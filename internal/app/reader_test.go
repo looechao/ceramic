@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"encoding/json"
@@ -21,10 +21,10 @@ func savePreview(t *testing.T, tt *ui.Tester, name string) {
 	if os.Getenv("CERAMIC_SCREENSHOTS") == "" {
 		return
 	}
-	if err := os.MkdirAll("build/qa", 0755); err != nil {
+	if err := os.MkdirAll("../../build/qa", 0755); err != nil {
 		t.Fatal(err)
 	}
-	f, err := os.Create("build/qa/" + name + ".png")
+	f, err := os.Create("../../build/qa/" + name + ".png")
 	if err != nil {
 		t.Fatal(err)
 	}
