@@ -44,12 +44,14 @@ func (r *reader) logout() {
 		r.message = err.Error()
 		return
 	}
+	r.stopStream()
 	r.generation++
 	r.session = nil
 	r.authorizing = false
 	r.home = &feedState{kind: "home"}
 	r.feedState = r.home
 	r.searchFeed = &feedState{kind: "search", searchKind: "accounts"}
+	r.notifications = &feedState{kind: "notifications"}
 	r.ownProfile = nil
 	r.workspaces = nil
 	r.authFeed = nil
@@ -62,7 +64,7 @@ func (r *reader) logout() {
 func (r *reader) cancelAuthorization() {
 	r.service.CancelLogin()
 	r.authorizing = false
-	for _, f := range []*feedState{r.authFeed, r.feedState, r.home, r.searchFeed, r.ownProfile} {
+	for _, f := range []*feedState{r.authFeed, r.feedState, r.home, r.searchFeed, r.notifications, r.ownProfile} {
 		if f != nil && (f.message == "正在连接实例…" || f.message == "请在浏览器中授权，完成后返回 Ceramic。") {
 			f.busy = false
 			f.message = ""

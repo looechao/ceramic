@@ -26,9 +26,10 @@ func (r *reader) ensureProfile() {
 	}
 	if r.workspaces == nil {
 		r.workspaces = map[string]*workspace{
-			"home":    {columns: []*feedState{r.home}},
-			"search":  {columns: []*feedState{r.searchFeed}},
-			"profile": {columns: []*feedState{r.ownProfile}},
+			"home":          {columns: []*feedState{r.home}},
+			"search":        {columns: []*feedState{r.searchFeed}},
+			"profile":       {columns: []*feedState{r.ownProfile}},
+			"notifications": {columns: []*feedState{r.notifications}},
 		}
 	}
 }
@@ -43,13 +44,18 @@ func (r *reader) navigate(page string) {
 		return
 	}
 	r.selected = page
+	if page == "notifications" {
+		r.unread = 0
+	}
 	r.pendingG = time.Time{}
 	if ws.focused == nil {
 		ws.focused = ws.columns[0]
 	}
 	r.feedState = ws.focused
 	root := ws.columns[0]
-	if !root.loaded && !root.busy {
+	// Notifications arrive while the tab is closed; reopening it should show
+	// them without requiring a manual refresh.
+	if (!root.loaded || page == "notifications") && !root.busy {
 		r.loadFeed(root, false)
 	}
 }

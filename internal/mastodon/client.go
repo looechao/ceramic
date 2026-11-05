@@ -1,6 +1,9 @@
 package mastodon
 
 import (
+	"bufio"
+	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -140,6 +143,68 @@ func (a *Client) Conversation(id string) ([]Status, error) {
 	}
 	posts := append(context.Ancestors, focal)
 	return append(posts, context.Descendants...), nil
+}
+
+// StreamUser follows the user stream and calls onEvent for each server-sent
+// event. The endpoint redirects to a separate streaming host, which would drop
+// an Authorization header, so the token travels in the query string instead.
+// It returns when the stream ends or ctx is cancelled.
+func (a *Client) StreamUser(ctx context.Context, onEvent func(event string, data []byte)) error {
+	a.mu.Lock()
+	s := a.session
+	a.mu.Unlock()
+	if s == nil {
+		return errors.New("请先登录")
+	}
+	endpoint := s.Instance + "/api/v1/streaming?stream=user&access_token=" + url.QueryEscape(s.Token)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Accept", "text/event-stream")
+	req.Header.Set("User-Agent", "Ceramic/0.1")
+	// The regular client times requests out after 25s, which would cut the
+	// stream; a stream lives until the server or the app closes it.
+	res, err := (&http.Client{}).Do(req)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		return fmt.Errorf("流式接口返回 HTTP %d", res.StatusCode)
+	}
+	scanner := bufio.NewScanner(res.Body)
+	scanner.Buffer(make([]byte, 0, 64*1024), 1<<20)
+	var event string
+	var data []byte
+	for scanner.Scan() {
+		line := scanner.Bytes()
+		if len(line) == 0 {
+			if len(data) > 0 {
+				onEvent(event, data)
+			}
+			event, data = "", nil
+			continue
+		}
+		switch {
+		case bytes.HasPrefix(line, []byte("event:")):
+			event = strings.TrimSpace(string(line[len("event:"):]))
+		case bytes.HasPrefix(line, []byte("data:")):
+			data = append(data, bytes.TrimSpace(line[len("data:"):])...)
+		}
+	}
+	return scanner.Err()
+}
+
+// Notifications reads the account's notification feed, newest first.
+func (a *Client) Notifications(cursor string) ([]Notification, error) {
+	q := url.Values{"limit": {"30"}}
+	if cursor != "" {
+		q.Set("max_id", cursor)
+	}
+	var result []Notification
+	err := a.readAPI("/api/v1/notifications", q, &result)
+	return result, err
 }
 
 func (a *Client) Search(query, kind string, offset int) (SearchResult, error) {

@@ -44,8 +44,8 @@ func Run() {
 			menu = mygo.NewMenu(columnCloseMenu(menu.Items(), func() { window.Update(reader.closeFocused) }))
 			mygo.App.SetMenu(menu)
 			items := []*mygo.MenuItem{}
-			for i, page := range []string{"profile", "home", "search"} {
-				title := []string{"我的", "首页", "Search"}[i]
+			for i, page := range []string{"profile", "home", "search", "notifications"} {
+				title := []string{"我的", "首页", "Search", "通知"}[i]
 				items = append(items, &mygo.MenuItem{Label: title, Accelerator: fmt.Sprintf("CmdOrCtrl+%d", i+1), Click: func(_ *mygo.MenuItem, _ *mygo.Window) {
 					window.Update(func() {
 						if reader.session != nil {
@@ -60,6 +60,7 @@ func Run() {
 		window.OnClosed(func() { mygo.App.Quit() })
 		if reader.session != nil {
 			reader.load(false)
+			reader.startStream()
 		}
 	})
 	if err := mygo.App.Run(); err != nil {

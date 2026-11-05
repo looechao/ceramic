@@ -60,6 +60,16 @@ type Status struct {
 	} `json:"filtered"`
 }
 
+// Notification is one entry from /api/v1/notifications. Status is nil for
+// follow and admin events, so the interface must not assume a post.
+type Notification struct {
+	ID        string  `json:"id"`
+	Type      string  `json:"type"`
+	CreatedAt string  `json:"created_at"`
+	Account   Account `json:"account"`
+	Status    *Status `json:"status"`
+}
+
 type SearchResult struct {
 	Accounts []Account `json:"accounts"`
 	Statuses []Status  `json:"statuses"`

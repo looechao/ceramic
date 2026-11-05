@@ -16,7 +16,7 @@ import (
 	"time"
 )
 
-const Scopes = "read:accounts read:statuses read:search"
+const Scopes = "read:accounts read:statuses read:search read:notifications"
 
 type pendingLogin struct {
 	Instance, ClientID, Secret, State, Redirect string

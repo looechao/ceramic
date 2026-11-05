@@ -24,6 +24,7 @@ func (r *reader) view(c *ui.Context) {
 		if s != nil && s != r.session {
 			r.session = s
 			r.authorizing = false
+			r.startStream()
 			if r.authFeed != nil {
 				r.authFeed.message = ""
 				r.loadFeed(r.authFeed, false)
@@ -73,6 +74,9 @@ func (r *reader) shell(c *ui.Context) {
 	}
 	if c.Shortcut(ui.Cmd, ui.Key3) {
 		r.navigate("search")
+	}
+	if c.Shortcut(ui.Cmd, ui.Key4) {
+		r.navigate("notifications")
 	}
 	if c.Shortcut(ui.Cmd, ui.KeyW) {
 		r.closeFocused()
@@ -199,7 +203,7 @@ func (r *reader) pane(c *ui.Context, f *feedState, ws *workspace, index int, war
 		if index > 0 {
 			ui.ButtonBase(c).Size(28, 28).Label("关闭此列").Tooltip("关闭此列 · " + shortcutHint("W")).OnClick(func() { r.closeColumn(ws, f) }).Children(func() { ui.Icon(c, closeIcon).Size(18, 18).TextColor(t.TextMuted) })
 		}
-		title := map[string]string{"home": "Home", "search": "Search", "profile": "Profile", "conversation": "Conversation"}[f.kind]
+		title := map[string]string{"home": "Home", "search": "Search", "profile": "Profile", "conversation": "Conversation", "notifications": "通知"}[f.kind]
 		if index > 0 && f.kind == "profile" {
 			title = f.profile.Name()
 		}
@@ -217,8 +221,16 @@ func (r *reader) pane(c *ui.Context, f *feedState, ws *workspace, index int, war
 				ui.Button(c, "重试").Margin(4, 14).OnClick(func() { r.loadFeed(f, f.failedMore) })
 			}
 		}
-		if r.authorizing && f.kind == "search" {
+		if r.authorizing && (f.kind == "search" || f.kind == "notifications") {
 			ui.Button(c, "取消授权").Margin(8, 14).OnClick(r.cancelAuthorization)
+		}
+		if f.kind == "notifications" && r.session != nil && !r.hasScope("read:notifications") && !r.authorizing {
+			ui.Text(c, "这次登录还没有通知权限，补充授权一次即可读取通知。").FontSize(12).TextColor(t.TextMuted).Padding(10, 14)
+			ui.Button(c, "授权只读通知").Margin(4, 14).Disabled(f.busy).OnClick(func() {
+				r.feedState = f
+				r.instance = r.session.Instance
+				r.login()
+			})
 		}
 		if f.preview != nil {
 			r.previewView(c, f)
@@ -232,6 +244,14 @@ func (r *reader) pane(c *ui.Context, f *feedState, ws *workspace, index int, war
 }
 
 func sidebarWidth(c *ui.Context) float32 { return max(railWidth, c.TitleBar().Left) }
+
+// unreadLabel keeps the badge short; Mastodon itself caps counts at 99+.
+func unreadLabel(n int) string {
+	if n > 99 {
+		return "99+"
+	}
+	return fmt.Sprint(n)
+}
 
 func (r *reader) sidebar(c *ui.Context) {
 	t := c.Theme()
@@ -274,19 +294,42 @@ func (r *reader) sidebar(c *ui.Context) {
 				}
 				avatarImage(c, me.Name(), bitmap, 32)
 			})
-			for i, page := range []string{"home", "search"} {
-				label := []string{"首页", "Search"}[i]
+			for i, page := range []string{"home", "search", "notifications"} {
+				label := []string{"首页", "Search", "通知"}[i]
+				icon := []*ui.SVG{navIcons[0], navIcons[1], bellIcon}[i]
 				bg, fg := ui.Transparent, t.TextMuted
 				if r.selected == page {
 					bg, fg = t.Text.Alpha(0.09), t.Accent
 				}
-				ui.ButtonBase(c.Key(page)).Size(48, 44).Radius(10).Background(bg).Label(label).Tooltip(label + " · " + shortcutHint(fmt.Sprint(i+2))).OnClick(func() {
+				tooltip := label + " · " + shortcutHint(fmt.Sprint(i+2))
+				alert := t.Accent
+				alertText := ui.Hex("#ffffff")
+				if t.Dark {
+					alertText = t.AccentText
+				}
+				unread := 0
+				if page == "notifications" {
+					unread = r.unread
+				}
+				if unread > 0 {
+					icon = bellUnreadIcon
+					if r.selected != page {
+						fg = alert
+					}
+					tooltip = fmt.Sprintf("%s · %d 条新通知", label, unread)
+				}
+				ui.ButtonBase(c.Key(page)).Size(48, 44).Radius(10).Background(bg).Label(label).Tooltip(tooltip).OnClick(func() {
 					if r.session != nil {
 						r.navigate(page)
 					} else {
 						r.selected = page
 					}
-				}).Children(func() { ui.Icon(c, navIcons[i]).Size(22, 22).TextColor(fg) })
+				}).Children(func() {
+					glyph := ui.Icon(c, icon).Size(22, 22).TextColor(fg)
+					if unread > 0 {
+						ui.Badge(c, unreadLabel(unread)).AttachTo(glyph, ui.AnchorTopRight, ui.AnchorCenter).BorderWidth(2).BorderColor(t.Surface).Background(alert).TextColor(alertText).FontSize(10).Bold().Padding(1, 5)
+					}
+				})
 			}
 		})
 	})
