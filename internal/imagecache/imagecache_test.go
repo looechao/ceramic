@@ -1,4 +1,4 @@
-package main
+package imagecache
 
 import (
 	"bytes"
@@ -11,8 +11,6 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
-
-	"github.com/egoist/mygo/ui"
 )
 
 func cachePNG(t *testing.T) []byte {
@@ -23,10 +21,11 @@ func cachePNG(t *testing.T) []byte {
 	}
 	return b.Bytes()
 }
+
 func TestXDGImageCacheDirectory(t *testing.T) {
 	root := t.TempDir()
 	t.Setenv("XDG_CACHE_HOME", root)
-	if got := xdgImageCacheDir(); got != filepath.Join(root, "ceramic", "images-v1") {
+	if got := DefaultDir(); got != filepath.Join(root, "ceramic", "images-v1") {
 		t.Fatal(got)
 	}
 	home, err := os.UserHomeDir()
@@ -35,11 +34,12 @@ func TestXDGImageCacheDirectory(t *testing.T) {
 	}
 	for _, value := range []string{"", "relative/path"} {
 		t.Setenv("XDG_CACHE_HOME", value)
-		if got := xdgImageCacheDir(); got != filepath.Join(home, ".cache", "ceramic", "images-v1") {
+		if got := DefaultDir(); got != filepath.Join(home, ".cache", "ceramic", "images-v1") {
 			t.Fatal(got)
 		}
 	}
 }
+
 func TestImageDiskCacheRestartAndRevalidation(t *testing.T) {
 	data := cachePNG(t)
 	var requests atomic.Int32
@@ -55,26 +55,27 @@ func TestImageDiskCacheRestartAndRevalidation(t *testing.T) {
 	}))
 	defer server.Close()
 	dir := t.TempDir()
-	cache := newImageCache(dir)
+	cache := New(dir)
 	cache.client = server.Client()
 	raw := server.URL + "/avatar"
 	published := 0
-	publish := func(b *ui.Bitmap) {
-		if b == nil {
-			t.Fatal("nil bitmap")
+	publish := func(data []byte) error {
+		if _, _, err := image.Decode(bytes.NewReader(data)); err != nil {
+			return err
 		}
 		published++
+		return nil
 	}
-	if err := cache.load(raw, publish); err != nil {
+	if err := cache.Load(raw, publish); err != nil {
 		t.Fatal(err)
 	}
 	if published != 1 || requests.Load() != 1 {
 		t.Fatal(published, requests.Load())
 	}
 	// A new cache instance simulates a new app process.
-	cache = newImageCache(dir)
+	cache = New(dir)
 	cache.client = server.Client()
-	if err := cache.load(raw, publish); err != nil {
+	if err := cache.Load(raw, publish); err != nil {
 		t.Fatal(err)
 	}
 	if published != 2 || requests.Load() != 1 {
@@ -83,7 +84,7 @@ func TestImageDiskCacheRestartAndRevalidation(t *testing.T) {
 	body, meta := cache.read(raw)
 	meta.Checked = time.Now().Add(-2 * time.Hour)
 	cache.write(raw, body, meta)
-	if err := cache.load(raw, publish); err != nil {
+	if err := cache.Load(raw, publish); err != nil {
 		t.Fatal(err)
 	}
 	if published != 3 || requests.Load() != 2 {
@@ -96,10 +97,11 @@ func TestImageDiskCacheRestartAndRevalidation(t *testing.T) {
 	meta.Checked = time.Now().Add(-2 * time.Hour)
 	cache.write(raw, body, meta)
 	server.Close()
-	if err := cache.load(raw, publish); err != nil || published != 4 {
+	if err := cache.Load(raw, publish); err != nil || published != 4 {
 		t.Fatal("offline stale image unavailable", err)
 	}
 }
+
 func TestImageCacheRecoveryAndNoStore(t *testing.T) {
 	data := cachePNG(t)
 	var requests atomic.Int32
@@ -111,21 +113,27 @@ func TestImageCacheRecoveryAndNoStore(t *testing.T) {
 		w.Write(data)
 	}))
 	defer server.Close()
-	cache := newImageCache(t.TempDir())
+	cache := New(t.TempDir())
 	cache.client = server.Client()
 	raw := server.URL + "/avatar"
 	if err := os.WriteFile(cache.path(raw), []byte("broken"), 0600); err != nil {
 		t.Fatal(err)
 	}
 	shown := 0
-	publish := func(*ui.Bitmap) { shown++ }
-	if err := cache.load(raw, publish); err != nil || shown != 1 {
+	publish := func(data []byte) error {
+		if _, _, err := image.Decode(bytes.NewReader(data)); err != nil {
+			return err
+		}
+		shown++
+		return nil
+	}
+	if err := cache.Load(raw, publish); err != nil || shown != 1 {
 		t.Fatal(err)
 	}
 	if body, _ := cache.read(raw); len(body) == 0 {
 		t.Fatal("corrupt cache not repaired")
 	}
-	if err := cache.load(server.URL+"/private", publish); err != nil {
+	if err := cache.Load(server.URL+"/private", publish); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(cache.path(server.URL + "/private")); !os.IsNotExist(err) {
@@ -135,14 +143,15 @@ func TestImageCacheRecoveryAndNoStore(t *testing.T) {
 	blocker := filepath.Join(t.TempDir(), "file")
 	os.WriteFile(blocker, []byte("x"), 0600)
 	cache.dir = blocker
-	if err := cache.load(raw, publish); err != nil || shown != 3 {
+	if err := cache.Load(raw, publish); err != nil || shown != 3 {
 		t.Fatal("cache I/O blocked online image", err)
 	}
 }
+
 func TestImageDiskCacheBudget(t *testing.T) {
-	cache := newImageCache(t.TempDir())
+	cache := New(t.TempDir())
 	data := cachePNG(t)
-	meta := cachedImage{Checked: time.Now(), FreshFor: time.Hour}
+	meta := metadata{Checked: time.Now(), FreshFor: time.Hour}
 	cache.write("old", data, meta)
 	info, _ := os.Stat(cache.path("old"))
 	cache.budget = info.Size() + 10

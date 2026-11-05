@@ -1,4 +1,6 @@
-package main
+// Package imagecache keeps downloaded images on disk and revalidates them. It
+// stores bytes and leaves decoding to its caller.
+package imagecache
 
 import (
 	"bytes"
@@ -8,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
@@ -15,29 +18,27 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	"ceramic/internal/mastodon"
-
-	"github.com/egoist/mygo/ui"
 )
 
 const imageDownloadLimit = 4 << 20
+
 const imageDiskLimit = 256 << 20
 
-type imageCache struct {
+type Cache struct {
 	dir    string
 	client *http.Client
 	mu     sync.Mutex
 	budget int64
 }
-type cachedImage struct {
+
+type metadata struct {
 	Checked  time.Time
 	FreshFor time.Duration
 	ETag     string
 	Modified string
 }
 
-func xdgImageCacheDir() string {
+func DefaultDir() string {
 	base := os.Getenv("XDG_CACHE_HOME")
 	if !filepath.IsAbs(base) {
 		home, err := os.UserHomeDir()
@@ -48,23 +49,30 @@ func xdgImageCacheDir() string {
 	}
 	return filepath.Join(base, "ceramic", "images-v1")
 }
-func newImageCache(dir string) *imageCache {
-	return &imageCache{dir: dir, budget: imageDiskLimit, client: &http.Client{
+
+func New(dir string) *Cache {
+	return &Cache{dir: dir, budget: imageDiskLimit, client: &http.Client{
 		Timeout: 20 * time.Second,
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			if len(via) > 5 || mastodon.SafeURL(req.URL.String()) == "" {
+			if len(via) > 5 || !safeRedirect(req.URL) {
 				return fmt.Errorf("invalid image redirect")
 			}
 			return nil
 		},
 	}}
 }
-func (c *imageCache) path(raw string) string {
+
+func safeRedirect(u *url.URL) bool {
+	return u.Scheme == "https" && u.Host != ""
+}
+
+func (c *Cache) path(raw string) string {
 	sum := sha256.Sum256([]byte(raw))
 	return filepath.Join(c.dir, hex.EncodeToString(sum[:])+".img")
 }
-func (c *imageCache) read(raw string) ([]byte, cachedImage) {
-	var meta cachedImage
+
+func (c *Cache) read(raw string) ([]byte, metadata) {
+	var meta metadata
 	if c.dir == "" {
 		return nil, meta
 	}
@@ -79,19 +87,21 @@ func (c *imageCache) read(raw string) ([]byte, cachedImage) {
 	}
 	header, body, ok := bytes.Cut(data, []byte{'\n'})
 	if !ok || len(header) > 8192 || len(body) > imageDownloadLimit || json.Unmarshal(header, &meta) != nil {
-		return nil, cachedImage{}
+		return nil, metadata{}
 	}
 	// Modification time tracks disk LRU; freshness lives in the header.
 	now := time.Now()
 	_ = os.Chtimes(c.path(raw), now, now)
 	return body, meta
 }
-func (c *imageCache) remove(raw string) {
+
+func (c *Cache) remove(raw string) {
 	if c.dir != "" {
 		_ = os.Remove(c.path(raw))
 	}
 }
-func (c *imageCache) write(raw string, data []byte, meta cachedImage) {
+
+func (c *Cache) write(raw string, data []byte, meta metadata) {
 	if c.dir == "" {
 		return
 	}
@@ -120,7 +130,8 @@ func (c *imageCache) write(raw string, data []byte, meta cachedImage) {
 	}
 	c.trim()
 }
-func (c *imageCache) trim() {
+
+func (c *Cache) trim() {
 	entries, err := os.ReadDir(c.dir)
 	if err != nil {
 		return
@@ -153,6 +164,7 @@ func (c *imageCache) trim() {
 		}
 	}
 }
+
 func cachePolicy(h http.Header) (time.Duration, bool) {
 	ttl := 24 * time.Hour
 	store := true
@@ -175,14 +187,14 @@ func cachePolicy(h http.Header) (time.Duration, bool) {
 	return max(0, ttl), store
 }
 
-// load publishes cached pixels before revalidating stale entries. Cache I/O is
-// best-effort: a read-only disk never prevents online images from displaying.
-func (c *imageCache) load(raw string, publish func(*ui.Bitmap)) error {
+// Load hands cached bytes to show before revalidating stale entries, and show
+// rejects bytes it cannot decode. Cache I/O is best-effort: a read-only disk
+// never prevents online images from displaying.
+func (c *Cache) Load(raw string, show func([]byte) error) error {
 	data, meta := c.read(raw)
 	cached := false
 	if len(data) > 0 {
-		if bitmap, err := decodeBitmap(data); err == nil {
-			publish(bitmap)
+		if err := show(data); err == nil {
 			cached = true
 			if time.Since(meta.Checked) >= 0 && time.Since(meta.Checked) < meta.FreshFor {
 				return nil
@@ -242,18 +254,16 @@ func (c *imageCache) load(raw string, publish func(*ui.Bitmap)) error {
 		}
 		return fmt.Errorf("image too large")
 	}
-	bitmap, err := decodeBitmap(data)
-	if err != nil {
+	if err := show(data); err != nil {
 		if cached {
 			return nil
 		}
 		return err
 	}
 	if store {
-		c.write(raw, data, cachedImage{Checked: time.Now(), FreshFor: ttl, ETag: res.Header.Get("ETag"), Modified: res.Header.Get("Last-Modified")})
+		c.write(raw, data, metadata{Checked: time.Now(), FreshFor: ttl, ETag: res.Header.Get("ETag"), Modified: res.Header.Get("Last-Modified")})
 	} else {
 		c.remove(raw)
 	}
-	publish(bitmap)
 	return nil
 }

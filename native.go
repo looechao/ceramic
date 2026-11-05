@@ -9,6 +9,7 @@ import (
 	"github.com/egoist/mygo/ui"
 	"golang.org/x/image/draw"
 
+	"ceramic/internal/imagecache"
 	"ceramic/internal/mastodon"
 )
 
@@ -49,7 +50,7 @@ type reader struct {
 	readingScroll  *readingMotion
 	typing         bool
 	pendingG       time.Time
-	diskImages     *imageCache
+	diskImages     *imagecache.Cache
 	closeWindow    func()
 	authFeed       *feedState
 	searchAllowed  bool
@@ -73,7 +74,7 @@ type reader struct {
 func newReader(service *mastodon.Client) *reader {
 	s, _, _ := service.Snapshot()
 	home := &feedState{kind: "home"}
-	return &reader{diskImages: newImageCache(xdgImageCacheDir()), service: service, session: s, feedState: home, home: home,
+	return &reader{diskImages: imagecache.New(imagecache.DefaultDir()), service: service, session: s, feedState: home, home: home,
 		searchFeed: &feedState{kind: "search", searchKind: "accounts"}, selected: "home",
 		images: map[string]*imageEntry{}, imageSlots: make(chan struct{}, 4)}
 }
@@ -279,7 +280,11 @@ func (r *reader) photo(raw string) *imageEntry {
 	go func() {
 		r.imageSlots <- struct{}{}
 		defer func() { <-r.imageSlots }()
-		err := r.diskImages.load(raw, func(bitmap *ui.Bitmap) {
+		err := r.diskImages.Load(raw, func(data []byte) error {
+			bitmap, err := decodeBitmap(data)
+			if err != nil {
+				return err
+			}
 			r.update(func() {
 				if r.images[raw] != entry {
 					return
@@ -288,6 +293,7 @@ func (r *reader) photo(raw string) *imageEntry {
 				entry.failed = false
 				r.trimImages()
 			})
+			return nil
 		})
 		r.update(func() {
 			if r.images[raw] != entry {
