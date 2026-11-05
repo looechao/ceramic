@@ -1,0 +1,6 @@
+{
+  "name": "Sprinkle",
+  "identifier": "dev.sprinkle.reader",
+  "version": "0.1.0",
+  "out": "build"
+}
