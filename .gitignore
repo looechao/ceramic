@@ -1,0 +1,27 @@
+# Application bundles, screenshots, and MyGo hot-reload output
+/build/
+/.mygo/
+/sprinkle
+/sprinkle.exe
+
+# Go test, coverage, and profiling output
+*.test
+*.test.exe
+/coverage.out
+/coverage.html
+*.prof
+
+# Local configuration and credentials (examples remain trackable)
+.env
+.env.*
+!.env.example
+!.env.*.example
+/session.json
+/.session-*
+
+# macOS metadata and editor temporary files
+.DS_Store
+._*
+*.swp
+*.swo
+*~
