@@ -9,7 +9,7 @@ go build -trimpath -ldflags='-s -w' -o "$APP/Contents/MacOS/Ceramic" .
 ICONSET="$(mktemp -d)/Ceramic.iconset"
 mkdir -p "$ICONSET"
 for entry in 16x16@2x:32 32x32@2x:64 128x128:128 128x128@2x:256 256x256:256 256x256@2x:512 512x512:512 512x512@2x:1024; do
-  sips -z "${entry#*:}" "${entry#*:}" assets/logo/ceramic.png --out "$ICONSET/icon_${entry%:*}.png" >/dev/null
+  sips -z "${entry#*:}" "${entry#*:}" resources/icon.png --out "$ICONSET/icon_${entry%:*}.png" >/dev/null
 done
 iconutil -c icns "$ICONSET" -o "$APP/Contents/Resources/Ceramic.icns"
 rm -rf "$(dirname "$ICONSET")"

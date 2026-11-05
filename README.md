@@ -47,17 +47,24 @@ CERAMIC_SCREENSHOTS=1 go test -run TestNative ./...
 
 ## 文件结构
 
-- `main.go`：MyGo 原生窗口，以及 OAuth 回调监听器
-- `native.go`：原生界面、异步加载、图片和时间线状态
-- `navigation.go`：每个 Tab 的列路径、详情返回、大图查看和页面状态
-- `reading_keys.go`：阅读快捷键与连续滚动
-- `post_style.go` / `icons.go`：帖子样式与图标
-- `image_cache.go`：XDG 图片磁盘缓存和缓存策略
-- `navigation_test.go`：搜索和个人页 API、跨页异步请求与导航测试
-- `content.go`：Mastodon 数据类型和 HTML 到原生富文本的转换
-- `service.go`：Mastodon 请求、OAuth、会话存储；只暴露 `/oauth/callback`
-- `assets/logo/`：应用图标源文件（`ceramic.svg`）和导出图（`ceramic.png`）
-- `service_test.go` / `native_test.go`：服务集成测试和原生 UI 交互测试
+- `main.go`：只启动 `internal/app`
+- `internal/app/`：窗口和全部界面
+  - `app.go`：窗口、菜单和启动
+  - `reader.go`：阅读状态和异步加载
+  - `images.go`：图片加载、解码和内存上限
+  - `navigation.go`：每个 Tab 的列路径、打开、关闭和聚焦
+  - `keys.go`：阅读快捷键与连续滚动
+  - `login_ui.go` / `shell_ui.go` / `timeline_ui.go` / `post_ui.go`：登录页、侧边栏和列、时间线、帖子
+  - `style.go` / `icons.go`：样式与图标
+- `internal/mastodon/`：不依赖界面
+  - `client.go`：Mastodon 请求
+  - `oauth.go`：授权流程，本地监听器只暴露 `/oauth/callback`
+  - `session.go`：会话存储
+  - `types.go` / `richtext.go`：数据类型和 HTML 到富文本的转换
+- `internal/imagecache/`：XDG 图片磁盘缓存和缓存策略，不依赖界面
+- `resources/`：应用图标源文件（`icon.svg`）和导出图（`icon.png`）
+
+测试文件与被测代码放在同一目录。
 
 ## 数据与授权
 
