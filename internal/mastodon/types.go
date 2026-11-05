@@ -1,0 +1,66 @@
+// Package mastodon reads the Mastodon API and handles login. It knows nothing
+// about the interface.
+package mastodon
+
+type Account struct {
+	ID          string `json:"id"`
+	Username    string `json:"username"`
+	DisplayName string `json:"display_name"`
+	Acct        string `json:"acct"`
+	Avatar      string `json:"avatar_static"`
+	Note        string `json:"note"`
+	URL         string `json:"url"`
+	Followers   int    `json:"followers_count"`
+	Following   int    `json:"following_count"`
+	Statuses    int    `json:"statuses_count"`
+}
+
+func (a Account) Name() string {
+	if a.DisplayName != "" {
+		return a.DisplayName
+	}
+	return a.Username
+}
+
+type Media struct {
+	Type        string `json:"type"`
+	URL         string `json:"url"`
+	Preview     string `json:"preview_url"`
+	Description string `json:"description"`
+}
+
+type LinkCard struct {
+	URL         string `json:"url"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Image       string `json:"image"`
+	Provider    string `json:"provider_name"`
+}
+
+type Status struct {
+	Card *LinkCard `json:"card"`
+
+	ID         string  `json:"id"`
+	Content    string  `json:"content"`
+	URL        string  `json:"url"`
+	CreatedAt  string  `json:"created_at"`
+	Account    Account `json:"account"`
+	Reblog     *Status `json:"reblog"`
+	Spoiler    string  `json:"spoiler_text"`
+	Sensitive  bool    `json:"sensitive"`
+	Media      []Media `json:"media_attachments"`
+	Replies    int     `json:"replies_count"`
+	Reblogs    int     `json:"reblogs_count"`
+	Favourites int     `json:"favourites_count"`
+	ReplyTo    string  `json:"in_reply_to_id"`
+	Filtered   []struct {
+		Filter struct {
+			Action string `json:"filter_action"`
+		} `json:"filter"`
+	} `json:"filtered"`
+}
+
+type SearchResult struct {
+	Accounts []Account `json:"accounts"`
+	Statuses []Status  `json:"statuses"`
+}

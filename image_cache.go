@@ -16,6 +16,8 @@ import (
 	"sync"
 	"time"
 
+	"ceramic/internal/mastodon"
+
 	"github.com/egoist/mygo/ui"
 )
 
@@ -50,7 +52,7 @@ func newImageCache(dir string) *imageCache {
 	return &imageCache{dir: dir, budget: imageDiskLimit, client: &http.Client{
 		Timeout: 20 * time.Second,
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			if len(via) > 5 || safeURL(req.URL.String()) == "" {
+			if len(via) > 5 || mastodon.SafeURL(req.URL.String()) == "" {
 				return fmt.Errorf("invalid image redirect")
 			}
 			return nil

@@ -3,9 +3,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/egoist/mygo/ui"
 	"strings"
 	"time"
+
+	"github.com/egoist/mygo/ui"
+
+	"ceramic/internal/mastodon"
 )
 
 type workspace struct {
@@ -18,7 +21,7 @@ type workspace struct {
 
 func (r *reader) ensureProfile() {
 	if r.ownProfile == nil {
-		var me account
+		var me mastodon.Account
 		_ = json.Unmarshal(r.session.Account, &me)
 		r.ownProfile = &feedState{kind: "profile", profile: me}
 	}
@@ -67,13 +70,13 @@ func (r *reader) appendColumn(source, detail *feedState) {
 		}
 	}
 }
-func (r *reader) openProfileFrom(source *feedState, person account) {
+func (r *reader) openProfileFrom(source *feedState, person mastodon.Account) {
 	if person.ID == "" || (source.kind == "profile" && source.profile.ID == person.ID) {
 		return
 	}
 	r.appendColumn(source, &feedState{kind: "profile", profile: person})
 }
-func (r *reader) openConversation(source *feedState, post status) {
+func (r *reader) openConversation(source *feedState, post mastodon.Status) {
 	if post.Reblog != nil {
 		post = *post.Reblog
 	}
@@ -81,7 +84,7 @@ func (r *reader) openConversation(source *feedState, post status) {
 		return
 	}
 	detail := &feedState{kind: "conversation", focalID: post.ID}
-	detail.applyPosts([]status{post}, false)
+	detail.applyPosts([]mastodon.Status{post}, false)
 	r.appendColumn(source, detail)
 }
 func (r *reader) focusColumn(ws *workspace, f *feedState) {
@@ -257,7 +260,7 @@ func (r *reader) pane(c *ui.Context, f *feedState, ws *workspace, index int) {
 		}
 		title := map[string]string{"home": "Home", "search": "Search", "profile": "Profile", "conversation": "Conversation"}[f.kind]
 		if index > 0 && f.kind == "profile" {
-			title = f.profile.name()
+			title = f.profile.Name()
 		}
 		ui.Text(c, title).FontSize(14).FontWeight(600)
 		ui.Spacer(c)
@@ -373,44 +376,44 @@ func (r *reader) timelineView(c *ui.Context, f *feedState) {
 		})
 	}).TrackScroll(&f.scroll).Grow(1)
 }
-func (r *reader) accountRow(c *ui.Context, f *feedState, p account) {
+func (r *reader) accountRow(c *ui.Context, f *feedState, p mastodon.Account) {
 	ui.Row(c).Padding(14, 22).Gap(12).BorderWidth(0, 0, 1, 0).BorderColor(c.Theme().Border).Children(func() {
 		r.avatar(c, f, p, 40)
 		ui.Column(c).Grow(1).Shrink(1).Gap(4).Children(func() {
 			ui.Row(c).Children(func() {
-				ui.Button(c, p.name()).Background(ui.Transparent).BorderWidth(0).Padding(0).Bold().OnClick(func() { r.openProfileFrom(f, p) })
+				ui.Button(c, p.Name()).Background(ui.Transparent).BorderWidth(0).Padding(0).Bold().OnClick(func() { r.openProfileFrom(f, p) })
 			})
 			ui.Text(c, "@"+p.Acct).FontSize(12).TextColor(c.Theme().TextMuted)
 		})
 	})
 }
-func (r *reader) avatar(c *ui.Context, f *feedState, p account, size float32) {
+func (r *reader) avatar(c *ui.Context, f *feedState, p mastodon.Account, size float32) {
 	var bitmap *ui.Bitmap
 	if entry := r.photo(p.Avatar); entry != nil {
 		bitmap = entry.bitmap
 	}
-	avatarImage(c, p.name(), bitmap, size).Label("查看 " + p.name()).OnClick(func() { r.openProfileFrom(f, p) })
+	avatarImage(c, p.Name(), bitmap, size).Label("查看 " + p.Name()).OnClick(func() { r.openProfileFrom(f, p) })
 }
-func (r *reader) profileHeader(c *ui.Context, f *feedState, p account) {
+func (r *reader) profileHeader(c *ui.Context, f *feedState, p mastodon.Account) {
 	ui.Column(c).Padding(22).Gap(12).BorderWidth(0, 0, 1, 0).BorderColor(c.Theme().Border).Children(func() {
 		r.avatar(c, f, p, 64)
-		ui.Text(c, p.name()).FontSize(23).Bold()
+		ui.Text(c, p.Name()).FontSize(23).Bold()
 		ui.Text(c, "@"+p.Acct).FontSize(12).TextColor(c.Theme().TextMuted)
-		richText(c, nativeText(p.Note), 14)
+		richText(c, mastodon.ParseText(p.Note), 14)
 		ui.Text(c, fmt.Sprintf("%d 帖子    %d 正在关注    %d 关注者", p.Statuses, p.Following, p.Followers)).FontSize(12).TextColor(c.Theme().TextMuted)
-		if target := safeURL(p.URL); target != "" {
+		if target := mastodon.SafeURL(p.URL); target != "" {
 			ui.Link(c, "在浏览器中查看个人页 ↗", target).FontSize(12)
 		}
 		ui.Text(c, "帖子").FontSize(14).Bold().MarginY(6)
 	})
 }
-func richText(c *ui.Context, runs []textRun, size float32) {
+func richText(c *ui.Context, runs []mastodon.TextRun, size float32) {
 	renderRichText(c, runs, size, nil)
 }
-func postText(c *ui.Context, runs []textRun, open func()) {
+func postText(c *ui.Context, runs []mastodon.TextRun, open func()) {
 	renderRichText(c, runs, 14, open)
 }
-func renderRichText(c *ui.Context, runs []textRun, size float32, open func()) {
+func renderRichText(c *ui.Context, runs []mastodon.TextRun, size float32, open func()) {
 	paragraph := ui.RichText(c).FontSize(size).LineHeight(1.55).Selectable()
 	if open != nil {
 		paragraph.OnClick(open)
@@ -453,7 +456,7 @@ func (r *reader) previewView(c *ui.Context, f *feedState) {
 			if m.Description != "" {
 				ui.Text(c, m.Description).Selectable().FontSize(13)
 			}
-			if target := safeURL(source); target != "" {
+			if target := mastodon.SafeURL(source); target != "" {
 				ui.Link(c, "打开原图 ↗", target)
 			}
 		})
@@ -476,8 +479,8 @@ func relativeTime(date time.Time) string {
 	return date.Local().Format("01-02")
 }
 
-func (r *reader) linkPreview(c *ui.Context, card linkCard) {
-	target := safeURL(card.URL)
+func (r *reader) linkPreview(c *ui.Context, card mastodon.LinkCard) {
+	target := mastodon.SafeURL(card.URL)
 	if target == "" || card.Title == "" {
 		return
 	}
@@ -532,13 +535,13 @@ func (r *reader) sidebar(c *ui.Context) {
 					ui.Icon(c, navIcons[2]).Size(24, 24).TextColor(t.TextMuted)
 					return
 				}
-				var me account
+				var me mastodon.Account
 				_ = json.Unmarshal(r.session.Account, &me)
 				var bitmap *ui.Bitmap
 				if e := r.photo(me.Avatar); e != nil {
 					bitmap = e.bitmap
 				}
-				avatarImage(c, me.name(), bitmap, 32)
+				avatarImage(c, me.Name(), bitmap, 32)
 			})
 			for i, page := range []string{"home", "search"} {
 				label := []string{"首页", "Search"}[i]

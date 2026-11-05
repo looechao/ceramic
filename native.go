@@ -3,15 +3,18 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"github.com/egoist/mygo/ui"
-	"golang.org/x/image/draw"
 	"image"
 	"time"
+
+	"github.com/egoist/mygo/ui"
+	"golang.org/x/image/draw"
+
+	"ceramic/internal/mastodon"
 )
 
 type postView struct {
-	status                  status
-	runs                    []textRun
+	status                  mastodon.Status
+	runs                    []mastodon.TextRun
 	expanded, mediaExpanded bool
 	warning                 string
 }
@@ -33,11 +36,11 @@ type feedState struct {
 	cursor            string
 	list              ui.ListState
 	kind              string
-	profile           account
-	accounts          []account
+	profile           mastodon.Account
+	accounts          []mastodon.Account
 	query, searchKind string
 	offset            int
-	preview           *media
+	preview           *mastodon.Media
 	width             float32
 	focalID           string
 }
@@ -51,9 +54,9 @@ type reader struct {
 	authFeed       *feedState
 	searchAllowed  bool
 	*feedState
-	service                      *application
+	service                      *mastodon.Client
 	update                       func(func())
-	session                      *session
+	session                      *mastodon.Session
 	instance                     string
 	authorizing                  bool
 	generation                   uint64
@@ -67,8 +70,8 @@ type reader struct {
 	searchTab                    int
 }
 
-func newReader(service *application) *reader {
-	s, _, _ := service.snapshot()
+func newReader(service *mastodon.Client) *reader {
+	s, _, _ := service.Snapshot()
 	home := &feedState{kind: "home"}
 	return &reader{diskImages: newImageCache(xdgImageCacheDir()), service: service, session: s, feedState: home, home: home,
 		searchFeed: &feedState{kind: "search", searchKind: "accounts"}, selected: "home",
@@ -78,7 +81,7 @@ func (r *reader) login() {
 	if r.busy || r.authorizing {
 		return
 	}
-	instance, err := normalizeInstance(r.instance)
+	instance, err := mastodon.NormalizeInstance(r.instance)
 	if err != nil {
 		r.message = err.Error()
 		return
@@ -90,7 +93,7 @@ func (r *reader) login() {
 	r.authorizing = true
 	r.message = "正在连接实例…"
 	go func() {
-		err := r.service.login(instance)
+		err := r.service.Login(instance)
 		r.update(func() {
 			if gen != r.generation || !r.authorizing {
 				return
@@ -107,7 +110,7 @@ func (r *reader) login() {
 	}()
 }
 func (r *reader) logout() {
-	if err := r.service.logout(); err != nil {
+	if err := r.service.Logout(); err != nil {
 		r.message = err.Error()
 		return
 	}
@@ -144,26 +147,26 @@ func (r *reader) loadFeed(f *feedState, more bool) {
 		offset = f.offset
 	}
 	go func() {
-		var posts []status
-		var people []account
+		var posts []mastodon.Status
+		var people []mastodon.Account
 		var err error
 		person := f.profile
 		switch f.kind {
 		case "conversation":
-			posts, err = r.service.conversation(f.focalID)
+			posts, err = r.service.Conversation(f.focalID)
 		case "profile":
 			if !more {
-				person, err = r.service.profile(f.profile.ID)
+				person, err = r.service.Profile(f.profile.ID)
 			}
 			if err == nil {
-				posts, err = r.service.accountPosts(f.profile.ID, cursor)
+				posts, err = r.service.AccountPosts(f.profile.ID, cursor)
 			}
 		case "search":
-			var result searchResult
-			result, err = r.service.search(f.query, f.searchKind, offset)
+			var result mastodon.SearchResult
+			result, err = r.service.Search(f.query, f.searchKind, offset)
 			posts, people = result.Statuses, result.Accounts
 		default:
-			posts, err = r.service.timeline(cursor)
+			posts, err = r.service.Timeline(cursor)
 		}
 		r.update(func() {
 			if gen != r.generation {
@@ -216,7 +219,7 @@ func (r *reader) loadFeed(f *feedState, more bool) {
 		})
 	}()
 }
-func (r *feedState) applyPosts(posts []status, more bool) {
+func (r *feedState) applyPosts(posts []mastodon.Status, more bool) {
 	if !more {
 		r.posts = nil
 	}
@@ -250,7 +253,7 @@ func (r *feedState) applyPosts(posts []status, more bool) {
 		if p.Reblog != nil {
 			body = *p.Reblog
 		}
-		r.posts = append(r.posts, &postView{status: p, runs: nativeText(body.Content), warning: warning})
+		r.posts = append(r.posts, &postView{status: p, runs: mastodon.ParseText(body.Content), warning: warning})
 	}
 	previous := r.cursor
 	if len(posts) > 0 {
@@ -259,7 +262,7 @@ func (r *feedState) applyPosts(posts []status, more bool) {
 	r.end = len(posts) == 0 || (more && previous == r.cursor)
 }
 func (r *reader) photo(raw string) *imageEntry {
-	raw = safeURL(raw)
+	raw = mastodon.SafeURL(raw)
 	if raw == "" {
 		return nil
 	}
@@ -331,7 +334,7 @@ func (r *reader) view(c *ui.Context) {
 	}
 	c.SetTheme(&t)
 	if r.authorizing {
-		s, _, message := r.service.snapshot()
+		s, _, message := r.service.Snapshot()
 		if s != nil && s != r.session {
 			r.session = s
 			r.authorizing = false
@@ -418,7 +421,7 @@ func (r *reader) post(c *ui.Context, f *feedState, p *postView) {
 		if p.status.Reblog != nil {
 			ui.Row(c).Gap(6).Margin(0, 0, 2, 54).Children(func() {
 				ui.Icon(c, boostIcon).Size(13, 13).TextColor(t.TextMuted)
-				ui.Text(c, p.status.Account.name()+" 转发了").FontSize(11).TextColor(t.TextMuted)
+				ui.Text(c, p.status.Account.Name()+" 转发了").FontSize(11).TextColor(t.TextMuted)
 			})
 		}
 		ui.Row(c).Gap(12).AlignItems(ui.Start).Children(func() {
@@ -426,7 +429,7 @@ func (r *reader) post(c *ui.Context, f *feedState, p *postView) {
 			ui.Column(c).Grow(1).Shrink(1).Gap(6).Children(func() {
 				ui.Column(c).Gap(2).Children(func() {
 					ui.Row(c).Gap(8).Children(func() {
-						ui.Button(c, s.Account.name()).Background(ui.Transparent).BorderWidth(0).Padding(0).FontWeight(600).FontSize(14).Shrink(1).MaxLines(1).OnClick(func() { r.openProfileFrom(f, s.Account) })
+						ui.Button(c, s.Account.Name()).Background(ui.Transparent).BorderWidth(0).Padding(0).FontWeight(600).FontSize(14).Shrink(1).MaxLines(1).OnClick(func() { r.openProfileFrom(f, s.Account) })
 						ui.Spacer(c)
 						if date, err := time.Parse(time.RFC3339, s.CreatedAt); err == nil {
 							ui.Text(c, relativeTime(date)).FontSize(11).TextColor(t.TextMuted).Tooltip(date.Local().Format("2006-01-02 15:04"))
@@ -478,7 +481,7 @@ func (r *reader) post(c *ui.Context, f *feedState, p *postView) {
 		})
 	})
 }
-func (r *reader) media(c *ui.Context, f *feedState, m media, single bool) {
+func (r *reader) media(c *ui.Context, f *feedState, m mastodon.Media, single bool) {
 	ui.Column(c).Gap(6).Children(func() {
 		if m.Type == "image" {
 			preview := m.Preview
@@ -511,7 +514,7 @@ func (r *reader) media(c *ui.Context, f *feedState, m media, single bool) {
 			entry := r.photo(source)
 			showExternal = entry == nil || entry.failed
 		}
-		if target := safeURL(m.URL); target != "" && showExternal {
+		if target := mastodon.SafeURL(m.URL); target != "" && showExternal {
 			label := "打开图片 ↗"
 			if m.Type != "image" {
 				label = "在浏览器中打开媒体 ↗"
@@ -548,7 +551,7 @@ func (r *reader) trimImages() {
 }
 
 func (r *reader) cancelAuthorization() {
-	r.service.cancelLogin()
+	r.service.CancelLogin()
 	r.authorizing = false
 	for _, f := range []*feedState{r.authFeed, r.feedState, r.home, r.searchFeed, r.ownProfile} {
 		if f != nil && (f.message == "正在连接实例…" || f.message == "请在浏览器中授权，完成后返回 Ceramic。") {

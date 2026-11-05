@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/egoist/mygo/ui"
 	"image"
 	"image/color"
 	"image/draw"
@@ -11,51 +10,18 @@ import (
 	"math"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
-	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/egoist/mygo/ui"
+
+	"ceramic/internal/mastodon"
 )
 
-func TestProfileAndSearchAPI(t *testing.T) {
-	var query url.Values
-	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("Authorization") != "Bearer test" {
-			t.Error("missing authentication")
-		}
-		query = r.URL.Query()
-		switch r.URL.Path {
-		case "/api/v1/accounts/42":
-			io.WriteString(w, `{"id":"42","display_name":"林间","note":"<p>简介</p>","followers_count":17}`)
-		case "/api/v1/accounts/42/statuses":
-			io.WriteString(w, `[{"id":"7","content":"<p>帖子</p>"}]`)
-		case "/api/v2/search":
-			io.WriteString(w, `{"accounts":[{"id":"42"}],"statuses":[{"id":"7"}]}`)
-		default:
-			t.Errorf("unexpected path %s", r.URL.Path)
-			http.NotFound(w, r)
-		}
-	}))
-	defer upstream.Close()
-	a := newApp(filepath.Join(t.TempDir(), "session.json"))
-	a.session = &session{Instance: upstream.URL, Token: "test"}
-	p, err := a.profile("42")
-	if err != nil || p.Followers != 17 {
-		t.Fatal(p, err)
-	}
-	posts, err := a.accountPosts("42", "8")
-	if err != nil || len(posts) != 1 || query.Get("max_id") != "8" {
-		t.Fatal(posts, query, err)
-	}
-	result, err := a.search("中文 & #tag", "statuses", 20)
-	if err != nil || len(result.Statuses) != 1 || query.Get("q") != "中文 & #tag" || query.Get("type") != "statuses" || query.Get("offset") != "20" {
-		t.Fatal(result, query, err)
-	}
-}
 func TestNativeNavigation(t *testing.T) {
 	r := testReader(t)
-	r.session = &session{Instance: "https://example.com", Account: json.RawMessage(`{"id":"me","display_name":"我的账号","acct":"me"}`)}
-	r.applyPosts([]status{{ID: "3", Content: "<p>首页保留的正文</p>", Account: account{ID: "42", DisplayName: "林间", Acct: "forest@example.com"}, Spoiler: "内容警告"}}, false)
+	r.session = &mastodon.Session{Instance: "https://example.com", Account: json.RawMessage(`{"id":"me","display_name":"我的账号","acct":"me"}`)}
+	r.applyPosts([]mastodon.Status{{ID: "3", Content: "<p>首页保留的正文</p>", Account: mastodon.Account{ID: "42", DisplayName: "林间", Acct: "forest@example.com"}, Spoiler: "内容警告"}}, false)
 	home := r.feedState
 	tt := ui.NewTester(r.view, 900, 820)
 	if err := tt.Click("展开隐藏内容：内容警告"); err != nil {
@@ -73,7 +39,7 @@ func TestNativeNavigation(t *testing.T) {
 	}
 	r.query = "forest"
 	r.submitSearch()
-	r.accounts = []account{{ID: "42", DisplayName: "林间", Acct: "forest@example.com"}}
+	r.accounts = []mastodon.Account{{ID: "42", DisplayName: "林间", Acct: "forest@example.com"}}
 	r.loaded = true
 	r.end = true
 	tt.Frame()
@@ -87,7 +53,7 @@ func TestNativeNavigation(t *testing.T) {
 	r.profile.Note = "<p>在山间散步，记录日常。<a href=\"https://example.com\">个人网站</a></p>"
 	r.profile.Followers = 17
 	r.profile.Statuses = 31
-	r.applyPosts([]status{{ID: "5", Content: "<p>个人页的帖子。</p>", Account: r.profile}}, false)
+	r.applyPosts([]mastodon.Status{{ID: "5", Content: "<p>个人页的帖子。</p>", Account: r.profile}}, false)
 	tt.Frame()
 	savePreview(t, tt, "native-profile")
 	if err := tt.Click("关闭此列"); err != nil {
@@ -128,8 +94,8 @@ func TestLoadKeepsResponseOnOriginPage(t *testing.T) {
 	}))
 	defer upstream.Close()
 	r := testReader(t)
-	r.session = &session{Instance: upstream.URL, Token: "test"}
-	r.service.session = r.session
+	r.session = &mastodon.Session{Instance: upstream.URL, Token: "test"}
+	r.service.SetSession(r.session)
 	updates := make(chan func(), 2)
 	r.update = func(f func()) { updates <- f }
 	r.load(false)
@@ -153,15 +119,15 @@ func TestLoadKeepsResponseOnOriginPage(t *testing.T) {
 
 func TestNativeColumnsAndMedia(t *testing.T) {
 	r := testReader(t)
-	r.session = &session{Instance: "https://example.com", Scopes: scopes, Account: json.RawMessage(`{"id":"me","display_name":"我的账号","acct":"me"}`)}
-	author := account{ID: "42", DisplayName: "林间散步", Acct: "forest@example.com", Note: "<p>记录旅途与日常。</p>", Followers: 127, Statuses: 83}
-	picture := media{Type: "image", URL: "https://example.com/photo.png", Preview: "https://example.com/photo.png", Description: "媒体排版测试图"}
+	r.session = &mastodon.Session{Instance: "https://example.com", Scopes: mastodon.Scopes, Account: json.RawMessage(`{"id":"me","display_name":"我的账号","acct":"me"}`)}
+	author := mastodon.Account{ID: "42", DisplayName: "林间散步", Acct: "forest@example.com", Note: "<p>记录旅途与日常。</p>", Followers: 127, Statuses: 83}
+	picture := mastodon.Media{Type: "image", URL: "https://example.com/photo.png", Preview: "https://example.com/photo.png", Description: "媒体排版测试图"}
 	img := image.NewRGBA(image.Rect(0, 0, 600, 320))
 	draw.Draw(img, img.Bounds(), &image.Uniform{color.RGBA{80, 110, 94, 255}}, image.Point{}, draw.Src)
 	bitmap := ui.NewBitmap(img)
 	r.images[picture.URL] = &imageEntry{bitmap: bitmap, ready: true}
 	author.Avatar = picture.URL
-	r.home.applyPosts([]status{{ID: "3", Content: "<p>今天走了另一条回家的路。</p>", Account: author, Media: []media{picture}, Replies: 2, Favourites: 7}}, false)
+	r.home.applyPosts([]mastodon.Status{{ID: "3", Content: "<p>今天走了另一条回家的路。</p>", Account: author, Media: []mastodon.Media{picture}, Replies: 2, Favourites: 7}}, false)
 	r.home.loaded = true
 	r.home.end = true
 	r.ensureProfile()
@@ -170,7 +136,7 @@ func TestNativeColumnsAndMedia(t *testing.T) {
 	r.ownProfile.end = true
 	r.query = "林间"
 	r.searchFeed.query = r.query
-	r.searchFeed.accounts = []account{author}
+	r.searchFeed.accounts = []mastodon.Account{author}
 	r.searchFeed.loaded = true
 	r.searchFeed.end = true
 	tt := ui.NewTester(r.view, 1240, 820)
@@ -256,9 +222,9 @@ func TestNativeColumnsAndMedia(t *testing.T) {
 
 func TestNativeReadingPositionSurvivesNavigation(t *testing.T) {
 	r := testReader(t)
-	r.session = &session{Account: json.RawMessage(`{"id":"me"}`)}
+	r.session = &mastodon.Session{Account: json.RawMessage(`{"id":"me"}`)}
 	for i := 0; i < 60; i++ {
-		r.home.applyPosts([]status{{ID: fmt.Sprint(i), Content: fmt.Sprintf("reading-row-%d", i), Account: account{DisplayName: "测试作者"}}}, true)
+		r.home.applyPosts([]mastodon.Status{{ID: fmt.Sprint(i), Content: fmt.Sprintf("reading-row-%d", i), Account: mastodon.Account{DisplayName: "测试作者"}}}, true)
 	}
 	r.home.loaded = true
 	tt := ui.NewTester(r.view, 760, 820)
@@ -292,7 +258,7 @@ func TestImageCacheEvictsLeastRecentlyUsed(t *testing.T) {
 // The system material must show only through the rail, never through posts.
 func TestSidebarMaterialKeepsReadingColumnsOpaque(t *testing.T) {
 	r := testReader(t)
-	r.session = &session{Account: json.RawMessage(`{"id":"me"}`)}
+	r.session = &mastodon.Session{Account: json.RawMessage(`{"id":"me"}`)}
 	tt := ui.NewTester(r.view, 1240, 820)
 	tt.SetVibrancy(true)
 	_, _, _, railAlpha := tt.Image().At(68, 400).RGBA()
@@ -317,37 +283,11 @@ func TestSidebarMaterialKeepsReadingColumnsOpaque(t *testing.T) {
 	}
 }
 
-func TestConversationAPI(t *testing.T) {
-	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("Authorization") != "Bearer test" {
-			t.Error("missing token")
-		}
-		switch r.URL.Path {
-		case "/api/v1/statuses/2":
-			io.WriteString(w, `{"id":"2","content":"focal"}`)
-		case "/api/v1/statuses/2/context":
-			io.WriteString(w, `{"ancestors":[{"id":"1"}],"descendants":[{"id":"3"}]}`)
-		default:
-			http.NotFound(w, r)
-		}
-	}))
-	defer upstream.Close()
-	a := newApp(filepath.Join(t.TempDir(), "session.json"))
-	a.session = &session{Instance: upstream.URL, Token: "test"}
-	posts, err := a.conversation("2")
-	if err != nil || len(posts) != 3 || posts[0].ID != "1" || posts[1].ID != "2" || posts[2].ID != "3" {
-		t.Fatal(posts, err)
-	}
-	if _, err := a.conversation("missing"); err == nil {
-		t.Fatal("missing status accepted")
-	}
-}
-
 func TestPostClickAndColumnScrolling(t *testing.T) {
 	r := testReader(t)
-	r.session = &session{Account: json.RawMessage(`{"id":"me"}`)}
-	author := account{ID: "author", DisplayName: "作者"}
-	r.home.applyPosts([]status{{ID: "post", Content: `点击正文打开讨论 <a href="https://example.com">外部链接</a>`, Account: author}}, false)
+	r.session = &mastodon.Session{Account: json.RawMessage(`{"id":"me"}`)}
+	author := mastodon.Account{ID: "author", DisplayName: "作者"}
+	r.home.applyPosts([]mastodon.Status{{ID: "post", Content: `点击正文打开讨论 <a href="https://example.com">外部链接</a>`, Account: author}}, false)
 	r.home.loaded = true
 	tt := ui.NewTester(r.view, 1240, 820)
 	if tt.HasText("关闭此列") {
@@ -402,7 +342,7 @@ func TestSidebarAccountAndWindowControls(t *testing.T) {
 	if !ok || mine.Y >= home.Y || mine.Y < 52 {
 		t.Fatal("sidebar overlaps controls or account is not above navigation")
 	}
-	r.session = &session{Account: json.RawMessage(`{"id":"me","display_name":"Me"}`)}
+	r.session = &mastodon.Session{Account: json.RawMessage(`{"id":"me","display_name":"Me"}`)}
 	tt.Frame()
 	if err := tt.Click("我的"); err != nil {
 		t.Fatal(err)
@@ -414,14 +354,14 @@ func TestSidebarAccountAndWindowControls(t *testing.T) {
 
 func TestFocusedColumnsCloseIndependently(t *testing.T) {
 	r := testReader(t)
-	r.session = &session{Account: json.RawMessage(`{"id":"me"}`)}
+	r.session = &mastodon.Session{Account: json.RawMessage(`{"id":"me"}`)}
 	closed := 0
 	r.closeWindow = func() { closed++ }
 	tt := ui.NewTester(r.view, 1240, 820)
 	ws := r.workspaces["home"]
-	r.openProfileFrom(r.home, account{ID: "one", DisplayName: "First"})
+	r.openProfileFrom(r.home, mastodon.Account{ID: "one", DisplayName: "First"})
 	first := r.feedState
-	r.openProfileFrom(first, account{ID: "two", DisplayName: "Second"})
+	r.openProfileFrom(first, mastodon.Account{ID: "two", DisplayName: "Second"})
 	second := r.feedState
 	tt.Frame()
 	if ws.focused != second {
@@ -473,9 +413,9 @@ func TestAutomaticPaginationPausesOnError(t *testing.T) {
 	}))
 	defer server.Close()
 	r := testReader(t)
-	r.session = &session{Instance: server.URL, Token: "test", Account: json.RawMessage(`{"id":"me"}`)}
-	r.service.session = r.session
-	r.home.applyPosts([]status{{ID: "123", Content: "Page one"}}, false)
+	r.session = &mastodon.Session{Instance: server.URL, Token: "test", Account: json.RawMessage(`{"id":"me"}`)}
+	r.service.SetSession(r.session)
+	r.home.applyPosts([]mastodon.Status{{ID: "123", Content: "Page one"}}, false)
 	r.home.loaded = true
 	updates := make(chan func(), 8)
 	r.update = func(f func()) { updates <- f }

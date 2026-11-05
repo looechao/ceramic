@@ -1,9 +1,10 @@
 package main
 
 import (
-	"github.com/egoist/mygo/ui"
 	"math"
 	"time"
+
+	"github.com/egoist/mygo/ui"
 )
 
 func (r *reader) readingKeys(c *ui.Context) {

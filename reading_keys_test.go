@@ -3,16 +3,19 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/egoist/mygo/ui"
 	"testing"
 	"time"
+
+	"github.com/egoist/mygo/ui"
+
+	"ceramic/internal/mastodon"
 )
 
 func TestReadingKeysAndInputIsolation(t *testing.T) {
 	r := testReader(t)
-	r.session = &session{Account: json.RawMessage(`{"id":"me"}`), Scopes: scopes}
+	r.session = &mastodon.Session{Account: json.RawMessage(`{"id":"me"}`), Scopes: mastodon.Scopes}
 	for i := 0; i < 60; i++ {
-		r.home.applyPosts([]status{{ID: fmt.Sprint(i), Content: fmt.Sprintf("Reading %d", i)}}, true)
+		r.home.applyPosts([]mastodon.Status{{ID: fmt.Sprint(i), Content: fmt.Sprintf("Reading %d", i)}}, true)
 	}
 	r.home.loaded, r.home.end = true, true
 	tt := ui.NewTester(r.view, 1240, 820)
@@ -45,7 +48,7 @@ func TestReadingKeysAndInputIsolation(t *testing.T) {
 	if r.home.scroll.Y <= 100 {
 		t.Fatal("G did not go to bottom")
 	}
-	r.openProfileFrom(r.home, account{ID: "one", DisplayName: "One"})
+	r.openProfileFrom(r.home, mastodon.Account{ID: "one", DisplayName: "One"})
 	detail := r.feedState
 	tt.Frame()
 	tt.Key(ui.Shift, ui.KeyJ)
@@ -102,11 +105,11 @@ func TestReadingKeysAndInputIsolation(t *testing.T) {
 
 func TestCloseReturnsToSourceColumn(t *testing.T) {
 	r := testReader(t)
-	r.session = &session{Account: json.RawMessage(`{"id":"me"}`)}
+	r.session = &mastodon.Session{Account: json.RawMessage(`{"id":"me"}`)}
 	r.ensureProfile()
-	r.openProfileFrom(r.home, account{ID: "one"})
+	r.openProfileFrom(r.home, mastodon.Account{ID: "one"})
 	first := r.feedState
-	r.openProfileFrom(r.home, account{ID: "two"})
+	r.openProfileFrom(r.home, mastodon.Account{ID: "two"})
 	second := r.feedState
 	r.closeColumn(r.workspaces["home"], second)
 	if r.feedState != r.home || len(r.workspaces["home"].columns) != 2 || r.workspaces["home"].columns[1] != first {
@@ -116,9 +119,9 @@ func TestCloseReturnsToSourceColumn(t *testing.T) {
 
 func TestReadingScrollTapsAndReversal(t *testing.T) {
 	r := testReader(t)
-	r.session = &session{Account: json.RawMessage(`{"id":"me"}`)}
+	r.session = &mastodon.Session{Account: json.RawMessage(`{"id":"me"}`)}
 	for i := 0; i < 100; i++ {
-		r.home.applyPosts([]status{{ID: fmt.Sprint(i), Content: "Reading row"}}, true)
+		r.home.applyPosts([]mastodon.Status{{ID: fmt.Sprint(i), Content: "Reading row"}}, true)
 	}
 	r.home.loaded, r.home.end = true, true
 	tt := ui.NewTester(r.view, 900, 820)
@@ -151,9 +154,9 @@ func TestReadingScrollTapsAndReversal(t *testing.T) {
 
 func TestHeldReadingStartsWithoutRepeat(t *testing.T) {
 	r := testReader(t)
-	r.session = &session{Account: json.RawMessage(`{"id":"me"}`)}
+	r.session = &mastodon.Session{Account: json.RawMessage(`{"id":"me"}`)}
 	for i := 0; i < 100; i++ {
-		r.home.applyPosts([]status{{ID: fmt.Sprint(i), Content: "Reading row"}}, true)
+		r.home.applyPosts([]mastodon.Status{{ID: fmt.Sprint(i), Content: "Reading row"}}, true)
 	}
 	r.home.loaded, r.home.end = true, true
 	tt := ui.NewTester(r.view, 900, 820)
@@ -194,9 +197,9 @@ func TestHeldReadingStartsWithoutRepeat(t *testing.T) {
 
 func TestCapitalGReachesLoadedEnd(t *testing.T) {
 	r := testReader(t)
-	r.session = &session{Account: json.RawMessage(`{"id":"me"}`)}
+	r.session = &mastodon.Session{Account: json.RawMessage(`{"id":"me"}`)}
 	for i := 0; i < 100; i++ {
-		r.home.applyPosts([]status{{ID: fmt.Sprint(i), Content: fmt.Sprintf("row %d", i)}}, true)
+		r.home.applyPosts([]mastodon.Status{{ID: fmt.Sprint(i), Content: fmt.Sprintf("row %d", i)}}, true)
 	}
 	r.home.loaded, r.home.end = true, true
 	tt := ui.NewTester(r.view, 900, 820)

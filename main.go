@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
-	"github.com/egoist/mygo"
-	"github.com/egoist/mygo/ui"
 	"log"
-	"net"
-	"net/http"
 	"os"
 	"path/filepath"
+
+	"github.com/egoist/mygo"
+	"github.com/egoist/mygo/ui"
+
+	"ceramic/internal/mastodon"
 )
 
 func main() {
@@ -16,15 +17,12 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	service := newApp(filepath.Join(dir, "Ceramic", "session.json"))
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	service := mastodon.New(filepath.Join(dir, "Ceramic", "session.json"))
+	stop, err := service.StartCallbackServer()
 	if err != nil {
 		log.Fatal(err)
 	}
-	service.origin = "http://" + listener.Addr().String()
-	server := &http.Server{Handler: service.routes(), ReadHeaderTimeout: requestTimeout}
-	go server.Serve(listener)
-	defer server.Close()
+	defer stop()
 	reader := newReader(service)
 	mygo.App.WhenReady(func() {
 		window := mygo.NewWindow(mygo.WindowOptions{Title: "Ceramic", TitleBarStyle: mygo.TitleBarHiddenInset, TitleBarHeight: 52, TrafficLightPosition: &mygo.Point{X: 12, Y: 18}, Vibrancy: mygo.VibrancySidebar, Width: 1240, Height: 820, MinWidth: 420, MinHeight: 560, Content: ui.View(reader.view)})

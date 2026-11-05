@@ -2,13 +2,16 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/egoist/mygo/ui"
+
+	"ceramic/internal/mastodon"
 )
 
 const railWidth float32 = 88
 const columnGap float32 = 12
 
-func (r *reader) postFooter(c *ui.Context, f *feedState, s status) {
+func (r *reader) postFooter(c *ui.Context, f *feedState, s mastodon.Status) {
 	t := c.Theme()
 	services := c.Services()
 	ui.Row(c).Margin(5, 0, 0, 0).Gap(18).Children(func() {
@@ -30,7 +33,7 @@ func (r *reader) postFooter(c *ui.Context, f *feedState, s status) {
 				}
 			})
 		}
-		if target := safeURL(s.URL); target != "" {
+		if target := mastodon.SafeURL(s.URL); target != "" {
 			ui.ButtonBase(c).Size(24, 24).Label("打开原帖").Tooltip("在浏览器中打开原帖").OnClick(func() { services.OpenURL(target) }).Children(func() { ui.Icon(c, externalIcon).Size(15, 15).TextColor(t.TextMuted) })
 		}
 	})

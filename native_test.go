@@ -2,17 +2,20 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/egoist/mygo/ui"
 	"image/png"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/egoist/mygo/ui"
+
+	"ceramic/internal/mastodon"
 )
 
 func testReader(t *testing.T) *reader {
-	return newReader(newApp(filepath.Join(t.TempDir(), "session.json")))
+	return newReader(mastodon.New(filepath.Join(t.TempDir(), "session.json")))
 }
 func savePreview(t *testing.T, tt *ui.Tester, name string) {
 	if os.Getenv("CERAMIC_SCREENSHOTS") == "" {
@@ -50,8 +53,8 @@ func TestNativeLogin(t *testing.T) {
 }
 func TestNativeTimeline(t *testing.T) {
 	r := testReader(t)
-	r.session = &session{Instance: "https://example.com", Account: json.RawMessage(`{"display_name":"测试账号"}`)}
-	r.applyPosts([]status{{ID: "3", Content: "<p>这是一条用于检查原生排版的测试动态。</p><p>文字直接由 Go 组件渲染，链接也可以 <a href=\"https://example.com\">点击打开</a>。</p>", Account: account{DisplayName: "林间散步", Acct: "forest@example.com"}, URL: "https://example.com/3", CreatedAt: "2026-11-05T05:00:00Z"}, {ID: "2", Content: "<p>折叠内容测试。</p>", Spoiler: "内容警告", Account: account{DisplayName: "远山", Acct: "mountain@example.com"}, URL: "https://example.com/2"}}, false)
+	r.session = &mastodon.Session{Instance: "https://example.com", Account: json.RawMessage(`{"display_name":"测试账号"}`)}
+	r.applyPosts([]mastodon.Status{{ID: "3", Content: "<p>这是一条用于检查原生排版的测试动态。</p><p>文字直接由 Go 组件渲染，链接也可以 <a href=\"https://example.com\">点击打开</a>。</p>", Account: mastodon.Account{DisplayName: "林间散步", Acct: "forest@example.com"}, URL: "https://example.com/3", CreatedAt: "2026-11-05T05:00:00Z"}, {ID: "2", Content: "<p>折叠内容测试。</p>", Spoiler: "内容警告", Account: mastodon.Account{DisplayName: "远山", Acct: "mountain@example.com"}, URL: "https://example.com/2"}}, false)
 	tt := ui.NewTester(r.view, 760, 820)
 	savePreview(t, tt, "native-timeline")
 	if !tt.HasText("Home") {
@@ -70,7 +73,7 @@ func TestNativeTimeline(t *testing.T) {
 	if len(tt.OpenedURLs()) != 1 {
 		t.Fatal("native link not opened")
 	}
-	r.applyPosts([]status{{ID: "2"}, {ID: "1", Content: "更早的动态"}}, true)
+	r.applyPosts([]mastodon.Status{{ID: "2"}, {ID: "1", Content: "更早的动态"}}, true)
 	if len(r.posts) != 3 {
 		t.Fatal("duplicate pagination")
 	}
@@ -89,30 +92,11 @@ func TestNativeTimeline(t *testing.T) {
 		t.Fatal("logout did not reset native view")
 	}
 }
-func TestNativeTextSafety(t *testing.T) {
-	runs := nativeText(`<p>Hello <strong>world</strong> &amp; 中文<a href="javascript:alert(1)">bad</a><a href="https://example.com">safe</a><script>evil()</script><span class="invisible">hidden</span></p>`)
-	var text string
-	links := 0
-	bold := false
-	for _, r := range runs {
-		text += r.Text
-		if r.URL != "" {
-			links++
-			if r.URL != "https://example.com" {
-				t.Fatal(r.URL)
-			}
-		}
-		bold = bold || r.Bold
-	}
-	if strings.Contains(text, "evil") || strings.Contains(text, "hidden") || links != 1 || !bold || !strings.Contains(text, "& 中文") {
-		t.Fatal(runs)
-	}
-}
 
 func TestConcealedPostsDoNotExposeContent(t *testing.T) {
 	r := testReader(t)
-	r.session = &session{Account: json.RawMessage(`{"id":"me"}`)}
-	var posts []status
+	r.session = &mastodon.Session{Account: json.RawMessage(`{"id":"me"}`)}
+	var posts []mastodon.Status
 	err := json.Unmarshal([]byte(`[
  {"id":"warn","content":"Filtered private body","account":{"display_name":"过滤测试"},"filtered":[{"filter":{"filter_action":"warn"}}]},
  {"id":"hide","content":"Never visible","filtered":[{"filter":{"filter_action":"hide"}}]},
