@@ -31,6 +31,14 @@ go test -race ./...
 ./scripts/build.sh
 ```
 
+Use `ui.Cmd`, not `ui.Super`, for shortcuts: it is Command on macOS and Control
+elsewhere.
+
+## Releases
+
+A tag such as `v0.2.0`, matching `version` in `mygo.json`, builds every desktop
+platform in `.github/workflows/release.yml` and creates a draft release.
+
 ## Commits
 
 Write commit messages as Conventional Commits, such as

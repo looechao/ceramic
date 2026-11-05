@@ -3,5 +3,8 @@
   "identifier": "dev.ceramic.reader",
   "version": "0.1.0",
   "icon": "resources/icon.png",
-  "out": "build"
+  "out": "build",
+  "linux": {
+    "webview": false
+  }
 }

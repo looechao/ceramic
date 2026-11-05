@@ -3,6 +3,7 @@ package app
 import (
 	"encoding/json"
 	"fmt"
+	"runtime"
 	"time"
 
 	"github.com/egoist/mygo/ui"
@@ -64,19 +65,19 @@ func (r *reader) view(c *ui.Context) {
 func (r *reader) shell(c *ui.Context) {
 	r.typing = false
 	r.ensureProfile()
-	if c.Shortcut(ui.Super, ui.Key1) {
+	if c.Shortcut(ui.Cmd, ui.Key1) {
 		r.navigate("profile")
 	}
-	if c.Shortcut(ui.Super, ui.Key2) {
+	if c.Shortcut(ui.Cmd, ui.Key2) {
 		r.navigate("home")
 	}
-	if c.Shortcut(ui.Super, ui.Key3) {
+	if c.Shortcut(ui.Cmd, ui.Key3) {
 		r.navigate("search")
 	}
-	if c.Shortcut(ui.Super, ui.KeyW) {
+	if c.Shortcut(ui.Cmd, ui.KeyW) {
 		r.closeFocused()
 	}
-	if c.Shortcut(ui.Super, ui.KeyR) {
+	if c.Shortcut(ui.Cmd, ui.KeyR) {
 		r.load(false)
 	}
 	w, _ := c.Size()
@@ -181,7 +182,7 @@ func (r *reader) pane(c *ui.Context, f *feedState, ws *workspace, index int) {
 			ui.Button(c, "返回").OnClick(func() { f.preview = nil })
 		}
 		if index > 0 {
-			ui.ButtonBase(c).Size(28, 28).Label("关闭此列").Tooltip("关闭此列 · ⌘W").OnClick(func() { r.closeColumn(ws, f) }).Children(func() { ui.Icon(c, closeIcon).Size(18, 18).TextColor(t.TextMuted) })
+			ui.ButtonBase(c).Size(28, 28).Label("关闭此列").Tooltip("关闭此列 · " + shortcutHint("W")).OnClick(func() { r.closeColumn(ws, f) }).Children(func() { ui.Icon(c, closeIcon).Size(18, 18).TextColor(t.TextMuted) })
 		}
 		title := map[string]string{"home": "Home", "search": "Search", "profile": "Profile", "conversation": "Conversation"}[f.kind]
 		if index > 0 && f.kind == "profile" {
@@ -221,15 +222,18 @@ func (r *reader) sidebar(c *ui.Context) {
 		fill = ui.Transparent
 	}
 	ui.Column(c).Width(sidebarWidth(c)).FillHeight().Background(fill).Children(func() {
-		// The real macOS window controls overlay this reserved drag region.
-		ui.Box(c).FillWidth().Height(max(52, c.TitleBar().Height)).DragWindow()
+		// The real macOS window controls overlay this reserved drag region. Other
+		// systems keep their own title bar above the view.
+		if runtime.GOOS == "darwin" {
+			ui.Box(c).FillWidth().Height(max(52, c.TitleBar().Height)).DragWindow()
+		}
 		ui.Column(c).FillWidth().Grow(1).Padding(12, 20).Gap(12).Children(func() {
 
 			bg := ui.Transparent
 			if r.selected == "profile" {
 				bg = t.Text.Alpha(0.09)
 			}
-			ui.ButtonBase(c).Size(48, 48).Radius(10).Background(bg).Label("我的").Tooltip("我的 · ⌘1").ContextMenu(func(m *ui.Menu) {
+			ui.ButtonBase(c).Size(48, 48).Radius(10).Background(bg).Label("我的").Tooltip("我的 · " + shortcutHint("1")).ContextMenu(func(m *ui.Menu) {
 				if r.session != nil && m.Item("退出登录").Chosen() {
 					r.logout()
 				}
@@ -258,7 +262,7 @@ func (r *reader) sidebar(c *ui.Context) {
 				if r.selected == page {
 					bg, fg = t.Text.Alpha(0.09), t.Accent
 				}
-				ui.ButtonBase(c.Key(page)).Size(48, 44).Radius(10).Background(bg).Label(label).Tooltip(label + fmt.Sprintf(" · ⌘%d", i+2)).OnClick(func() {
+				ui.ButtonBase(c.Key(page)).Size(48, 44).Radius(10).Background(bg).Label(label).Tooltip(label + " · " + shortcutHint(fmt.Sprint(i+2))).OnClick(func() {
 					if r.session != nil {
 						r.navigate(page)
 					} else {

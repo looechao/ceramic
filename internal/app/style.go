@@ -1,6 +1,10 @@
 package app
 
-import "github.com/egoist/mygo/ui"
+import (
+	"runtime"
+
+	"github.com/egoist/mygo/ui"
+)
 
 const railWidth float32 = 88
 
@@ -36,4 +40,12 @@ func postTint(p *postView) ui.Color {
 	default:
 		return ui.Transparent
 	}
+}
+
+// shortcutHint names a shortcut of ui.Cmd the way the system writes it.
+func shortcutHint(key string) string {
+	if runtime.GOOS == "darwin" {
+		return "⌘" + key
+	}
+	return "Ctrl+" + key
 }

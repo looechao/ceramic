@@ -1,12 +1,12 @@
 # Ceramic
 
-基于 **MyGo v0.7.4 原生 UI** 的最小 Mastodon 桌面阅读器，当前构建目标是 macOS Apple Silicon。
+基于 **MyGo v0.7.4 原生 UI** 的最小 Mastodon 桌面阅读器。主要在 macOS 上开发和使用，也构建 Windows 与 Linux 版本，这两个平台尚未在真机上验证。
 
 界面全部由 Go 编写，使用 `ui.View`、`ui.List`、`ui.RichText`、`ui.Image` 等原生渲染组件，没有 WebView、HTML 页面、JavaScript 或前端构建工具。MyGo 在 macOS 上使用 Metal 绘制界面，并非 AppKit/SwiftUI 控件。
 
 ## 使用
 
-双击 `build/Ceramic.app`，输入账号所在的实例域名（例如 `mastodon.social`），在系统浏览器中授权，回到应用阅读首页时间线。
+打开应用，输入账号所在的实例域名（例如 `mastodon.social`），在系统浏览器中授权，回到应用阅读首页时间线。
 
 - Home / Search / Profile 各自保留阅读路径，默认左侧一列；打开详情时向右追加，超出窗口可横向滚动
 - 账号与帖子搜索、自己的个人页；点击作者或回复图标，在当前 Tab 右侧打开个人页或讨论串
@@ -35,7 +35,22 @@
 
 仓库使用 `.editorconfig` 统一缩进和文件格式，Go 源码以 `gofmt` 为准。`.gitattributes` 统一文本换行。构建产物、热重载目录、本地环境文件与测试产物不会提交；示例环境文件可以提交，但不得包含真实凭据。
 
-产物为 `build/Ceramic.app`，采用本地 ad-hoc 签名，未经过 Apple 公证。其他平台未验证，打包脚本仅适用于 macOS。
+默认构建当前机器的版本，产物在 `build/<系统>-<架构>/`，macOS 为 `build/darwin-arm64/Ceramic.app`。用 `-platform` 可以构建其他平台，生成 Windows 安装包需要安装 NSIS：
+
+```sh
+./scripts/build.sh -platform darwin/arm64,darwin/amd64,windows/amd64,windows/arm64,linux/amd64,linux/arm64
+```
+
+Linux 版运行时需要 GTK 3。所有版本都没有代码签名：macOS 为 ad-hoc 签名且未公证，Gatekeeper 会拦截；Windows 会出现 SmartScreen 警告。
+
+## 发布
+
+修改 `mygo.json` 的 `version`，提交后推送同名标签。GitHub Actions 会测试并构建全部桌面平台，生成草稿 Release，确认后手动发布：
+
+```sh
+git tag v0.1.0
+git push origin v0.1.0
+```
 
 ```sh
 go test -race ./...
@@ -62,7 +77,7 @@ CERAMIC_SCREENSHOTS=1 go test -run TestNative ./...
   - `session.go`：会话存储
   - `types.go` / `richtext.go`：数据类型和 HTML 到富文本的转换
 - `internal/imagecache/`：XDG 图片磁盘缓存和缓存策略，不依赖界面
-- `resources/`：应用图标源文件（`icon.svg`）和导出图（`icon.png`）
+- `resources/icon.png`：打包用图标，源文件是 `docs/icon.svg`
 
 测试文件与被测代码放在同一目录。
 

@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
@@ -27,7 +28,16 @@ func Run() {
 	defer stop()
 	reader := newReader(service)
 	mygo.App.WhenReady(func() {
-		window := mygo.NewWindow(mygo.WindowOptions{Title: "Ceramic", TitleBarStyle: mygo.TitleBarHiddenInset, TitleBarHeight: 52, TrafficLightPosition: &mygo.Point{X: 12, Y: 18}, Vibrancy: mygo.VibrancySidebar, Width: 1240, Height: 820, MinWidth: 420, MinHeight: 560, Content: ui.View(reader.view)})
+		options := mygo.WindowOptions{Title: "Ceramic", Width: 1240, Height: 820, MinWidth: 420, MinHeight: 560, Content: ui.View(reader.view)}
+		// Elsewhere the system's title bar stays, because its buttons would cover
+		// the toolbar of whichever column reaches the right edge.
+		if runtime.GOOS == "darwin" {
+			options.TitleBarStyle = mygo.TitleBarHiddenInset
+			options.TitleBarHeight = 52
+			options.TrafficLightPosition = &mygo.Point{X: 12, Y: 18}
+			options.Vibrancy = mygo.VibrancySidebar
+		}
+		window := mygo.NewWindow(options)
 		reader.update = window.Update
 		reader.closeWindow = window.Close
 		if menu := mygo.App.Menu(); menu != nil {

@@ -380,7 +380,7 @@ func TestFocusedColumnsCloseIndependently(t *testing.T) {
 		t.Fatal("tab lost focus")
 	}
 	tt.Frame()
-	tt.Key(ui.Super, ui.KeyW)
+	tt.Key(ui.Cmd, ui.KeyW)
 	if closed != 0 || len(ws.columns) != 2 || ws.columns[1] != second || ws.focused != r.home {
 		t.Fatal("close removed wrong columns or window")
 	}
@@ -392,11 +392,11 @@ func TestFocusedColumnsCloseIndependently(t *testing.T) {
 	if ws.focused != second {
 		t.Fatal("nested control did not focus column")
 	}
-	tt.Key(ui.Super, ui.KeyW)
+	tt.Key(ui.Cmd, ui.KeyW)
 	if len(ws.columns) != 1 || closed != 0 {
 		t.Fatal("detail close closed root")
 	}
-	tt.Key(ui.Super, ui.KeyW)
+	tt.Key(ui.Cmd, ui.KeyW)
 	if closed != 1 || len(ws.columns) != 1 {
 		t.Fatal("root Cmd-W should close window")
 	}
