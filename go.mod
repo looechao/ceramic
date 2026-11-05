@@ -1,4 +1,4 @@
-module sprinkle
+module ceramic
 
 go 1.27.3
 

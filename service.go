@@ -99,7 +99,7 @@ func (a *application) request(method, endpoint, token string, form url.Values, o
 		return err
 	}
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("User-Agent", "Sprinkle/0.1")
+	req.Header.Set("User-Agent", "Ceramic/0.1")
 	if form != nil {
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	}
@@ -167,7 +167,7 @@ func (a *application) login(instance string) error {
 		ID     string `json:"client_id"`
 		Secret string `json:"client_secret"`
 	}
-	if err = a.request("POST", instance+"/api/v1/apps", "", url.Values{"client_name": {"Sprinkle"}, "redirect_uris": {redirect}, "scopes": {scopes}}, &app); err != nil {
+	if err = a.request("POST", instance+"/api/v1/apps", "", url.Values{"client_name": {"Ceramic"}, "redirect_uris": {redirect}, "scopes": {scopes}}, &app); err != nil {
 		return err
 	}
 	if app.ID == "" || app.Secret == "" {
@@ -199,7 +199,7 @@ func (a *application) callback(w http.ResponseWriter, r *http.Request) {
 	p := a.pending
 	if p == nil || time.Now().After(p.Expires) || subtle.ConstantTimeCompare([]byte(r.URL.Query().Get("state")), []byte(p.State)) != 1 {
 		a.mu.Unlock()
-		http.Error(w, "授权已过期或无效，请返回 Sprinkle 重试。", 400)
+		http.Error(w, "授权已过期或无效，请返回 Ceramic 重试。", 400)
 		return
 	}
 	// Consume the state before exchanging the code, preventing callback replay.
@@ -240,10 +240,10 @@ func (a *application) callback(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		a.loginError = err.Error()
 		w.WriteHeader(400)
-		fmt.Fprint(w, "登录未完成，请返回 Sprinkle 查看提示。")
+		fmt.Fprint(w, "登录未完成，请返回 Ceramic 查看提示。")
 		return
 	}
-	fmt.Fprint(w, "登录成功。可以关闭这个页面，回到 Sprinkle 阅读时间线。")
+	fmt.Fprint(w, "登录成功。可以关闭这个页面，回到 Ceramic 阅读时间线。")
 }
 func saveSession(path string, s *session) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {

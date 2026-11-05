@@ -44,7 +44,7 @@ func xdgImageCacheDir() string {
 		}
 		base = filepath.Join(home, ".cache")
 	}
-	return filepath.Join(base, "sprinkle", "images-v1")
+	return filepath.Join(base, "ceramic", "images-v1")
 }
 func newImageCache(dir string) *imageCache {
 	return &imageCache{dir: dir, budget: imageDiskLimit, client: &http.Client{

@@ -1,8 +1,8 @@
 # Application bundles, screenshots, and MyGo hot-reload output
 /build/
 /.mygo/
-/sprinkle
-/sprinkle.exe
+/ceramic
+/ceramic.exe
 
 # Go test, coverage, and profiling output
 *.test

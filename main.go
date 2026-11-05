@@ -16,7 +16,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	service := newApp(filepath.Join(dir, "Sprinkle", "session.json"))
+	service := newApp(filepath.Join(dir, "Ceramic", "session.json"))
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		log.Fatal(err)
@@ -27,7 +27,7 @@ func main() {
 	defer server.Close()
 	reader := newReader(service)
 	mygo.App.WhenReady(func() {
-		window := mygo.NewWindow(mygo.WindowOptions{Title: "Sprinkle", TitleBarStyle: mygo.TitleBarHiddenInset, TitleBarHeight: 52, TrafficLightPosition: &mygo.Point{X: 12, Y: 18}, Vibrancy: mygo.VibrancySidebar, Width: 1240, Height: 820, MinWidth: 420, MinHeight: 560, Content: ui.View(reader.view)})
+		window := mygo.NewWindow(mygo.WindowOptions{Title: "Ceramic", TitleBarStyle: mygo.TitleBarHiddenInset, TitleBarHeight: 52, TrafficLightPosition: &mygo.Point{X: 12, Y: 18}, Vibrancy: mygo.VibrancySidebar, Width: 1240, Height: 820, MinWidth: 420, MinHeight: 560, Content: ui.View(reader.view)})
 		reader.update = window.Update
 		reader.closeWindow = window.Close
 		if menu := mygo.App.Menu(); menu != nil {

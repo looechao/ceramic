@@ -102,7 +102,7 @@ func (r *reader) login() {
 				return
 			}
 			r.authorizing = true
-			f.message = "请在浏览器中授权，完成后返回 Sprinkle。"
+			f.message = "请在浏览器中授权，完成后返回 Ceramic。"
 		})
 	}()
 }
@@ -363,7 +363,7 @@ func (r *reader) view(c *ui.Context) {
 	ui.Row(c).Fill().Children(func() {
 		r.sidebar(c)
 		ui.Column(c).Grow(1).Shrink(1).FillHeight().Background(t.Background).Children(func() {
-			ui.Text(c, "sprinkle").Font("Georgia").FontSize(24).Bold().TextColor(t.Accent).Padding(20, 24).DragWindow()
+			ui.Text(c, "ceramic").Font("Georgia").FontSize(24).Bold().TextColor(t.Accent).Padding(20, 24).DragWindow()
 			if r.message != "" {
 				ui.Text(c, r.message).Padding(12, 24)
 			}
@@ -551,7 +551,7 @@ func (r *reader) cancelAuthorization() {
 	r.service.cancelLogin()
 	r.authorizing = false
 	for _, f := range []*feedState{r.authFeed, r.feedState, r.home, r.searchFeed, r.ownProfile} {
-		if f != nil && (f.message == "正在连接实例…" || f.message == "请在浏览器中授权，完成后返回 Sprinkle。") {
+		if f != nil && (f.message == "正在连接实例…" || f.message == "请在浏览器中授权，完成后返回 Ceramic。") {
 			f.busy = false
 			f.message = ""
 		}

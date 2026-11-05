@@ -15,7 +15,7 @@ func testReader(t *testing.T) *reader {
 	return newReader(newApp(filepath.Join(t.TempDir(), "session.json")))
 }
 func savePreview(t *testing.T, tt *ui.Tester, name string) {
-	if os.Getenv("SPRINKLE_SCREENSHOTS") == "" {
+	if os.Getenv("CERAMIC_SCREENSHOTS") == "" {
 		return
 	}
 	if err := os.MkdirAll("build/qa", 0755); err != nil {

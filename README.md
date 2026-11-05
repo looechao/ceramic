@@ -1,4 +1,4 @@
-# Sprinkle
+# Ceramic
 
 基于 **MyGo v0.7.4 原生 UI** 的最小 Mastodon 桌面阅读器，当前构建目标是 macOS Apple Silicon。
 
@@ -6,7 +6,7 @@
 
 ## 使用
 
-双击 `build/Sprinkle.app`，输入账号所在的实例域名（例如 `mastodon.social`），在系统浏览器中授权，回到应用阅读首页时间线。
+双击 `build/Ceramic.app`，输入账号所在的实例域名（例如 `mastodon.social`），在系统浏览器中授权，回到应用阅读首页时间线。
 
 - Home / Search / Profile 各自保留阅读路径，默认左侧一列；打开详情时向右追加，超出窗口可横向滚动
 - 账号与帖子搜索、自己的个人页；点击作者或回复图标，在当前 Tab 右侧打开个人页或讨论串
@@ -31,16 +31,16 @@
 ./scripts/build.sh
 ```
 
-开发模式运行 `Sprinkle Dev`，监听源码变化；编译失败时旧版本继续运行。重启保留已保存登录，内存中的阅读路径会重置。关闭开发窗口会结束监听。
+开发模式运行 `Ceramic Dev`，监听源码变化；编译失败时旧版本继续运行。重启保留已保存登录，内存中的阅读路径会重置。关闭开发窗口会结束监听。
 
 仓库使用 `.editorconfig` 统一缩进和文件格式，Go 源码以 `gofmt` 为准。`.gitattributes` 统一文本换行。构建产物、热重载目录、本地环境文件与测试产物不会提交；示例环境文件可以提交，但不得包含真实凭据。
 
-产物为 `build/Sprinkle.app`，采用本地 ad-hoc 签名，未经过 Apple 公证。其他平台未验证，打包脚本仅适用于 macOS。
+产物为 `build/Ceramic.app`，采用本地 ad-hoc 签名，未经过 Apple 公证。其他平台未验证，打包脚本仅适用于 macOS。
 
 ```sh
 go test -race ./...
 go vet ./...
-SPRINKLE_SCREENSHOTS=1 go test -run TestNative ./...
+CERAMIC_SCREENSHOTS=1 go test -run TestNative ./...
 ```
 
 最后一条命令会使用 MyGo 的原生 CPU 渲染器在 `build/qa/` 生成登录页、时间线、紧凑窗口及深色模式截图。截图使用明确的测试数据，不是实际账号内容。
@@ -56,13 +56,14 @@ SPRINKLE_SCREENSHOTS=1 go test -run TestNative ./...
 - `navigation_test.go`：搜索和个人页 API、跨页异步请求与导航测试
 - `content.go`：Mastodon 数据类型和 HTML 到原生富文本的转换
 - `service.go`：Mastodon 请求、OAuth、会话存储；只暴露 `/oauth/callback`
+- `assets/logo/`：应用图标源文件（`ceramic.svg`）和导出图（`ceramic.png`）
 - `service_test.go` / `native_test.go`：服务集成测试和原生 UI 交互测试
 
 ## 数据与授权
 
 Go 直接连接所选实例。浏览器仅用于登录授权和打开外部链接，应用界面不经过浏览器。随机 `127.0.0.1` 端口只接收 OAuth 回调，不提供页面或客户端 API；回调校验一次性 state 和 Host。
 
-只申请 `read:accounts read:statuses read:search` 权限。旧会话仍可阅读首页和个人页；搜索被拒绝时，在 Search 中点击“授权只读搜索”补充授权，取消会保留原会话。帖子搜索范围取决于实例的搜索后端。**当前原型将访问令牌保存在 `~/Library/Application Support/Sprinkle/session.json`，权限为 0600，尚未使用钥匙串加密。** 不要分享这个文件。退出登录会删除本地会话；如需撤销实例侧授权，在实例的“已授权应用”中撤销 Sprinkle。
+只申请 `read:accounts read:statuses read:search` 权限。旧会话仍可阅读首页和个人页；搜索被拒绝时，在 Search 中点击“授权只读搜索”补充授权，取消会保留原会话。帖子搜索范围取决于实例的搜索后端。**当前原型将访问令牌保存在 `~/Library/Application Support/Ceramic/session.json`，权限为 0600，尚未使用钥匙串加密。** 不要分享这个文件。退出登录会删除本地会话；如需撤销实例侧授权，在实例的“已授权应用”中撤销 Ceramic。
 
 帖子不落盘。图片从帖子媒体服务器加载，使用内存和 XDG 磁盘两级缓存；最多同时加载 4 张，单张下载上限 4 MiB、解码上限 1600 万像素。普通图片缩至最长边 1200 像素，带 EXIF 的相机图片保留 MyGo 的方向处理。图片缓存按最近使用淘汰，基础解码像素预算 64 MiB、最多 128 项（不包括 GPU 纹理及框架生成的缩小级别）；失败时可在浏览器打开原图。
 
@@ -97,7 +98,7 @@ macOS 隐藏顶部标题栏，系统红黄绿按钮位于侧栏顶部；该区�
 ## 图片磁盘缓存
 
 按 [XDG Base Directory 规范](https://specifications.freedesktop.org/basedir/latest/) 存放：
-有效的绝对路径 `$XDG_CACHE_HOME/sprinkle/images-v1`，未设置、为空或为相对路径时使用 `~/.cache/sprinkle/images-v1`，macOS 同样遵循这一规则。Finder 启动的应用只读取其进程实际继承的环境变量。
+有效的绝对路径 `$XDG_CACHE_HOME/ceramic/images-v1`，未设置、为空或为相对路径时使用 `~/.cache/ceramic/images-v1`，macOS 同样遵循这一规则。Finder 启动的应用只读取其进程实际继承的环境变量。
 
 缓存覆盖头像、帖子图片和链接预览图，不保存帖子正文或登录令牌。文件名为 URL 的 SHA-256，新目录权限 0700、文件 0600，采用临时文件加原子替换。磁盘预算 256 MiB、最多 2000 张，写入时按最近使用淘汰；原有内存预算仍然生效。
 

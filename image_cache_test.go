@@ -26,7 +26,7 @@ func cachePNG(t *testing.T) []byte {
 func TestXDGImageCacheDirectory(t *testing.T) {
 	root := t.TempDir()
 	t.Setenv("XDG_CACHE_HOME", root)
-	if got := xdgImageCacheDir(); got != filepath.Join(root, "sprinkle", "images-v1") {
+	if got := xdgImageCacheDir(); got != filepath.Join(root, "ceramic", "images-v1") {
 		t.Fatal(got)
 	}
 	home, err := os.UserHomeDir()
@@ -35,7 +35,7 @@ func TestXDGImageCacheDirectory(t *testing.T) {
 	}
 	for _, value := range []string{"", "relative/path"} {
 		t.Setenv("XDG_CACHE_HOME", value)
-		if got := xdgImageCacheDir(); got != filepath.Join(home, ".cache", "sprinkle", "images-v1") {
+		if got := xdgImageCacheDir(); got != filepath.Join(home, ".cache", "ceramic", "images-v1") {
 			t.Fatal(got)
 		}
 	}

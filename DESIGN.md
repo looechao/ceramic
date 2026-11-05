@@ -1,4 +1,4 @@
-# Sprinkle desktop reading
+# Ceramic desktop reading
 
 ## Direction
 Ivory-inspired compact reading workspace, built only with official MyGo v0.7.4. A narrow navigation rail and independent per-tab reading paths replace the earlier broad sidebar. Real content, not decoration, provides the visual focus.
