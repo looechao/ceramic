@@ -4,6 +4,7 @@ import (
 	"github.com/egoist/mygo/ui"
 
 	"ceramic/internal/mastodon"
+	"ceramic/resources"
 )
 
 func (r *reader) login() {
@@ -73,29 +74,41 @@ func (r *reader) cancelAuthorization() {
 	}
 }
 
+var loginLogo = func() *ui.Bitmap {
+	bitmap, err := ui.DecodeBitmap(resources.Icon)
+	if err != nil {
+		panic(err)
+	}
+	return bitmap
+}()
+
 func (r *reader) loginView(c *ui.Context) {
 	t := c.Theme()
+	_, height := c.Size()
 	ui.Scroll(c).Grow(1).Children(func() {
-		ui.Column(c).MaxWidth(470).FillWidth().Margin(0, ui.Auto).Padding(40, 26).Gap(18).Children(func() {
-			ui.Text(c, "你的联邦宇宙，小小一角。").FontSize(12).TextColor(t.TextMuted)
-			ui.Text(c, "关注的人，\n值得慢慢读。").FontSize(34).LineHeight(1.4)
-			ui.Text(c, "连接 Mastodon，按时间顺序阅读关注的人发布的动态。").FontSize(15).TextColor(t.TextMuted).LineHeight(1.7)
-			ui.Divider(c).MarginY(12)
-			ui.Text(c, "你的实例地址").Bold().FontSize(13)
-			ui.TextInput(c.Key("instance"), &r.instance).Label("实例地址").Placeholder("mastodon.social").Height(44).Disabled(r.busy || r.authorizing).OnSubmit(r.login)
-			ui.Text(c, "填写账号所在的服务器域名。").FontSize(12).TextColor(t.TextMuted)
-			label := "连接 Mastodon"
-			if r.busy {
-				label = "正在连接…"
-			}
-			if r.authorizing {
-				label = "等待浏览器授权…"
-			}
-			ui.PrimaryButton(c, label).Height(44).Disabled(r.busy || r.authorizing).OnClick(r.login)
-			if r.authorizing {
-				ui.Button(c, "取消连接").OnClick(r.cancelAuthorization)
-			}
-			ui.Text(c, "只申请读取权限。\n在系统浏览器中授权，无需在这里提供密码。").FontSize(12).LineHeight(1.7).TextColor(t.TextMuted).MarginY(16)
+		ui.Column(c).FillWidth().MinHeight(max(0, height-52)).Padding(24).AlignItems(ui.Center).Justify(ui.Center).Children(func() {
+			ui.Column(c).FillWidth().MaxWidth(360).AlignItems(ui.Center).Children(func() {
+				ui.Image(c, loginLogo).Size(88, 88).Fit(ui.Contain).Label("Ceramic")
+				ui.Text(c, "登录 Ceramic").FontSize(28).FontWeight(600).Margin(16, 0, 32, 0)
+				ui.Text(c, "实例").FontSize(13).TextColor(t.TextMuted).Margin(0, 0, 8, 0)
+				ui.TextInput(c.Key("instance"), &r.instance).Label("实例地址").Placeholder("实例域名").FillWidth().Height(46).Disabled(r.busy || r.authorizing).OnSubmit(r.login)
+				ui.Text(c, "例如 mastodon.social").FontSize(12).TextColor(t.TextMuted).Margin(10, 0, 0, 0)
+				label := "继续"
+				if r.busy {
+					label = "正在连接…"
+				}
+				if r.authorizing {
+					label = "等待浏览器授权…"
+				}
+				ui.PrimaryButton(c, label).Height(40).Padding(8, 24).Radius(20).Margin(24, 0, 0, 0).Disabled(r.busy || r.authorizing).OnClick(r.login)
+				if r.message != "" {
+					ui.Text(c, r.message).FontSize(12).LineHeight(1.5).TextColor(t.TextMuted).FillWidth().Margin(16, 0, 0, 0)
+				}
+				if r.authorizing {
+					ui.Button(c, "取消连接").Margin(12, 0, 0, 0).OnClick(r.cancelAuthorization)
+				}
+				ui.Text(c, "在浏览器中安全授权，仅申请读取权限。").FontSize(11).TextColor(t.TextMuted).Margin(32, 0, 0, 0)
+			})
 		})
 	})
 }

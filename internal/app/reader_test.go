@@ -2,6 +2,7 @@ package app
 
 import (
 	"encoding/json"
+	"fmt"
 	"image/png"
 	"os"
 	"path/filepath"
@@ -36,20 +37,36 @@ func savePreview(t *testing.T, tt *ui.Tester, name string) {
 func TestNativeLogin(t *testing.T) {
 	r := testReader(t)
 	tt := ui.NewTester(r.view, 760, 820)
-	if !tt.HasText("连接 Mastodon") {
+	if !tt.HasText("继续") {
 		t.Fatal(tt.Texts())
 	}
 	savePreview(t, tt, "native-login")
+	for _, size := range [][2]int{{1240, 820}, {420, 820}, {1240, 560}} {
+		tt.SetSize(size[0], size[1])
+		savePreview(t, tt, fmt.Sprintf("native-login-%dx%d", int(size[0]), int(size[1])))
+	}
 	r.instance = "https://example.com/@invalid"
 	tt.Frame()
-	if err := tt.Click("连接 Mastodon"); err != nil {
+	if err := tt.Click("继续"); err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(r.message, "域名") {
 		t.Fatal("missing inline validation")
 	}
-	tt.SetSize(420, 640)
+	tt.SetSize(420, 560)
 	savePreview(t, tt, "native-login-compact")
+	tt.SetDark(true)
+	savePreview(t, tt, "native-login-dark")
+	r.authorizing = true
+	r.message = "请在浏览器中授权，完成后返回 Ceramic。"
+	tt.Frame()
+	savePreview(t, tt, "native-login-authorizing")
+	if err := tt.Click("取消连接"); err != nil {
+		t.Fatal(err)
+	}
+	if r.authorizing {
+		t.Fatal("authorization did not cancel")
+	}
 }
 func TestNativeTimeline(t *testing.T) {
 	r := testReader(t)
@@ -88,7 +105,7 @@ func TestNativeTimeline(t *testing.T) {
 	if err := tt.ChooseMenuItem("退出登录"); err != nil {
 		t.Fatal(err)
 	}
-	if r.session != nil || !tt.HasText("连接 Mastodon") {
+	if r.session != nil || !tt.HasText("继续") {
 		t.Fatal("logout did not reset native view")
 	}
 }

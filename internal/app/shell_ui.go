@@ -68,10 +68,7 @@ func (r *reader) view(c *ui.Context) {
 	ui.Row(c).Fill().Children(func() {
 		r.sidebar(c)
 		ui.Column(c).Grow(1).Shrink(1).FillHeight().Background(t.Background).Children(func() {
-			ui.Text(c, "ceramic").Font("Georgia").FontSize(24).Bold().TextColor(t.Accent).Padding(20, 24).DragWindow()
-			if r.message != "" {
-				ui.Text(c, r.message).Padding(12, 24)
-			}
+			ui.Row(c).FillWidth().Height(52).DragWindow()
 			r.loginView(c)
 		})
 	})
