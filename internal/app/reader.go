@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"encoding/json"
+	"sort"
 	"strings"
 	"time"
 
@@ -20,25 +21,26 @@ type postView struct {
 }
 
 type feedState struct {
-	readingJump       int
-	previewScroll     ui.ScrollState
-	scroll            ui.ScrollState
-	source            *feedState
-	failedMore        bool
-	message           string
-	busy, end, loaded bool
-	posts             []*postView
-	cursor            string
-	list              ui.ListState
-	kind              string
-	profile           mastodon.Account
-	accounts          []mastodon.Account
-	notifications     []mastodon.Notification
-	query, searchKind string
-	offset            int
-	preview           *mastodon.Media
-	width             float32
-	focalID           string
+	readingJump          int
+	previewScroll        ui.ScrollState
+	scroll               ui.ScrollState
+	source               *feedState
+	failedMore           bool
+	message              string
+	busy, end, loaded    bool
+	posts                []*postView
+	cursor               string
+	list                 ui.ListState
+	kind                 string
+	profile              mastodon.Account
+	accounts             []mastodon.Account
+	notifications        []mastodon.Notification
+	notificationExpanded map[string]*bool
+	query, searchKind    string
+	offset               int
+	preview              *mastodon.Media
+	width                float32
+	focalID              string
 }
 
 type reader struct {
@@ -84,11 +86,15 @@ func (r *reader) load(more bool) { r.loadFeed(r.feedState, more) }
 // without polling. A failed stream reconnects with a growing delay.
 func (r *reader) startStream() {
 	r.stopStream()
-	if r.session == nil || r.update == nil {
+	if r.session == nil || r.update == nil || !r.hasScope("read:notifications") {
 		return
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	r.cancelStream = cancel
+	gen, session, feed := r.generation, r.session, r.notifications
+	current := func() bool {
+		return ctx.Err() == nil && r.generation == gen && r.session == session && r.notifications == feed
+	}
 	// Seed the feed so notifications that arrive later are counted as unread;
 	// otherwise the first poll would treat everything as already seen.
 	if !r.notifications.busy {
@@ -105,8 +111,8 @@ func (r *reader) startStream() {
 				return
 			case <-ticker.C:
 				r.update(func() {
-					if r.session != nil && !r.notifications.busy {
-						r.loadFeed(r.notifications, false)
+					if current() && !feed.busy {
+						r.loadFeed(feed, false)
 					}
 				})
 			}
@@ -124,10 +130,12 @@ func (r *reader) startStream() {
 					return
 				}
 				r.update(func() {
-					if r.selected != "notifications" {
+					if !current() {
+						return
+					}
+					if feed.prependNotification(n) && r.selected != "notifications" {
 						r.unread++
 					}
-					r.notifications.prependNotification(n)
 				})
 			})
 			if ctx.Err() != nil {
@@ -139,7 +147,7 @@ func (r *reader) startStream() {
 			case <-time.After(delay):
 			}
 			if delay < 30*time.Second {
-				delay *= 2
+				delay = min(30*time.Second, delay*2)
 			}
 		}
 	}()
@@ -152,14 +160,14 @@ func (r *reader) stopStream() {
 	}
 }
 
-func (r *feedState) prependNotification(n mastodon.Notification) {
+func (r *feedState) prependNotification(n mastodon.Notification) bool {
 	for _, existing := range r.notifications {
 		if existing.ID == n.ID {
-			return
+			return false
 		}
 	}
 	r.notifications = append([]mastodon.Notification{n}, r.notifications...)
-	r.loaded = true
+	return true
 }
 
 func (r *reader) loadFeed(f *feedState, more bool) {
@@ -173,6 +181,7 @@ func (r *reader) loadFeed(f *feedState, more bool) {
 	f.failedMore = more
 	f.message = ""
 	gen := r.generation
+	initial := !f.loaded
 	cursor := ""
 	offset := 0
 	if more {
@@ -219,7 +228,7 @@ func (r *reader) loadFeed(f *feedState, more bool) {
 				f.profile = person
 			}
 			if f.kind == "notifications" {
-				wasLoaded := f.loaded
+				wasLoaded := !initial
 				known := map[string]bool{}
 				for _, n := range f.notifications {
 					known[n.ID] = true
@@ -272,30 +281,38 @@ func (r *reader) loadFeed(f *feedState, more bool) {
 	}()
 }
 
+// Head refreshes merge with loaded history. Only older-page requests move the
+// pagination boundary; an SSE event arriving during HTTP must survive it.
 func (r *feedState) applyNotifications(items []mastodon.Notification, more bool) {
-	if !more {
-		r.notifications = nil
-	}
 	seen := map[string]bool{}
 	for _, n := range r.notifications {
 		seen[n.ID] = true
 	}
 	for _, n := range items {
-		if seen[n.ID] {
-			continue
+		if !seen[n.ID] {
+			r.notifications = append(r.notifications, n)
+			seen[n.ID] = true
 		}
-		seen[n.ID] = true
-		r.notifications = append(r.notifications, n)
 	}
-	previous := r.cursor
-	if len(items) > 0 {
-		r.cursor = items[len(items)-1].ID
+	// Mastodon notification IDs are decimal snowflakes, not machine-sized ints.
+	sort.SliceStable(r.notifications, func(i, j int) bool {
+		a, b := r.notifications[i].ID, r.notifications[j].ID
+		if len(a) != len(b) {
+			return len(a) > len(b)
+		}
+		return a > b
+	})
+	if more || r.cursor == "" {
+		previous := r.cursor
+		if len(items) > 0 {
+			r.cursor = items[len(items)-1].ID
+		}
+		r.end = len(items) == 0 || (more && previous == r.cursor)
 	}
-	r.end = len(items) == 0 || (more && previous == r.cursor)
 }
 
 func (r *reader) hasScope(scope string) bool {
-	return r.session != nil && strings.Contains(" "+r.session.Scopes+" ", " "+scope+" ")
+	return r.session != nil && (strings.Contains(" "+r.session.Scopes+" ", " "+scope+" ") || strings.Contains(" "+r.session.Scopes+" ", " read "))
 }
 
 func (r *feedState) applyPosts(posts []mastodon.Status, more bool) {
@@ -311,20 +328,7 @@ func (r *feedState) applyPosts(posts []mastodon.Status, more bool) {
 			continue
 		}
 		seen[p.ID] = true
-		hidden := false
-		filters := p.Filtered
-		if p.Reblog != nil {
-			filters = append(append(p.Filtered[:0:0], p.Filtered...), p.Reblog.Filtered...)
-		}
-		warning := ""
-		for _, f := range filters {
-			if f.Filter.Action == "hide" {
-				hidden = true
-			}
-			if f.Filter.Action == "warn" {
-				warning = "已被你的过滤规则折叠"
-			}
-		}
+		hidden, warning := statusFilter(p)
 		if hidden {
 			continue
 		}
@@ -339,4 +343,21 @@ func (r *feedState) applyPosts(posts []mastodon.Status, more bool) {
 		r.cursor = posts[len(posts)-1].ID
 	}
 	r.end = len(posts) == 0 || (more && previous == r.cursor)
+}
+
+func statusFilter(p mastodon.Status) (hidden bool, warning string) {
+	filters := p.Filtered
+	if p.Reblog != nil {
+		filters = append(append(p.Filtered[:0:0], p.Filtered...), p.Reblog.Filtered...)
+	}
+
+	for _, f := range filters {
+		if f.Filter.Action == "hide" {
+			hidden = true
+		}
+		if f.Filter.Action == "warn" {
+			warning = "已被你的过滤规则折叠"
+		}
+	}
+	return
 }

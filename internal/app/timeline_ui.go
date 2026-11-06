@@ -143,6 +143,24 @@ func notificationLabel(kind string) (string, *ui.SVG) {
 // only a preview so long boosts cannot push the next notification away.
 func (r *reader) notificationRow(c *ui.Context, f *feedState, n mastodon.Notification) {
 	t := c.Theme()
+	warning := ""
+	if n.Status != nil {
+		hidden, filtered := statusFilter(*n.Status)
+		if hidden {
+			return
+		}
+		status := n.Status
+		if status.Reblog != nil {
+			status = status.Reblog
+		}
+		warning = status.Spoiler
+		if filtered != "" {
+			if warning != "" {
+				warning += " · "
+			}
+			warning += filtered
+		}
+	}
 	label, icon := notificationLabel(n.Type)
 	row := ui.Column(c).Padding(12, 16).Gap(6).BorderWidth(0, 0, 1, 0).BorderColor(postDivider(c))
 	var relation *mastodon.Status
@@ -171,7 +189,22 @@ func (r *reader) notificationRow(c *ui.Context, f *feedState, n mastodon.Notific
 			})
 		})
 		if relation != nil {
-			renderRichText(c, mastodon.ParseText(relation.Content), 13, func() { r.openConversation(f, *relation) })
+			content := func() {
+				renderRichText(c, mastodon.ParseText(relation.Content), 13, func() { r.openConversation(f, *relation) })
+			}
+			if warning == "" {
+				content()
+			} else {
+				if f.notificationExpanded == nil {
+					f.notificationExpanded = map[string]*bool{}
+				}
+				expanded := f.notificationExpanded[n.ID]
+				if expanded == nil {
+					expanded = new(bool)
+					f.notificationExpanded[n.ID] = expanded
+				}
+				concealedContent(c, warning, expanded, false, content)
+			}
 		}
 	})
 }

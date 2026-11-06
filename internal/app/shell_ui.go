@@ -73,10 +73,10 @@ func (r *reader) shell(c *ui.Context) {
 		r.navigate("home")
 	}
 	if c.Shortcut(ui.Cmd, ui.Key3) {
-		r.navigate("search")
+		r.navigate("notifications")
 	}
 	if c.Shortcut(ui.Cmd, ui.Key4) {
-		r.navigate("notifications")
+		r.navigate("search")
 	}
 	if c.Shortcut(ui.Cmd, ui.KeyW) {
 		r.closeFocused()
@@ -294,9 +294,9 @@ func (r *reader) sidebar(c *ui.Context) {
 				}
 				avatarImage(c, me.Name(), bitmap, 32)
 			})
-			for i, page := range []string{"home", "search", "notifications"} {
-				label := []string{"首页", "Search", "通知"}[i]
-				icon := []*ui.SVG{navIcons[0], navIcons[1], bellIcon}[i]
+			for i, page := range []string{"home", "notifications", "search"} {
+				label := []string{"首页", "通知", "Search"}[i]
+				icon := []*ui.SVG{navIcons[0], bellIcon, navIcons[1]}[i]
 				bg, fg := ui.Transparent, t.TextMuted
 				if r.selected == page {
 					bg, fg = t.Text.Alpha(0.09), t.Accent

@@ -45,6 +45,7 @@ func (r *reader) logout() {
 		return
 	}
 	r.stopStream()
+	r.unread = 0
 	r.generation++
 	r.session = nil
 	r.authorizing = false
