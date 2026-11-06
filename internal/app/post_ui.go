@@ -15,7 +15,7 @@ func (r *reader) post(c *ui.Context, f *feedState, p *postView) {
 	if s.Reblog != nil {
 		s = *s.Reblog
 	}
-	row := ui.Column(c).OnClick(func() { r.openConversation(f, s) }).Padding(14, 16).Gap(6).BorderWidth(0, 0, 1, 0).BorderColor(postDivider(c))
+	row := ui.Column(c).Padding(14, 16).Gap(6).BorderWidth(0, 0, 1, 0).BorderColor(postDivider(c))
 	tint := postTint(p)
 	if tint != ui.Transparent && !c.Preferences().HighContrast {
 		opacity := float32(0.065)
@@ -51,7 +51,11 @@ func (r *reader) post(c *ui.Context, f *feedState, p *postView) {
 							ui.Text(c, "回复").FontSize(11).TextColor(t.TextMuted)
 						})
 					}
-					postText(c, p.runs, func() { r.openConversation(f, s) })
+					renderRichText(c, p.runs, 14, func() {
+						if f.preview == nil {
+							r.openConversation(f, s)
+						}
+					}, func(ev ui.InputEvent) { r.postTextInput(f, ev) })
 					if s.Card != nil && len(s.Media) == 0 {
 						r.linkPreview(c, *s.Card)
 					}
@@ -138,21 +142,23 @@ func (r *reader) linkPreview(c *ui.Context, card mastodon.LinkCard) {
 		return
 	}
 	t := c.Theme()
-	ui.Column(c).Gap(7).Padding(10).Radius(7).Background(t.Surface).Children(func() {
+	ui.Row(c).Gap(10).Padding(10).Radius(7).Background(t.Surface).AlignItems(ui.Start).Children(func() {
 		if e := r.photo(card.Image); e != nil && e.bitmap != nil {
-			ui.Image(c, e.bitmap).FillWidth().Height(130).Fit(ui.Cover).Radius(5).Label(card.Title)
+			ui.Image(c, e.bitmap).Size(64, 64).Shrink(0).Fit(ui.Cover).Radius(5).Label("外链预览缩略图")
 		}
-		if card.Provider != "" {
-			ui.Text(c, card.Provider).FontSize(11).TextColor(t.TextMuted)
-		}
-		ui.Link(c, card.Title, target).FontSize(13).Bold()
-		description := []rune(card.Description)
-		if len(description) > 140 {
-			description = description[:140]
-		}
-		if len(description) > 0 {
-			ui.Text(c, string(description)).FontSize(12).TextColor(t.TextMuted)
-		}
+		ui.Column(c).Grow(1).Shrink(1).Gap(4).Children(func() {
+			if card.Provider != "" {
+				ui.Text(c, card.Provider).FontSize(11).TextColor(t.TextMuted).MaxLines(1)
+			}
+			ui.Link(c, card.Title, target).FontSize(13).Bold().MaxLines(2)
+			description := []rune(card.Description)
+			if len(description) > 140 {
+				description = description[:140]
+			}
+			if len(description) > 0 {
+				ui.Text(c, string(description)).FontSize(12).TextColor(t.TextMuted).MaxLines(2)
+			}
+		})
 	})
 }
 
@@ -212,17 +218,53 @@ func concealedContent(c *ui.Context, warning string, expanded *bool, media bool,
 }
 
 func richText(c *ui.Context, runs []mastodon.TextRun, size float32) {
-	renderRichText(c, runs, size, nil)
+	renderRichText(c, runs, size, nil, nil)
 }
 
-func postText(c *ui.Context, runs []mastodon.TextRun, open func()) {
-	renderRichText(c, runs, 14, open)
+type textSelectionGesture struct {
+	suppress bool
+	x, y     float32
 }
 
-func renderRichText(c *ui.Context, runs []mastodon.TextRun, size float32, open func()) {
+func (r *reader) postTextInput(f *feedState, ev ui.InputEvent) {
+	r.readingScrollInput(ev)
+	if ev.Kind == ui.InputPointerDown {
+		if ws := r.workspaces[r.selected]; ws != nil {
+			r.focusColumn(ws, f)
+		}
+	}
+}
+
+func renderRichText(c *ui.Context, runs []mastodon.TextRun, size float32, open func(), input func(ui.InputEvent)) {
 	paragraph := ui.RichText(c).FontSize(size).LineHeight(1.55).Selectable()
-	if open != nil {
-		paragraph.OnClick(open)
+	if open == nil {
+		paragraph.OnClick(func() {})
+	} else {
+		gesture := ui.Local(paragraph, "selection-gesture", func() textSelectionGesture { return textSelectionGesture{} })
+		start, end := paragraph.TextSelection()
+		selected := start != end
+		paragraph.HandleInput(func(ev ui.InputEvent) bool {
+			if input != nil {
+				input(ev)
+			}
+			switch ev.Kind {
+			case ui.InputPointerDown:
+				// Remember the selection before native input collapses it.
+				*gesture = textSelectionGesture{suppress: selected || ev.Mods&ui.Shift != 0 || ev.Button != 0, x: ev.X, y: ev.Y}
+			case ui.InputPointerMove, ui.InputPointerUp:
+				if ev.Button != 0 {
+					return false
+				}
+				// A quick drag can finish before the selection is reflected in a frame.
+				dx, dy := ev.X-gesture.x, ev.Y-gesture.y
+				gesture.suppress = gesture.suppress || dx*dx+dy*dy > 9
+			}
+			return false
+		}).OnClick(func() {
+			if !selected && !gesture.suppress {
+				open()
+			}
+		})
 	}
 	paragraph.Children(func() {
 		for _, run := range runs {

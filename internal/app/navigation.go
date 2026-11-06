@@ -67,6 +67,17 @@ func (r *reader) appendColumn(source, detail *feedState) {
 			if f != source {
 				continue
 			}
+			if detail.kind == "conversation" {
+				for _, existing := range ws.columns {
+					if existing.kind == "conversation" && existing.focalID == detail.focalID {
+						r.selected = page
+						r.focusColumn(ws, existing)
+						ws.reveal = false
+						ws.revealFocus = true
+						return
+					}
+				}
+			}
 			detail.source = source
 			ws.columns = append(ws.columns, detail)
 			ws.focused = detail
