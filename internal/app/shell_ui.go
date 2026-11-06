@@ -161,7 +161,11 @@ func (r *reader) shell(c *ui.Context) {
 						}
 						f.readingJump = 0
 					}
-					r.pane(c, f, ws, i)
+					// Keep the column shell and toolbar for layout, focus and
+					// accessibility. Distant bodies retain their feed/ListState,
+					// but do not build rows or request images until approached.
+					warm := compact || f == ws.focused || columnNearViewport(i, len(ws.columns), width, available, ws.scroll.X)
+					r.pane(c, f, ws, i, warm)
 				})
 			}
 		})
@@ -169,7 +173,18 @@ func (r *reader) shell(c *ui.Context) {
 	r.readingKeys(c)
 }
 
-func (r *reader) pane(c *ui.Context, f *feedState, ws *workspace, index int) {
+// Include a full neighboring column on either side so ordinary horizontal
+// scrolling has content ready before it enters the viewport. Clamp against
+// this frame's geometry, not ScrollState.MaxX from before a resize or append.
+func columnNearViewport(index, count int, width, viewport, offset float32) bool {
+	stride := width + columnGap
+	end := max(0, float32(count)*stride-columnGap-viewport)
+	offset = min(max(0, offset), end)
+	left := float32(index) * stride
+	return left+width >= offset-stride && left <= offset+viewport+stride
+}
+
+func (r *reader) pane(c *ui.Context, f *feedState, ws *workspace, index int, warm bool) {
 	t := c.Theme()
 	header := ui.Hex("#f7f7f9")
 	paper := ui.Hex("#ffffff")
@@ -192,6 +207,9 @@ func (r *reader) pane(c *ui.Context, f *feedState, ws *workspace, index int) {
 		ui.Spacer(c)
 		ui.ButtonBase(c).Size(28, 28).Label("刷新 " + title).Tooltip("刷新 " + title).Disabled(f.busy).OnClick(func() { r.loadFeed(f, false) }).Children(func() { ui.Icon(c, refreshIcon).Size(16, 16).TextColor(t.TextMuted) })
 	}).Background(header).Height(48).Padding(8, 16).BorderWidth(0, 0, 1, 0).BorderColor(t.Border)
+	if !warm {
+		return
+	}
 	ui.Column(c).Grow(1).Shrink(1).FillWidth().Background(paper).Children(func() {
 		if f.message != "" {
 			ui.Text(c, f.message).FontSize(12).Padding(10, 14).Background(t.Surface)
