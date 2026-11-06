@@ -134,7 +134,10 @@ func (r *reader) shell(c *ui.Context) {
 		if t.Dark {
 			paper = ui.Hex("#232325")
 		}
-		ui.ScrollHorizontal(c.Key(ws)).TrackScroll(&ws.scroll).Grow(1).Shrink(1).FillHeight().Padding(columnGap).Gap(columnGap).Background(backdrop).Children(func() {
+		ui.ScrollHorizontal(c.Key(ws)).TrackScroll(&ws.scroll).Grow(1).Shrink(1).FillHeight().Padding(columnGap).Gap(columnGap).Background(backdrop).HandleInput(func(ev ui.InputEvent) bool {
+			r.readingScrollInput(ev)
+			return ws.trackpad.scroll(ev, &ws.scroll, nil)
+		}).Children(func() {
 			for i, f := range ws.columns {
 				if compact && f != ws.focused {
 					continue
@@ -148,6 +151,16 @@ func (r *reader) shell(c *ui.Context) {
 				}
 				column.HandleInput(func(ev ui.InputEvent) bool {
 					r.readingScrollInput(ev)
+					scroll := &f.scroll
+					if f.preview != nil {
+						scroll = &f.previewScroll
+					}
+					if ev.Y < 48 {
+						scroll = nil
+					}
+					if ws.trackpad.scroll(ev, &ws.scroll, scroll) {
+						return true
+					}
 					if ev.Kind == ui.InputPointerDown {
 						r.focusColumn(ws, f)
 					}
