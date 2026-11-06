@@ -12,6 +12,21 @@ import (
 )
 
 func (r *reader) view(c *ui.Context) {
+	r.releaseShownImagePixels()
+	// Keep the current rendered working set resident. Release its protection
+	// on the next view, so leaving a column also permits cache reclamation.
+	r.imageFrame++
+	defer func() {
+		r.trimImages()
+		for _, entry := range r.images {
+			if entry.shown && !entry.pixelsReleased {
+				// One follow-up frame releases newly displayed CPU pixels even
+				// when the user stops interacting. This is not an idle loop.
+				c.After(0)
+				break
+			}
+		}
+	}()
 	t := *c.Theme()
 	t.Accent = ui.Hex("#37694e")
 	if t.Dark {

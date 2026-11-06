@@ -61,6 +61,7 @@ type reader struct {
 	generation                   uint64
 	images                       map[string]*imageEntry
 	imageTick                    uint64
+	imageFrame                   uint64
 	imageSlots                   chan struct{}
 	home, searchFeed, ownProfile *feedState
 	notifications                *feedState

@@ -12,10 +12,13 @@ import (
 )
 
 type imageEntry struct {
-	bitmap *ui.Bitmap
-	failed bool
-	used   uint64
-	ready  bool
+	bitmap         *ui.Bitmap
+	failed         bool
+	used           uint64
+	frame          uint64
+	ready          bool
+	shown          bool
+	pixelsReleased bool
 }
 
 func (r *reader) photo(raw string) *imageEntry {
@@ -26,9 +29,11 @@ func (r *reader) photo(raw string) *imageEntry {
 	r.imageTick++
 	if entry, ok := r.images[raw]; ok {
 		entry.used = r.imageTick
+		entry.frame = r.imageFrame
+		entry.shown = entry.bitmap != nil
 		return entry
 	}
-	entry := &imageEntry{used: r.imageTick}
+	entry := &imageEntry{used: r.imageTick, frame: r.imageFrame}
 	r.images[raw] = entry
 	if r.update == nil {
 		return entry
@@ -46,6 +51,7 @@ func (r *reader) photo(raw string) *imageEntry {
 					return
 				}
 				entry.bitmap = bitmap
+				entry.shown, entry.pixelsReleased = false, false
 				entry.failed = false
 				r.trimImages()
 			})
@@ -89,7 +95,10 @@ func decodeBitmap(data []byte) (*ui.Bitmap, error) {
 	return ui.NewBitmap(img), nil
 }
 
-// Keep decoded image storage bounded independently of how far the user reads.
+// Bound retained history, but never evict the current rendered working set:
+// doing so would cause every redraw to reload it and evict another visible
+// image. The budget can be exceeded while those images are in use, then is
+// enforced again at the end of the first view that no longer uses them.
 func (r *reader) trimImages() {
 	for {
 		bytes := 0
@@ -100,7 +109,7 @@ func (r *reader) trimImages() {
 				w, h := e.bitmap.Size()
 				bytes += w * h * 4
 			}
-			if e.ready && e.used < tick {
+			if e.ready && (e.frame == 0 || e.frame != r.imageFrame) && e.used < tick {
 				oldest = key
 				tick = e.used
 			}
@@ -112,5 +121,17 @@ func (r *reader) trimImages() {
 			return
 		}
 		delete(r.images, oldest)
+	}
+}
+
+// Run on the UI thread, after a preceding view has used the bitmap. GPU
+// textures remain intact; decoded bitmaps retain compressed source data for
+// restoration. NewBitmap-backed resized images safely keep their pixels.
+func (r *reader) releaseShownImagePixels() {
+	for _, entry := range r.images {
+		if entry.shown && !entry.pixelsReleased && entry.bitmap != nil {
+			entry.bitmap.ReleasePixels()
+			entry.pixelsReleased = true
+		}
 	}
 }

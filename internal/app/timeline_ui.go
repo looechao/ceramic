@@ -177,7 +177,6 @@ func (r *reader) notificationRow(c *ui.Context, f *feedState, n mastodon.Notific
 			s = *s.Reblog
 		}
 		relation = &s
-		row.OnClick(func() { r.openConversation(f, s) })
 	}
 	row.Children(func() {
 		ui.Row(c).Gap(6).Children(func() {
@@ -197,7 +196,9 @@ func (r *reader) notificationRow(c *ui.Context, f *feedState, n mastodon.Notific
 		})
 		if relation != nil {
 			content := func() {
-				renderRichText(c, mastodon.ParseText(relation.Content), 13, func() { r.openConversation(f, *relation) })
+				renderRichText(c, mastodon.ParseText(relation.Content), 13, func() {
+					r.openConversation(f, *relation)
+				}, func(ev ui.InputEvent) { r.postTextInput(f, ev) })
 			}
 			if warning == "" {
 				content()
@@ -212,6 +213,7 @@ func (r *reader) notificationRow(c *ui.Context, f *feedState, n mastodon.Notific
 				}
 				concealedContent(c, warning, expanded, false, content)
 			}
+			ui.Button(c, "查看帖子").FontSize(12).OnClick(func() { r.openConversation(f, *relation) })
 		}
 	})
 }

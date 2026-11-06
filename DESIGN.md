@@ -34,3 +34,11 @@ Post types use subtle fading tints: boosts #9263c7, replies #4f89b7, warnings/se
 Only the sidebar uses system vibrancy. Reading columns use the framework's continuous rounded corners with opaque light headers (#f7f7f9), white bodies and a gray workspace (#eeeef0). Dark mode uses #2b2b2e headers, #232325 bodies and #171719 workspace. No custom corner masks or transparent header cutouts.
 
 Account list rows have no divider lines; spacing separates accounts. They lift by 2 pt with a soft shadow on pointer hover, settling on press and returning over 140 ms. The hit area and list layout stay fixed. Reduced motion keeps only the surface tint; high contrast omits the shadow. This applies to account results, not post rows.
+
+External link previews use a compact horizontal layout: a fixed 64 × 64 pt square thumbnail beside provider, a two-line title and a two-line summary. Posts’ attached photos retain their full media layout.
+
+Post and notification text opens a conversation immediately on a single click. Drag selection, copying and clearing a selection do not navigate. Reply and view-post controls also open immediately.
+
+A conversation opens only once per workspace. Reopening it reveals the existing column without resetting its reading position.
+
+Image cache limits apply to unused history; images used by the current view stay resident to prevent eviction/reload flicker. After display, decoded bitmaps release redundant CPU pixels while retaining GPU textures and compressed data for restoration.

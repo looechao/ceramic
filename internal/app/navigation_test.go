@@ -480,3 +480,29 @@ func TestAutomaticPaginationPausesOnError(t *testing.T) {
 	default:
 	}
 }
+
+func TestConversationReusesExistingColumn(t *testing.T) {
+	r := testReader(t)
+	r.session = &mastodon.Session{Account: json.RawMessage(`{"id":"me"}`)}
+	post := mastodon.Status{ID: "original", Content: "Original post"}
+	r.openConversation(r.home, post)
+	ws := r.workspaces["home"]
+	original := ws.focused
+	original.scroll.Y = 120
+	r.openConversation(r.home, mastodon.Status{ID: "another", Content: "Another post"})
+	other := ws.focused
+	for _, source := range []*feedState{r.home, other} {
+		r.openConversation(source, mastodon.Status{ID: "boost", Reblog: &post})
+		if len(ws.columns) != 3 || ws.focused != original || r.feedState != original {
+			t.Fatal("reopening a post must focus its existing conversation")
+		}
+		if original.scroll.Y != 120 || !ws.revealFocus || ws.reveal {
+			t.Fatal("reopening must preserve reading position and reveal the existing column")
+		}
+	}
+	r.closeColumn(ws, original)
+	r.openConversation(r.home, post)
+	if len(ws.columns) != 3 || ws.focused == original || ws.focused.focalID != post.ID {
+		t.Fatal("closed conversations must be openable again")
+	}
+}
