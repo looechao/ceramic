@@ -15,6 +15,7 @@ type workspace struct {
 	revealFocus bool
 	columns     []*feedState
 	scroll      ui.ScrollState
+	trackpad    trackpadGesture
 	reveal      bool
 }
 
