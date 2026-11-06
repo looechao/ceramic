@@ -4,7 +4,7 @@
 Ivory-inspired compact reading workspace, built only with official MyGo v0.7.4. A narrow navigation rail and independent per-tab reading paths replace the earlier broad sidebar. Real content, not decoration, provides the visual focus.
 
 ## Palette
-System light/dark background, surface, text, muted text and borders. Accent #37694e in light mode; #91c8a4 in dark mode. Selection uses the text color at 9% opacity with an accent glyph. No forced dark mode or custom glass. Post-type gradients remain subtle and are omitted in high contrast.
+System light/dark background, surface, text, muted text and borders. Accent is monochrome ink, matching the black-and-white app icon: #1d1d1f (hover #3a3a3c, pressed #000000, white text) in light mode; #ededed (hover #ffffff, pressed #d4d4d6, #1d1d1f text) in dark mode. Always set hover and pressed with the accent so framework defaults never leak through. The unread badge is the only warm color: clay #b34a30 with white text in light mode, #e2876b with #1d1d1f text in dark mode. Selection uses the text color at 9% opacity with an accent glyph. No forced dark mode or custom glass. Post-type gradients remain subtle and are omitted in high contrast.
 
 ## Typography
 MyGo system typography. Post body 14 pt, line height 1.55; author and column title 14 pt semibold; account 12 pt; time/metadata 11 pt. Profile title 23 pt. Selectable body and biographies retain links, emphasis and paragraphs.

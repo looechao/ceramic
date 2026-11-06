@@ -28,10 +28,12 @@ func (r *reader) view(c *ui.Context) {
 		}
 	}()
 	t := *c.Theme()
-	t.Accent = ui.Hex("#37694e")
+	// Ink on porcelain: the accent is monochrome, like the app icon.
+	t.Accent, t.AccentHover, t.AccentPressed = ui.Hex("#1d1d1f"), ui.Hex("#3a3a3c"), ui.Hex("#000000")
+	t.AccentText = ui.Hex("#ffffff")
 	if t.Dark {
-		t.Accent = ui.Hex("#91c8a4")
-		t.AccentText = ui.Hex("#17251c")
+		t.Accent, t.AccentHover, t.AccentPressed = ui.Hex("#ededed"), ui.Hex("#ffffff"), ui.Hex("#d4d4d6")
+		t.AccentText = ui.Hex("#1d1d1f")
 	}
 	c.SetTheme(&t)
 	if r.authorizing {
@@ -327,10 +329,10 @@ func (r *reader) sidebar(c *ui.Context) {
 					bg, fg = t.Text.Alpha(0.09), t.Accent
 				}
 				tooltip := label + " · " + shortcutHint(fmt.Sprint(i+2))
-				alert := t.Accent
-				alertText := ui.Hex("#ffffff")
+				// Unread is the one warm clay color in the interface.
+				alert, alertText := ui.Hex("#b34a30"), ui.Hex("#ffffff")
 				if t.Dark {
-					alertText = t.AccentText
+					alert, alertText = ui.Hex("#e2876b"), ui.Hex("#1d1d1f")
 				}
 				unread := 0
 				if page == "notifications" {
