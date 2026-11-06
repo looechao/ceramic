@@ -54,8 +54,8 @@ Linux 版运行时需要 GTK 3。所有版本都没有代码签名：macOS 为 a
 修改 `mygo.json` 的 `version`，提交后推送同名标签。GitHub Actions 会测试并构建全部桌面平台，生成草稿 Release，确认后手动发布：
 
 ```sh
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.2.0
+git push origin v0.2.0
 ```
 
 ```sh
