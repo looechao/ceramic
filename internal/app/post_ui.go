@@ -207,7 +207,7 @@ func (r *reader) postFooter(c *ui.Context, f *feedState, s mastodon.Status) {
 			if i != 3 {
 				hint = fmt.Sprintf("%s %d", label, item.count)
 			}
-			disabled := i != 0 && (r.interactions[s.ID] || r.session == nil)
+			disabled := r.session == nil || (i != 0 && r.interactions[s.ID])
 			if i == 1 && !r.canBoost(s) {
 				disabled = true
 				hint = locales.ThisPostCannotBeBoosted()
@@ -225,7 +225,7 @@ func (r *reader) postFooter(c *ui.Context, f *feedState, s mastodon.Status) {
 			}
 			button := ui.ButtonBase(c.Key(i)).Padding(0, 6).MinWidth(30).Shrink(0).Justify(ui.Center).Gap(4).Height(30).Radius(15).Label(hint).Tooltip(hint).Disabled(disabled).OnClick(func() {
 				if i == 0 {
-					r.openConversation(f, s)
+					r.showReply(s)
 				} else {
 					r.interact(f, s, action)
 				}

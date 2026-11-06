@@ -10,7 +10,7 @@ System light/dark background, surface, text, muted text and borders. Accent is m
 MyGo system typography. Post body 14 pt, line height 1.55; author and column title 14 pt semibold; account 12 pt; time/metadata 11 pt. Profile title 23 pt. Selectable body and biographies retain links, emphasis and paragraphs.
 
 ## Components
-Official Toolbar, SearchField, Segmented, List, Avatar, RichText, ButtonBase, MenuButton and Icon. Navigation icons retain accessible labels and shortcut tooltips. Images use 10 pt corners; link previews 7 pt; selected navigation 10 pt. Avatars are circular. Reply opens a conversation column; boost, favourite and bookmark controls toggle their state after server confirmation, with nonzero counts and accessible labels. Loaded images open in-app without a redundant external link beneath them.
+Official Toolbar, SearchField, Segmented, List, Avatar, RichText, ButtonBase, MenuButton and Icon. Navigation icons retain accessible labels and shortcut tooltips. Images use 10 pt corners; link previews 7 pt; selected navigation 10 pt. Avatars are circular. Reply opens the composer with the original post as its reply target; boost, favourite and bookmark controls toggle their state after server confirmation, with nonzero counts and accessible labels. Loaded images open in-app without a redundant external link beneath them.
 
 ## Layout
 88 pt minimum navigation rail, expanded if native controls need more room. On macOS, the hidden title bar keeps real traffic lights at (12,18), with a 52 pt reserved draggable area. Windows and Linux keep the system title bar, with no reserved area and no vibrancy. The account avatar or signed-out profile icon sits above Home and Search. Reading columns have 12 pt outer padding, 12 pt gaps and 12 pt rounded corners. Each tab starts with one left-aligned root column, up to 580 pt wide. Details append to the right in a horizontal scroll container that reveals the latest column. When at least 720 pt is available, two columns fit side by side; wider windows can show more. Every column has a 48 pt toolbar and independent virtual list. Posts use 14 pt vertical / 16 pt horizontal padding, 42 pt avatars, a 12 pt avatar/body gap and 6 pt content spacing. Footer actions group along the text edge with 30 pt hit height; bookmark and external link sit at the trailing edge.
@@ -39,7 +39,7 @@ Content lists share one hover surface across posts, notifications and accounts (
 
 External link previews use a compact horizontal layout: a fixed 64 × 64 pt square thumbnail beside provider, a two-line title and a two-line summary. Posts’ attached photos retain their full media layout.
 
-Post and notification text opens a conversation immediately on a single click. Drag selection, copying and clearing a selection do not navigate. Reply and view-post controls also open immediately.
+Post and notification text opens a conversation immediately on a single click. Drag selection, copying and clearing a selection do not navigate. Reply opens the composer immediately; view-post controls open the conversation immediately.
 
 A conversation opens only once per workspace. Reopening it reveals the existing column without resetting its reading position.
 
@@ -97,3 +97,10 @@ Publish uses the existing compact primary text button, without a paper-plane gly
 Browse uses Lucide’s simple globe for Local and the classic CC0 five-node Fediverse community logo rendered in theme-matched monochrome for Federated. Both remain compact inline buttons without persistent backgrounds.
 
 Application labels use the MyGo catalogs in locales, with Simplified Chinese, English, Japanese, Korean and Spanish. Settings uses a full-width native language select with autonyms; App.SetLocale applies and persists the choice. Menus rebuild on locale changes. Protocol values and draft poll durations are independent of translated labels. This supersedes the earlier Chinese-only label rule.
+
+
+Settings offers the native MyGo updater, with version, automatic checks and a manual check button. Update windows use the native plugin, and relaunch follows the normal draft-saving close path. Release manifests and archives are signed together.
+
+Reply composition preserves the original visibility restriction and content warning, pre-fills participants except the current account, and saves any existing draft before opening a different reply. Reply identity persists with drafts and is submitted as in_reply_to_id. The reply target is visible above the editor.
+
+Mention completion uses the token at the caret, with rune offsets and IME composition protection. Suggestions first use accounts already loaded, then a debounced, cancelable instance account search. Up/Down selects, Enter/Tab accepts, and Escape dismisses suggestions before the composer. Clicking a suggestion retains editor focus. Completion never submits the post.

@@ -241,5 +241,14 @@
   "ServiceCallbackInvalid": "Autorización no válida o caducada. Vuelve a Ceramic.",
   "ServiceCallbackFailed": "Inicio de sesión incompleto. Vuelve a Ceramic.",
   "ServiceCallbackSuccess": "Sesión iniciada. Cierra esta página y vuelve a Ceramic.",
-  "ServiceHTTPError": "El servidor devolvió HTTP {status}. Inténtalo más tarde."
+  "ServiceHTTPError": "El servidor devolvió HTTP {status}. Inténtalo más tarde.",
+  "Updates": "Actualizaciones",
+  "AutomaticallyCheckUpdates": "Buscar automáticamente",
+  "CheckForUpdates": "Buscar actualizaciones…",
+  "UpdateVersion": "Versión {version}",
+  "UpdateConfirmation": "Obtén de GitHub las actualizaciones para este dispositivo.",
+  "ReplyingTo": "Respondiendo a {account}",
+  "MentionSuggestions": "Sugerencias de menciones",
+  "SearchingAccounts": "Buscando cuentas",
+  "MentionSearchFailed": "No se pudo buscar. Puedes escribir la cuenta completa."
 }

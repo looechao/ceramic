@@ -38,7 +38,7 @@ func TestNativeSavedTabsAndWriting(t *testing.T) {
 		}
 	}
 	savePreview(t, tt, "native-saved-tabs")
-	d := &composer{audience: "仅关注者", text: "今天读到一段很喜欢的话。", spoiler: "阅读笔记"}
+	d := &composer{audience: "private", text: "今天读到一段很喜欢的话。", spoiler: "阅读笔记"}
 	r.composer = d
 	ct := ui.NewTester(func(c *ui.Context) { r.composeView(c, d) }, 540, 520)
 	savePreview(t, ct, "native-writing")

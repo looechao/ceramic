@@ -241,5 +241,14 @@
   "ServiceCallbackInvalid": "인증이 만료되었거나 잘못되었습니다. Ceramic으로 돌아가 다시 시도하세요.",
   "ServiceCallbackFailed": "로그인이 완료되지 않았습니다. Ceramic으로 돌아가 확인하세요.",
   "ServiceCallbackSuccess": "로그인되었습니다. 이 페이지를 닫고 Ceramic으로 돌아가세요.",
-  "ServiceHTTPError": "서버에서 HTTP {status}를 반환했습니다. 나중에 다시 시도하세요."
+  "ServiceHTTPError": "서버에서 HTTP {status}를 반환했습니다. 나중에 다시 시도하세요.",
+  "Updates": "소프트웨어 업데이트",
+  "AutomaticallyCheckUpdates": "업데이트 자동 확인",
+  "CheckForUpdates": "업데이트 확인…",
+  "UpdateVersion": "버전 {version}",
+  "UpdateConfirmation": "GitHub에서 이 기기에 맞는 업데이트를 받습니다.",
+  "ReplyingTo": "{account}에게 답글",
+  "MentionSuggestions": "멘션 추천",
+  "SearchingAccounts": "계정 검색 중",
+  "MentionSearchFailed": "계정 검색에 실패했습니다. 전체 계정명을 직접 입력할 수 있습니다."
 }

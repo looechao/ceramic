@@ -82,6 +82,7 @@ type Poll struct {
 }
 
 type Status struct {
+	Mentions   []Account     `json:"mentions"`
 	Emojis     []CustomEmoji `json:"emojis"`
 	Poll       *Poll         `json:"poll"`
 	Favourited bool          `json:"favourited"`
