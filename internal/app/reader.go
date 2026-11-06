@@ -1,6 +1,10 @@
 package app
 
 import (
+	"context"
+	"encoding/json"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/egoist/mygo/ui"
@@ -17,24 +21,26 @@ type postView struct {
 }
 
 type feedState struct {
-	readingJump       int
-	previewScroll     ui.ScrollState
-	scroll            ui.ScrollState
-	source            *feedState
-	failedMore        bool
-	message           string
-	busy, end, loaded bool
-	posts             []*postView
-	cursor            string
-	list              ui.ListState
-	kind              string
-	profile           mastodon.Account
-	accounts          []mastodon.Account
-	query, searchKind string
-	offset            int
-	preview           *mastodon.Media
-	width             float32
-	focalID           string
+	readingJump          int
+	previewScroll        ui.ScrollState
+	scroll               ui.ScrollState
+	source               *feedState
+	failedMore           bool
+	message              string
+	busy, end, loaded    bool
+	posts                []*postView
+	cursor               string
+	list                 ui.ListState
+	kind                 string
+	profile              mastodon.Account
+	accounts             []mastodon.Account
+	notifications        []mastodon.Notification
+	notificationExpanded map[string]*bool
+	query, searchKind    string
+	offset               int
+	preview              *mastodon.Media
+	width                float32
+	focalID              string
 }
 
 type reader struct {
@@ -57,21 +63,112 @@ type reader struct {
 	imageTick                    uint64
 	imageSlots                   chan struct{}
 	home, searchFeed, ownProfile *feedState
+	notifications                *feedState
 	workspaces                   map[string]*workspace
 	selected                     string
 	query                        string
 	searchTab                    int
+	cancelStream                 context.CancelFunc
+	unread                       int
 }
 
 func newReader(service *mastodon.Client) *reader {
 	s, _, _ := service.Snapshot()
 	home := &feedState{kind: "home"}
 	return &reader{diskImages: imagecache.New(imagecache.DefaultDir()), service: service, session: s, feedState: home, home: home,
-		searchFeed: &feedState{kind: "search", searchKind: "accounts"}, selected: "home",
+		searchFeed: &feedState{kind: "search", searchKind: "accounts"}, notifications: &feedState{kind: "notifications"}, selected: "home",
 		images: map[string]*imageEntry{}, imageSlots: make(chan struct{}, 4)}
 }
 
 func (r *reader) load(more bool) { r.loadFeed(r.feedState, more) }
+
+// startStream keeps a user-stream connection open so new notifications arrive
+// without polling. A failed stream reconnects with a growing delay.
+func (r *reader) startStream() {
+	r.stopStream()
+	if r.session == nil || r.update == nil || !r.hasScope("read:notifications") {
+		return
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	r.cancelStream = cancel
+	gen, session, feed := r.generation, r.session, r.notifications
+	current := func() bool {
+		return ctx.Err() == nil && r.generation == gen && r.session == session && r.notifications == feed
+	}
+	// Seed the feed so notifications that arrive later are counted as unread;
+	// otherwise the first poll would treat everything as already seen.
+	if !r.notifications.busy {
+		r.loadFeed(r.notifications, false)
+	}
+	// Some networks buffer server-sent events. Poll as a safety net so a
+	// notification is never far away, even without the stream.
+	go func() {
+		ticker := time.NewTicker(15 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				r.update(func() {
+					if current() && !feed.busy {
+						r.loadFeed(feed, false)
+					}
+				})
+			}
+		}
+	}()
+	go func() {
+		delay := time.Second
+		for ctx.Err() == nil {
+			_ = r.service.StreamUser(ctx, func(event string, data []byte) {
+				if event != "notification" {
+					return
+				}
+				var n mastodon.Notification
+				if json.Unmarshal(data, &n) != nil || n.ID == "" {
+					return
+				}
+				r.update(func() {
+					if !current() {
+						return
+					}
+					if feed.prependNotification(n) && r.selected != "notifications" {
+						r.unread++
+					}
+				})
+			})
+			if ctx.Err() != nil {
+				return
+			}
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(delay):
+			}
+			if delay < 30*time.Second {
+				delay = min(30*time.Second, delay*2)
+			}
+		}
+	}()
+}
+
+func (r *reader) stopStream() {
+	if r.cancelStream != nil {
+		r.cancelStream()
+		r.cancelStream = nil
+	}
+}
+
+func (r *feedState) prependNotification(n mastodon.Notification) bool {
+	for _, existing := range r.notifications {
+		if existing.ID == n.ID {
+			return false
+		}
+	}
+	r.notifications = append([]mastodon.Notification{n}, r.notifications...)
+	return true
+}
 
 func (r *reader) loadFeed(f *feedState, more bool) {
 	if f.busy || r.session == nil || r.update == nil {
@@ -84,6 +181,7 @@ func (r *reader) loadFeed(f *feedState, more bool) {
 	f.failedMore = more
 	f.message = ""
 	gen := r.generation
+	initial := !f.loaded
 	cursor := ""
 	offset := 0
 	if more {
@@ -93,9 +191,12 @@ func (r *reader) loadFeed(f *feedState, more bool) {
 	go func() {
 		var posts []mastodon.Status
 		var people []mastodon.Account
+		var notices []mastodon.Notification
 		var err error
 		person := f.profile
 		switch f.kind {
+		case "notifications":
+			notices, err = r.service.Notifications(cursor)
 		case "conversation":
 			posts, err = r.service.Conversation(f.focalID)
 		case "profile":
@@ -126,7 +227,23 @@ func (r *reader) loadFeed(f *feedState, more bool) {
 			if f.kind == "profile" {
 				f.profile = person
 			}
-			f.applyPosts(posts, more)
+			if f.kind == "notifications" {
+				wasLoaded := !initial
+				known := map[string]bool{}
+				for _, n := range f.notifications {
+					known[n.ID] = true
+				}
+				f.applyNotifications(notices, more)
+				if wasLoaded && !more && r.selected != "notifications" && f == r.notifications {
+					for _, n := range notices {
+						if !known[n.ID] {
+							r.unread++
+						}
+					}
+				}
+			} else {
+				f.applyPosts(posts, more)
+			}
 			if f.kind == "conversation" {
 				f.end = true
 				if firstLoad {
@@ -164,6 +281,40 @@ func (r *reader) loadFeed(f *feedState, more bool) {
 	}()
 }
 
+// Head refreshes merge with loaded history. Only older-page requests move the
+// pagination boundary; an SSE event arriving during HTTP must survive it.
+func (r *feedState) applyNotifications(items []mastodon.Notification, more bool) {
+	seen := map[string]bool{}
+	for _, n := range r.notifications {
+		seen[n.ID] = true
+	}
+	for _, n := range items {
+		if !seen[n.ID] {
+			r.notifications = append(r.notifications, n)
+			seen[n.ID] = true
+		}
+	}
+	// Mastodon notification IDs are decimal snowflakes, not machine-sized ints.
+	sort.SliceStable(r.notifications, func(i, j int) bool {
+		a, b := r.notifications[i].ID, r.notifications[j].ID
+		if len(a) != len(b) {
+			return len(a) > len(b)
+		}
+		return a > b
+	})
+	if more || r.cursor == "" {
+		previous := r.cursor
+		if len(items) > 0 {
+			r.cursor = items[len(items)-1].ID
+		}
+		r.end = len(items) == 0 || (more && previous == r.cursor)
+	}
+}
+
+func (r *reader) hasScope(scope string) bool {
+	return r.session != nil && (strings.Contains(" "+r.session.Scopes+" ", " "+scope+" ") || strings.Contains(" "+r.session.Scopes+" ", " read "))
+}
+
 func (r *feedState) applyPosts(posts []mastodon.Status, more bool) {
 	if !more {
 		r.posts = nil
@@ -177,20 +328,7 @@ func (r *feedState) applyPosts(posts []mastodon.Status, more bool) {
 			continue
 		}
 		seen[p.ID] = true
-		hidden := false
-		filters := p.Filtered
-		if p.Reblog != nil {
-			filters = append(append(p.Filtered[:0:0], p.Filtered...), p.Reblog.Filtered...)
-		}
-		warning := ""
-		for _, f := range filters {
-			if f.Filter.Action == "hide" {
-				hidden = true
-			}
-			if f.Filter.Action == "warn" {
-				warning = "已被你的过滤规则折叠"
-			}
-		}
+		hidden, warning := statusFilter(p)
 		if hidden {
 			continue
 		}
@@ -205,4 +343,21 @@ func (r *feedState) applyPosts(posts []mastodon.Status, more bool) {
 		r.cursor = posts[len(posts)-1].ID
 	}
 	r.end = len(posts) == 0 || (more && previous == r.cursor)
+}
+
+func statusFilter(p mastodon.Status) (hidden bool, warning string) {
+	filters := p.Filtered
+	if p.Reblog != nil {
+		filters = append(append(p.Filtered[:0:0], p.Filtered...), p.Reblog.Filtered...)
+	}
+
+	for _, f := range filters {
+		if f.Filter.Action == "hide" {
+			hidden = true
+		}
+		if f.Filter.Action == "warn" {
+			warning = "已被你的过滤规则折叠"
+		}
+	}
+	return
 }

@@ -1,6 +1,9 @@
 package mastodon
 
 import (
+	"bufio"
+	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -140,6 +143,111 @@ func (a *Client) Conversation(id string) ([]Status, error) {
 	}
 	posts := append(context.Ancestors, focal)
 	return append(posts, context.Descendants...), nil
+}
+
+// StreamUser discovers the streaming host without credentials, then opens the
+// notifications SSE endpoint with bearer authentication. Cancellation covers
+// both discovery and the long-lived connection.
+func (a *Client) StreamUser(ctx context.Context, onEvent func(event string, data []byte)) error {
+	a.mu.Lock()
+	s := a.session
+	a.mu.Unlock()
+	if s == nil {
+		return errors.New("请先登录")
+	}
+	discovery, err := http.NewRequestWithContext(ctx, http.MethodGet, s.Instance+"/api/v1/streaming", nil)
+	if err != nil {
+		return err
+	}
+	probe := *a.client
+	probe.Timeout = requestTimeout
+	probe.CheckRedirect = func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse }
+	response, err := probe.Do(discovery)
+	if err != nil {
+		return err
+	}
+	response.Body.Close()
+	endpoint := discovery.URL
+	switch response.StatusCode {
+	case http.StatusMovedPermanently, http.StatusFound, http.StatusTemporaryRedirect, http.StatusPermanentRedirect:
+		endpoint, err = response.Location()
+		if err != nil {
+			return err
+		}
+	case http.StatusNotFound:
+		// No separate streaming host configured.
+	default:
+		return fmt.Errorf("流式发现接口返回 HTTP %d", response.StatusCode)
+	}
+	if endpoint.Host == "" || endpoint.User != nil ||
+		(endpoint.Scheme != "https" && !(endpoint.Scheme == "http" && discovery.URL.Scheme == "http" && endpoint.Host == discovery.URL.Host)) {
+		return errors.New("流式接口地址无效")
+	}
+	endpoint.Path, endpoint.RawPath = "/api/v1/streaming/user/notification", ""
+	endpoint.RawQuery, endpoint.Fragment = "", ""
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint.String(), nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Accept", "text/event-stream")
+	req.Header.Set("Authorization", "Bearer "+s.Token)
+	req.Header.Set("User-Agent", "Ceramic/0.1")
+	// The regular client times requests out after 25s, which would cut the
+	// stream; a stream lives until the server or the app closes it.
+	stream := probe
+	stream.Timeout = 0
+	res, err := stream.Do(req)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		return fmt.Errorf("流式接口返回 HTTP %d", res.StatusCode)
+	}
+	if !strings.HasPrefix(res.Header.Get("Content-Type"), "text/event-stream") {
+		return errors.New("流式接口未返回事件流")
+	}
+	scanner := bufio.NewScanner(res.Body)
+	scanner.Buffer(make([]byte, 0, 64*1024), 1<<20)
+	var event string
+	var data []byte
+	for scanner.Scan() {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		line := scanner.Bytes()
+		if len(line) == 0 {
+			if len(data) > 0 {
+				onEvent(event, data)
+			}
+			event, data = "", nil
+			continue
+		}
+		switch {
+		case bytes.HasPrefix(line, []byte("event:")):
+			event = strings.TrimSpace(string(line[len("event:"):]))
+		case bytes.HasPrefix(line, []byte("data:")):
+			if len(data) > 0 {
+				data = append(data, '\n')
+			}
+			data = append(data, bytes.TrimPrefix(line[len("data:"):], []byte(" "))...)
+			if len(data) > 1<<20 {
+				return errors.New("流式事件过大")
+			}
+		}
+	}
+	return scanner.Err()
+}
+
+// Notifications reads the account's notification feed, newest first.
+func (a *Client) Notifications(cursor string) ([]Notification, error) {
+	q := url.Values{"limit": {"30"}}
+	if cursor != "" {
+		q.Set("max_id", cursor)
+	}
+	var result []Notification
+	err := a.readAPI("/api/v1/notifications", q, &result)
+	return result, err
 }
 
 func (a *Client) Search(query, kind string, offset int) (SearchResult, error) {

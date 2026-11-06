@@ -38,6 +38,10 @@ func (r *reader) timelineView(c *ui.Context, f *feedState) {
 		header = 1
 	}
 	people := len(f.accounts)
+	count := len(f.posts)
+	if f.kind == "notifications" {
+		count = len(f.notifications)
+	}
 	f.list.Key = func(i int) any {
 		if i < header {
 			return "profile-header"
@@ -47,12 +51,15 @@ func (r *reader) timelineView(c *ui.Context, f *feedState) {
 			return "account:" + f.accounts[i].ID
 		}
 		i -= people
-		if i < len(f.posts) {
+		if i < count {
+			if f.kind == "notifications" {
+				return "notification:" + f.notifications[i].ID
+			}
 			return "post:" + f.posts[i].status.ID
 		}
 		return "footer"
 	}
-	ui.List(c.Key(f), &f.list, header+people+len(f.posts)+1, func(i int) {
+	ui.List(c.Key(f), &f.list, header+people+count+1, func(i int) {
 		if i < header {
 			r.profileHeader(c, f, f.profile)
 			return
@@ -63,7 +70,11 @@ func (r *reader) timelineView(c *ui.Context, f *feedState) {
 			return
 		}
 		i -= people
-		if i < len(f.posts) {
+		if i < count {
+			if f.kind == "notifications" {
+				r.notificationRow(c, f, f.notifications[i])
+				return
+			}
 			r.post(c, f, f.posts[i])
 			return
 		}
@@ -81,13 +92,16 @@ func (r *reader) timelineView(c *ui.Context, f *feedState) {
 				ui.Text(c, "正在加载…").TextColor(c.Theme().TextMuted)
 			case f.kind == "search" && f.query == "":
 				ui.Text(c, "输入关键词，查找账号或帖子。").TextColor(c.Theme().TextMuted)
-			case len(f.posts) == 0 && people == 0 && f.message == "":
+			case count == 0 && people == 0 && f.message == "":
 				label := "还没有动态。关注一些人后，他们的帖子会出现在这里。"
 				if f.kind == "profile" {
 					label = "还没有可显示的帖子。"
 				}
 				if f.kind == "search" {
 					label = "没有找到结果。帖子搜索范围取决于实例的索引能力。"
+				}
+				if f.kind == "notifications" {
+					label = "还没有通知。有人关注、转发、收藏或提到你时，会出现在这里。"
 				}
 				ui.Text(c, label).TextColor(c.Theme().TextMuted)
 			}
@@ -100,6 +114,99 @@ func (r *reader) timelineView(c *ui.Context, f *feedState) {
 			}
 		})
 	}).TrackScroll(&f.scroll).Grow(1)
+}
+
+func notificationLabel(kind string) (string, *ui.SVG) {
+	switch kind {
+	case "mention":
+		return "提到了你", replyIcon
+	case "reblog":
+		return "转发了你的帖子", boostIcon
+	case "favourite":
+		return "收藏了你的帖子", heartIcon
+	case "follow":
+		return "关注了你", navIcons[2]
+	case "follow_request":
+		return "请求关注你", navIcons[2]
+	case "poll":
+		return "投票已结束", bellIcon
+	case "update":
+		return "编辑了帖子", bellIcon
+	case "status":
+		return "发布了新帖子", bellIcon
+	default:
+		return "通知", bellIcon
+	}
+}
+
+// notificationRow keeps the actor and event type visible; the post itself is
+// only a preview so long boosts cannot push the next notification away.
+func (r *reader) notificationRow(c *ui.Context, f *feedState, n mastodon.Notification) {
+	t := c.Theme()
+	warning := ""
+	if n.Status != nil {
+		hidden, filtered := statusFilter(*n.Status)
+		if hidden {
+			return
+		}
+		status := n.Status
+		if status.Reblog != nil {
+			status = status.Reblog
+		}
+		warning = status.Spoiler
+		if filtered != "" {
+			if warning != "" {
+				warning += " · "
+			}
+			warning += filtered
+		}
+	}
+	label, icon := notificationLabel(n.Type)
+	row := ui.Column(c).Padding(12, 16).Gap(6).BorderWidth(0, 0, 1, 0).BorderColor(postDivider(c))
+	var relation *mastodon.Status
+	if n.Status != nil {
+		s := *n.Status
+		if s.Reblog != nil {
+			s = *s.Reblog
+		}
+		relation = &s
+		row.OnClick(func() { r.openConversation(f, s) })
+	}
+	row.Children(func() {
+		ui.Row(c).Gap(6).Children(func() {
+			ui.Icon(c, icon).Size(14, 14).TextColor(t.Accent)
+			ui.Text(c, label).FontSize(12).TextColor(t.TextMuted)
+			ui.Spacer(c)
+			if date, err := time.Parse(time.RFC3339, n.CreatedAt); err == nil {
+				ui.Text(c, relativeTime(date)).FontSize(11).TextColor(t.TextMuted).Tooltip(date.Local().Format("2006-01-02 15:04"))
+			}
+		})
+		ui.Row(c).Gap(10).AlignItems(ui.Start).Children(func() {
+			r.avatar(c, f, n.Account, 34)
+			ui.Column(c).Grow(1).Shrink(1).Gap(2).Children(func() {
+				ui.Button(c, n.Account.Name()).Background(ui.Transparent).BorderWidth(0).Padding(0).FontSize(13).FontWeight(600).Shrink(1).MaxLines(1).OnClick(func() { r.openProfileFrom(f, n.Account) })
+				ui.Text(c, "@"+n.Account.Acct).FontSize(11).TextColor(t.TextMuted)
+			})
+		})
+		if relation != nil {
+			content := func() {
+				renderRichText(c, mastodon.ParseText(relation.Content), 13, func() { r.openConversation(f, *relation) })
+			}
+			if warning == "" {
+				content()
+			} else {
+				if f.notificationExpanded == nil {
+					f.notificationExpanded = map[string]*bool{}
+				}
+				expanded := f.notificationExpanded[n.ID]
+				if expanded == nil {
+					expanded = new(bool)
+					f.notificationExpanded[n.ID] = expanded
+				}
+				concealedContent(c, warning, expanded, false, content)
+			}
+		}
+	})
 }
 
 func (r *reader) accountRow(c *ui.Context, f *feedState, p mastodon.Account) {

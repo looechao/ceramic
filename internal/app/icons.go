@@ -12,6 +12,10 @@ var navIcons = []*ui.SVG{
 	lineIcon(`<circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/>`),
 	lineIcon(`<circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/>`),
 }
+var bellIcon = lineIcon(`<path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>`)
+
+var bellUnreadIcon = lineIcon(`<path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" fill="currentColor"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>`)
+
 var refreshIcon = lineIcon(`<path d="M20 7v5h-5M4 17v-5h5M5.5 7a8 8 0 0 1 13-1L20 9M4 15l1.5 3a8 8 0 0 0 13-1"/>`)
 
 var replyIcon = lineIcon(`<path d="M9 5 3 11l6 6M3 11h10a7 7 0 0 1 7 7"/>`)
