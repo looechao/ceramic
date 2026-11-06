@@ -1,6 +1,9 @@
 package app
 
 import (
+	"encoding/json"
+	"strings"
+
 	"github.com/egoist/mygo/ui"
 
 	"ceramic/internal/mastodon"
@@ -82,6 +85,51 @@ var loginLogo = func() *ui.Bitmap {
 	return bitmap
 }()
 
+// knownInstances is the bundled directory: suggestions only, any domain
+// can still sign in.
+var knownInstances = func() []string {
+	var list []string
+	if err := json.Unmarshal(resources.Instances, &list); err != nil {
+		panic(err)
+	}
+	return list
+}()
+
+const maxInstanceSuggestions = 6
+
+// flagshipInstance is the example under the field, so it leads its prefix.
+const flagshipInstance = "mastodon.social"
+
+// instanceSuggestions matches what was typed against the directory:
+// domains starting with it first, then those with a later label starting
+// with it (social → mastodon.social), then any containing it. ui.Autocomplete
+// keeps this order and hides an exact match.
+func instanceSuggestions(typed string) []string {
+	q := strings.ToLower(strings.TrimSpace(typed))
+	if q == "" {
+		return nil
+	}
+	var starts, labels, contains []string
+	for _, d := range knownInstances {
+		switch {
+		case d == q:
+			return nil
+		case strings.HasPrefix(d, q):
+			if d == flagshipInstance {
+				starts = append([]string{d}, starts...)
+			} else {
+				starts = append(starts, d)
+			}
+		case strings.Contains(d, "."+q) || strings.Contains(d, "-"+q):
+			labels = append(labels, d)
+		case strings.Contains(d, q):
+			contains = append(contains, d)
+		}
+	}
+	out := append(append(starts, labels...), contains...)
+	return out[:min(len(out), maxInstanceSuggestions)]
+}
+
 func (r *reader) loginView(c *ui.Context) {
 	t := c.Theme()
 	_, height := c.Size()
@@ -91,7 +139,7 @@ func (r *reader) loginView(c *ui.Context) {
 				ui.Image(c, loginLogo).Size(88, 88).Fit(ui.Contain).Label("Ceramic")
 				ui.Text(c, "登录 Ceramic").FontSize(28).FontWeight(600).Margin(16, 0, 32, 0)
 				ui.Text(c, "实例").FontSize(13).TextColor(t.TextMuted).Margin(0, 0, 8, 0)
-				ui.TextInput(c.Key("instance"), &r.instance).Label("实例地址").Placeholder("实例域名").FillWidth().Height(46).Disabled(r.busy || r.authorizing).OnSubmit(r.login)
+				ui.Autocomplete(c.Key("instance"), &r.instance, instanceSuggestions(r.instance)).Label("实例地址").Placeholder("实例域名").FillWidth().Height(46).Disabled(r.busy || r.authorizing).OnSubmit(r.login)
 				ui.Text(c, "例如 mastodon.social").FontSize(12).TextColor(t.TextMuted).Margin(10, 0, 0, 0)
 				label := "继续"
 				if r.busy {
