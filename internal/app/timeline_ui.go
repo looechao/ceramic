@@ -90,7 +90,7 @@ func (r *reader) timelineView(c *ui.Context, f *feedState) {
 			case f.busy:
 				loadingStatus(c, "正在加载…")
 			case f.kind == "search" && f.query == "":
-				ui.Text(c, "输入关键词，查找帖子或账号。").TextColor(c.Theme().TextMuted)
+				r.exploreBrowse(c, f)
 			case count == 0 && people == 0 && f.message == "":
 				label := "还没有动态。关注一些人后，他们的帖子会出现在这里。"
 				if f.kind == "bookmarks" {

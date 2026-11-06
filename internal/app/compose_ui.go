@@ -6,15 +6,15 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"runtime"
 	"unicode/utf8"
 
 	"ceramic/internal/mastodon"
-	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 )
 
 type composer struct {
+	draftID                   string
+	draftsOpen                bool
 	cancelPublish             context.CancelFunc
 	attachments               []composeAttachment
 	pollEnabled, pollMultiple bool
@@ -27,7 +27,7 @@ type composer struct {
 	key, payload              string
 	update                    func(func())
 	close                     func()
-	window                    *mygo.Window
+	open                      bool
 }
 
 func (r *reader) showComposer() {
@@ -48,41 +48,52 @@ func (r *reader) showComposer() {
 		r.composer = &composer{audience: audience, pollDuration: "1 天"}
 	}
 	d := r.composer
-	if d.window != nil {
-		d.window.Show()
-		d.window.Focus()
+	if err := r.loadDrafts(); err != nil {
+		d.message = "部分草稿未能读取：" + err.Error()
+	}
+	d.open = true
+	d.update = r.update
+	d.close = func() { r.closeComposer(d) }
+	r.readingScroll = nil
+}
+
+func (r *reader) composePopup(c *ui.Context) {
+	d := r.composer
+	if d == nil || !d.open {
 		return
 	}
-	opts := mygo.WindowOptions{Parent: r.parentWindow, Title: "新嘟文 · Ceramic", Width: 560, Height: 680, MinWidth: 420, MinHeight: 460, Content: ui.View(func(c *ui.Context) { r.composeView(c, d) })}
-	if runtime.GOOS == "darwin" {
-		opts.TitleBarStyle = mygo.TitleBarHiddenInset
-		opts.TitleBarHeight = 40
-		opts.TrafficLightPosition = &mygo.Point{X: 12, Y: 12}
-	}
-	w := mygo.NewWindow(opts)
-	d.window, d.update, d.close = w, w.Update, w.Close
-	w.OnClose(func(e *mygo.CloseEvent) {
-		if d.busy {
-			e.PreventDefault()
+	w, h := c.Size()
+	ui.DialogBase(c.Key(d), &d.open, func(backdrop, panel ui.Element) {
+		backdrop.Background(ui.Transparent)
+		panel.Size(min(560, max(1, w-32)), min(640, max(1, h-32))).Radius(12).Clip().
+			Background(c.Theme().Background).Shadow(0, 8, 28, 0, ui.Hex("#000000").Alpha(.18)).Label("发帖弹窗")
+		if panel.OverlayShortcut(ui.Cmd, ui.KeyW) {
+			d.close()
+		}
+		if d.draftsOpen {
+			r.draftsView(c, d)
+		} else {
+			r.composeView(c, d)
 		}
 	})
-	w.OnClosed(func() { d.window = nil; d.close = nil })
-	w.Show()
-	w.Focus()
+	// Native overlays report attempted dismissal; keep uploads and publication visible.
+	if d.busy {
+		d.open = true
+	} else if !d.open {
+		d.open = true
+		r.closeComposer(d)
+	}
 }
+
+var draftIcon = bundledIcon("file-text")
 
 var composeImageIcon = bundledIcon("image-plus")
 var composePollIcon = bundledIcon("chart-no-axes-column-increasing")
 var composeWarningIcon = bundledIcon("triangle-alert")
-var composeSendIcon = bundledIcon("send")
 var composePlusIcon = bundledIcon("plus")
 var composeMinusIcon = bundledIcon("minus")
 
 func (r *reader) composeView(c *ui.Context, d *composer) {
-	if c.Shortcut(0, ui.KeyEscape) && !d.busy && d.close != nil {
-		d.close()
-		return
-	}
 	t := *c.Theme()
 	t.Accent, t.AccentText = ui.Hex("#1d1d1f"), ui.Hex("#ffffff")
 	if t.Dark {
@@ -90,9 +101,6 @@ func (r *reader) composeView(c *ui.Context, d *composer) {
 	}
 	c.SetTheme(&t)
 	ui.Column(c).Fill().Background(t.Background).Children(func() {
-		if runtime.GOOS == "darwin" {
-			ui.Row(c).FillWidth().Height(40).DragWindow()
-		}
 		ui.Row(c).FillWidth().Height(54).Padding(8, 20).AlignItems(ui.Center).Children(func() {
 			imageControl(c, closeIcon, "关闭并保留草稿", d.busy, func() {
 				if d.close != nil {
@@ -100,19 +108,24 @@ func (r *reader) composeView(c *ui.Context, d *composer) {
 				}
 			})
 			ui.Spacer(c)
-			ui.Text(c, "新嘟文").FontSize(17).Bold()
+			ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
+				ui.Image(c, loginLogo).Size(28, 28).Fit(ui.Contain).Label("Ceramic")
+				ui.Text(c, "新嘟文").FontSize(17).Bold()
+			})
 			ui.Spacer(c)
 			label := "发布"
 			if d.busy {
 				label = "正在处理…"
 			}
-			ui.ButtonBase(c).Size(34, 34).Radius(17).Background(t.Accent).Label(label).Tooltip(label).Disabled(d.busy || !d.ready() || !r.hasScope("write:statuses")).OnClick(func() { r.publish(d) }).Children(func() {
-				if d.busy {
-					ui.Spinner(c).Size(18, 18).TextColor(t.AccentText)
-				} else {
-					ui.Icon(c, composeSendIcon).Size(18, 18).TextColor(t.AccentText)
-				}
+			draftButton := ui.ButtonBase(c).Label("草稿").Tooltip("查看草稿").Height(32).Padding(6, 10).Gap(5).Radius(8).Margin(0, 6, 0, 0).Disabled(d.busy).OnClick(func() { r.openDrafts(d) })
+			draftInk := postActionStyle(c, draftButton, t.Text, false, d.busy)
+			draftButton.Children(func() {
+				ui.Icon(c, draftIcon).Size(16, 16).TextColor(draftInk)
+				ui.Text(c, "草稿").FontSize(13).TextColor(draftInk)
 			})
+			ui.PrimaryButton(c, label).Height(32).Padding(6, 12).Radius(16).FontSize(13).
+				Disabled(d.busy || !d.ready() || !r.hasScope("write:statuses")).OnClick(func() { r.publish(d) })
+
 		})
 		if r.session == nil {
 			ui.Text(c, "请先登录。").Padding(20)
@@ -230,6 +243,9 @@ func (r *reader) publish(d *composer) {
 		}
 		d.key, d.payload = hex.EncodeToString(b[:]), payload
 	}
+	if !r.saveDraft(d) {
+		return
+	}
 	s := r.session
 	gen := r.generation
 	key := d.key
@@ -264,6 +280,14 @@ func (r *reader) publish(d *composer) {
 			d.attachments = attachments
 			if err != nil {
 				d.message = err.Error() + "；草稿已保留，可重试。"
+				r.saveDraft(d)
+				return
+			}
+			if d.draftID != "" && !r.deleteDraft(d, d.draftID) {
+				d.message = "帖子已发布，但本地草稿未能删除；请勿重复发布。"
+				d.text, d.spoiler, d.key, d.payload = "", "", "", ""
+				d.attachments = nil
+				d.pollEnabled = false
 				return
 			}
 			d.text, d.spoiler, d.key, d.payload = "", "", "", ""

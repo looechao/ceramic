@@ -42,9 +42,6 @@ func (r *reader) view(c *ui.Context) {
 			r.session = s
 			r.relationships = nil
 			r.authorizing = false
-			if r.composer != nil && r.composer.window != nil {
-				r.composer.update(func() {})
-			}
 			r.startStream()
 			if r.authFeed != nil {
 				r.authFeed.message = ""
@@ -151,7 +148,9 @@ func (r *reader) shell(c *ui.Context) {
 			r.mascot(c, area, columnGap+used, free)
 		})
 	})
-	if ws := r.workspaces[r.selected]; ws != nil && ws.focused != nil && ws.focused.preview != nil {
+	if r.composer != nil && r.composer.open {
+		r.composePopup(c)
+	} else if ws := r.workspaces[r.selected]; ws != nil && ws.focused != nil && ws.focused.preview != nil {
 		r.previewView(c, ws.focused)
 	} else {
 		r.readingKeys(c)
@@ -376,15 +375,6 @@ func (r *reader) sidebar(c *ui.Context) {
 				})
 			}
 			ui.Spacer(c)
-			ui.Text(c, "Browse").FontSize(10).TextColor(t.TextMuted).AlignSelf(ui.Center)
-			for _, page := range []string{"local", "federated"} {
-				label := map[string]string{"local": "Local", "federated": "Federated"}[page]
-				bg := ui.Transparent
-				if r.selected == page {
-					bg = t.Text.Alpha(.09)
-				}
-				ui.ButtonBase(c.Key(page)).Size(48, 30).Radius(8).Background(bg).Label(label).Tooltip(label).Disabled(r.session == nil).OnClick(func() { r.navigate(page) }).Children(func() { ui.Text(c, label).FontSize(10) })
-			}
 			ui.ButtonBase(c).Size(48, 44).Radius(10).Label("写帖子").Tooltip("写帖子 · " + shortcutHint("N")).Disabled(r.session == nil).OnClick(func() {
 				if r.openWriting != nil {
 					r.openWriting()
