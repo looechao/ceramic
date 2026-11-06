@@ -203,7 +203,7 @@ func (r *reader) pane(c *ui.Context, f *feedState, ws *workspace, index int, war
 		if index > 0 {
 			ui.ButtonBase(c).Size(28, 28).Label("关闭此列").Tooltip("关闭此列 · " + shortcutHint("W")).OnClick(func() { r.closeColumn(ws, f) }).Children(func() { ui.Icon(c, closeIcon).Size(18, 18).TextColor(t.TextMuted) })
 		}
-		title := map[string]string{"home": "Home", "search": "Search", "profile": "Profile", "conversation": "Conversation", "notifications": "通知"}[f.kind]
+		title := map[string]string{"home": "Home", "search": "Search", "profile": "Profile", "conversation": "Conversation", "notifications": "通知", "following": "正在关注", "followers": "关注者"}[f.kind]
 		if index > 0 && f.kind == "profile" {
 			title = f.profile.Name()
 		}

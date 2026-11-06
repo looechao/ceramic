@@ -192,9 +192,12 @@ func (r *reader) loadFeed(f *feedState, more bool) {
 		var posts []mastodon.Status
 		var people []mastodon.Account
 		var notices []mastodon.Notification
+		var next string
 		var err error
 		person := f.profile
 		switch f.kind {
+		case "following", "followers":
+			people, next, err = r.service.AccountConnections(f.profile.ID, f.kind, cursor)
 		case "notifications":
 			notices, err = r.service.Notifications(cursor)
 		case "conversation":
@@ -227,7 +230,11 @@ func (r *reader) loadFeed(f *feedState, more bool) {
 			if f.kind == "profile" {
 				f.profile = person
 			}
-			if f.kind == "notifications" {
+			if f.kind == "following" || f.kind == "followers" {
+				f.applyAccounts(people, more)
+				f.cursor = next
+				f.end = next == "" || (more && next == cursor) || len(people) == 0
+			} else if f.kind == "notifications" {
 				wasLoaded := !initial
 				known := map[string]bool{}
 				for _, n := range f.notifications {
@@ -257,19 +264,7 @@ func (r *reader) loadFeed(f *feedState, more bool) {
 			}
 			if f.kind == "search" {
 				r.searchAllowed = true
-				if !more {
-					f.accounts = nil
-				}
-				seen := map[string]bool{}
-				for _, p := range f.accounts {
-					seen[p.ID] = true
-				}
-				for _, p := range people {
-					if !seen[p.ID] {
-						f.accounts = append(f.accounts, p)
-						seen[p.ID] = true
-					}
-				}
+				f.applyAccounts(people, more)
 				count := len(posts)
 				if f.searchKind == "accounts" {
 					count = len(people)
@@ -360,4 +355,21 @@ func statusFilter(p mastodon.Status) (hidden bool, warning string) {
 		}
 	}
 	return
+}
+
+// applyAccounts preserves list keys when pages overlap.
+func (f *feedState) applyAccounts(people []mastodon.Account, more bool) {
+	if !more {
+		f.accounts = nil
+	}
+	seen := make(map[string]bool, len(f.accounts))
+	for _, p := range f.accounts {
+		seen[p.ID] = true
+	}
+	for _, p := range people {
+		if p.ID != "" && !seen[p.ID] {
+			f.accounts = append(f.accounts, p)
+			seen[p.ID] = true
+		}
+	}
 }

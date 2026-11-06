@@ -34,7 +34,7 @@ func (r *reader) timelineView(c *ui.Context, f *feedState) {
 	// Header and account rows belong to the virtual list, so long biographies
 	// and many search results cannot push the post list out of the window.
 	header := 0
-	if f.kind == "profile" {
+	if f.kind == "profile" || f.kind == "following" || f.kind == "followers" {
 		header = 1
 	}
 	people := len(f.accounts)
@@ -61,7 +61,11 @@ func (r *reader) timelineView(c *ui.Context, f *feedState) {
 	}
 	ui.List(c.Key(f), &f.list, header+people+count+1, func(i int) {
 		if i < header {
-			r.profileHeader(c, f, f.profile)
+			if f.kind == "profile" {
+				r.profileHeader(c, f, f.profile)
+			} else {
+				ui.Text(c, "@"+f.profile.Acct).FontSize(12).TextColor(c.Theme().TextMuted).Padding(14, 22)
+			}
 			return
 		}
 		i -= header
@@ -99,6 +103,9 @@ func (r *reader) timelineView(c *ui.Context, f *feedState) {
 				}
 				if f.kind == "search" {
 					label = "没有找到结果。帖子搜索范围取决于实例的索引能力。"
+				}
+				if f.kind == "following" || f.kind == "followers" {
+					label = "没有可显示的账号。列表可能为空，或未公开。"
 				}
 				if f.kind == "notifications" {
 					label = "还没有通知。有人关注、转发、收藏或提到你时，会出现在这里。"
@@ -209,14 +216,48 @@ func (r *reader) notificationRow(c *ui.Context, f *feedState, n mastodon.Notific
 	})
 }
 
+// accountHoverDuration keeps pointer feedback brief without animating layout.
+const accountHoverDuration = 140 * time.Millisecond
+
 func (r *reader) accountRow(c *ui.Context, f *feedState, p mastodon.Account) {
-	ui.Row(c).Padding(14, 22).Gap(12).BorderWidth(0, 0, 1, 0).BorderColor(c.Theme().Border).Children(func() {
-		r.avatar(c, f, p, 40)
-		ui.Column(c).Grow(1).Shrink(1).Gap(4).Children(func() {
-			ui.Row(c).Children(func() {
-				ui.Button(c, p.Name()).Background(ui.Transparent).BorderWidth(0).Padding(0).Bold().OnClick(func() { r.openProfileFrom(f, p) })
+	t := c.Theme()
+	// The hit area stays still while its contents lift, avoiding hover flicker
+	// at the edges and preserving the virtual list's row measurements.
+	hit := ui.Column(c).FillWidth().Padding(4, 8).
+		OnClick(func() { r.openProfileFrom(f, p) })
+	target := float32(0)
+	if hit.Hovered() {
+		target = 1
+	}
+	if hit.Pressed() {
+		target = 0.25
+	}
+	lift := hit.Animate("account-hover", target, accountHoverDuration)
+	movement := lift
+	if c.Preferences().ReduceMotion {
+		movement = 0
+	}
+	paper := ui.Hex("#ffffff")
+	shadowAlpha := float32(0.08)
+	if t.Dark {
+		paper = ui.Hex("#232325")
+		shadowAlpha = 0.22
+	}
+	hit.Children(func() {
+		row := ui.Row(c).FillWidth().Padding(10, 14).Gap(12).Radius(8).
+			Background(paper.Mix(t.SurfaceHover, lift*0.3)).
+			Translate(0, -2*movement)
+		if !c.Preferences().HighContrast {
+			row.Shadow(0, 3*lift, 7*lift, 0, ui.Hex("#000000").Alpha(shadowAlpha*lift))
+		}
+		row.Children(func() {
+			r.avatar(c, f, p, 40)
+			ui.Column(c).Grow(1).Shrink(1).Gap(4).Children(func() {
+				ui.Row(c).Children(func() {
+					ui.Button(c, p.Name()).Background(ui.Transparent).BorderWidth(0).Padding(0).Bold().OnClick(func() { r.openProfileFrom(f, p) })
+				})
+				ui.Text(c, "@"+p.Acct).FontSize(12).TextColor(t.TextMuted)
 			})
-			ui.Text(c, "@"+p.Acct).FontSize(12).TextColor(c.Theme().TextMuted)
 		})
 	})
 }
@@ -235,7 +276,11 @@ func (r *reader) profileHeader(c *ui.Context, f *feedState, p mastodon.Account) 
 		ui.Text(c, p.Name()).FontSize(23).Bold()
 		ui.Text(c, "@"+p.Acct).FontSize(12).TextColor(c.Theme().TextMuted)
 		richText(c, mastodon.ParseText(p.Note), 14)
-		ui.Text(c, fmt.Sprintf("%d 帖子    %d 正在关注    %d 关注者", p.Statuses, p.Following, p.Followers)).FontSize(12).TextColor(c.Theme().TextMuted)
+		ui.Row(c).Gap(12).AlignItems(ui.Center).Children(func() {
+			ui.Text(c, fmt.Sprintf("%d 帖子", p.Statuses)).FontSize(12).TextColor(c.Theme().TextMuted)
+			ui.Button(c, fmt.Sprintf("%d 正在关注", p.Following)).FontSize(12).Background(ui.Transparent).BorderWidth(0).Padding(4, 0).OnClick(func() { r.openConnections(f, "following") })
+			ui.Button(c, fmt.Sprintf("%d 关注者", p.Followers)).FontSize(12).Background(ui.Transparent).BorderWidth(0).Padding(4, 0).OnClick(func() { r.openConnections(f, "followers") })
+		})
 		if target := mastodon.SafeURL(p.URL); target != "" {
 			ui.Link(c, "在浏览器中查看个人页 ↗", target).FontSize(12)
 		}
