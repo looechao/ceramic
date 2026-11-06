@@ -15,16 +15,7 @@ func (r *reader) post(c *ui.Context, f *feedState, p *postView) {
 	if s.Reblog != nil {
 		s = *s.Reblog
 	}
-	row := ui.Column(c).Padding(14, 16).Gap(6).BorderWidth(0, 0, 1, 0).BorderColor(postDivider(c))
-	tint := postTint(p)
-	if tint != ui.Transparent && !c.Preferences().HighContrast {
-		opacity := float32(0.065)
-		if t.Dark {
-			opacity = 0.10
-		}
-		row.Gradient(tint.Alpha(opacity), tint.Alpha(0), 25)
-	}
-	row.Children(func() {
+	r.postSurface(c, f, postTint(p), func(hover *postHoverState) {
 		if p.status.Reblog != nil {
 			ui.Row(c).Gap(6).Margin(0, 0, 2, 54).Children(func() {
 				ui.Icon(c, boostIcon).Size(13, 13).TextColor(t.TextMuted)
@@ -42,7 +33,10 @@ func (r *reader) post(c *ui.Context, f *feedState, p *postView) {
 							ui.Text(c, relativeTime(date)).FontSize(11).TextColor(t.TextMuted).Tooltip(date.Local().Format("2006-01-02 15:04"))
 						}
 					})
-					ui.Text(c, "@"+s.Account.Acct).FontSize(12).TextColor(t.TextMuted)
+					ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
+						ui.Text(c, "@"+s.Account.Acct).FontSize(12).TextColor(t.TextMuted).Grow(1).Shrink(1).MaxLines(1)
+						visibilityBadge(c, s.Visibility)
+					})
 				})
 				content := func() {
 					if s.ReplyTo != "" {
@@ -55,7 +49,10 @@ func (r *reader) post(c *ui.Context, f *feedState, p *postView) {
 						if f.preview == nil {
 							r.openConversation(f, s)
 						}
-					}, func(ev ui.InputEvent) { r.postTextInput(f, ev) })
+					}, func(ev ui.InputEvent) {
+						hover.input(ev, true)
+						r.postTextInput(f, ev)
+					})
 					if s.Card != nil && len(s.Media) == 0 {
 						r.linkPreview(c, *s.Card)
 					}

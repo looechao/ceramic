@@ -195,6 +195,7 @@ func (r *reader) notificationRow(c *ui.Context, f *feedState, n mastodon.Notific
 			})
 		})
 		if relation != nil {
+			visibilityBadge(c, relation.Visibility)
 			content := func() {
 				renderRichText(c, mastodon.ParseText(relation.Content), 13, func() {
 					r.openConversation(f, *relation)
