@@ -6,9 +6,9 @@
 
 一款轻巧的 Mastodon 桌面客户端。连接你的账号，探索 Fediverse。主要在 macOS 上开发和使用，也构建 Windows 与 Linux 版本，这两个平台尚未在真机上验证。
 
-[下载最新版本](https://github.com/looechao/ceramic/releases/latest) · [本地预览官网](#宣传页) · [MIT 许可证](LICENSE)
+[下载最新版本](https://github.com/looechao/ceramic/releases/latest) · [官网](https://ceramic.looechao.com) · [MIT 许可证](LICENSE)
 
-![Ceramic 多栏阅读界面的真实截图](site/ceramic-screenshot.png)
+![Ceramic 多栏阅读界面的真实截图](docs/ceramic-screenshot.png)
 
 基于 **MyGo v0.7.4 原生 UI** 构建。第三方依赖及资源遵循各自的许可证。
 
@@ -73,20 +73,6 @@ CERAMIC_SCREENSHOTS=1 go test -run TestNative ./...
 ```
 
 最后一条命令会使用 MyGo 的原生 CPU 渲染器在 `build/qa/` 生成登录页、时间线、紧凑窗口及深色模式截图。截图使用明确的测试数据，不是实际账号内容。
-
-## 宣传页
-
-`site/` 是 Ceramic 的静态官网，无需构建。页面提供中英文切换，外观跟随系统，并展示真实应用截图和可交互的多栏演示：点击帖子或头像打开新列，也可以尝试喜欢、转发和收藏。
-
-本地预览：
-
-```sh
-python3 -m http.server 4173 --directory site
-```
-
-部署到 Cloudflare Pages：连接本仓库，Framework preset 选 None，Build command 留空，Build output directory 填 `site`。`site/_headers` 设置安全头和图标缓存。
-
-页面里的小人路径来自 `internal/app/mascot/body.svg`，改动小人形状时一并更新 `site/index.html` 中的 `blob-body`。页面上的数字（4 MB 安装包、空闲 CPU 低于 1%）测于 Ceramic 0.1.0，版本变化后需要重新测量。
 
 ## 文件结构
 

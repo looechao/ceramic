@@ -6,9 +6,9 @@ Another desktop app for Mastodon.
 
 Connect your Mastodon account and explore the Fediverse in a lightweight native app.
 
-[Download the latest release](https://github.com/looechao/ceramic/releases/latest) · [中文说明](README.zh-CN.md) · [MIT License](LICENSE)
+[Website](https://ceramic.looechao.com) · [Download the latest release](https://github.com/looechao/ceramic/releases/latest) · [中文说明](README.zh-CN.md) · [MIT License](LICENSE)
 
-![Ceramic with multiple reading columns open](site/ceramic-screenshot.png)
+![Ceramic with multiple reading columns open](docs/ceramic-screenshot.png)
 
 ## Features
 
@@ -54,12 +54,6 @@ Requires Go 1.27.3 or later. No Node, npm, or Bun is needed.
 ./scripts/build.sh
 go vet ./...
 go test -race ./...
-```
-
-The static website can be previewed with:
-
-```sh
-python3 -m http.server 4173 --directory site
 ```
 
 Ceramic connects directly to your instance and stores its access token locally. The current macOS prototype does not yet use Keychain encryption. See the [Chinese documentation](README.zh-CN.md) for builds, data storage, and architecture.
