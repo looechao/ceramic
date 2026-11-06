@@ -1,6 +1,7 @@
 package app
 
 import (
+	"ceramic/locales"
 	"crypto/sha256"
 	"encoding/json"
 	"errors"
@@ -77,7 +78,7 @@ func (r *reader) loadDrafts() error {
 			return err
 		}
 		if saved.ID != id {
-			return errors.New("草稿标识不匹配")
+			return errors.New(locales.DraftIdMismatch())
 		}
 		r.drafts = append(r.drafts, saved)
 	}
@@ -95,13 +96,13 @@ func readDiskDraft(path string, withImages bool) (savedDraft, error) {
 	defer f.Close()
 	stat, err := f.Stat()
 	if err != nil || stat.Size() > 96<<20 {
-		return savedDraft{}, errors.New("草稿文件过大或无法读取")
+		return savedDraft{}, errors.New(locales.DraftIsTooLargeOrUnreadable())
 	}
 	if err = json.NewDecoder(io.LimitReader(f, 96<<20)).Decode(&disk); err != nil {
 		return savedDraft{}, err
 	}
 	if len(disk.Images) > 4 {
-		return savedDraft{}, errors.New("草稿图片数量无效")
+		return savedDraft{}, errors.New(locales.InvalidDraftImageCount())
 	}
 	for _, img := range disk.Images {
 		a := composeAttachment{name: img.Name, description: img.Description, uploadedDescription: img.UploadedDescription, id: img.ID, digest: img.Digest}
@@ -124,7 +125,7 @@ func (r *reader) persistDraft(saved savedDraft) error {
 		return nil
 	}
 	if !validDraftID(saved.ID) {
-		return errors.New("无效的草稿标识")
+		return errors.New(locales.InvalidDraftId())
 	}
 	if err := os.MkdirAll(dir, 0700); err != nil {
 		return err
@@ -158,7 +159,7 @@ func (r *reader) removeDraftFile(id string) error {
 		return nil
 	}
 	if !validDraftID(id) {
-		return errors.New("无效的草稿标识")
+		return errors.New(locales.InvalidDraftId())
 	}
 	err := os.Remove(filepath.Join(dir, id+".json"))
 	if os.IsNotExist(err) {
@@ -187,7 +188,7 @@ func (r *reader) closeComposer(d *composer) {
 
 func decodeComposeImage(data []byte) (*ui.Bitmap, error) {
 	if len(data) > 16<<20 {
-		return nil, errors.New("图片不能超过 16 MB")
+		return nil, errors.New(locales.ImagesMustBeNoLargerThan16Mb())
 	}
 	return boundedComposeBitmap(data)
 }

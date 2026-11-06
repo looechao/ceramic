@@ -1,7 +1,7 @@
 package app
 
 import (
-	"fmt"
+	"ceramic/locales"
 	"time"
 
 	"github.com/egoist/mygo/ui"
@@ -13,13 +13,13 @@ func (r *reader) searchHeader(c *ui.Context) {
 	ui.Column(c).Padding(12, 14).Gap(10).Children(func() {
 
 		ui.Row(c).Gap(8).Children(func() {
-			input := ui.SearchField(c, &r.query).Label("搜索内容").Placeholder("关键词、帖子链接或账号").Grow(1).OnSubmit(r.submitSearch)
+			input := ui.SearchField(c, &r.query).Label(locales.SearchQuery()).Placeholder(locales.KeywordsPostLinkOrAccount()).Grow(1).OnSubmit(r.submitSearch)
 			if input.Focused() {
 				r.typing = true
 			}
-			ui.Button(c, "搜索").OnClick(r.submitSearch)
+			ui.Button(c, locales.Search()).OnClick(r.submitSearch)
 		})
-		if ui.Segmented(c, &r.searchTab, "帖子", "账号").Changed() {
+		if ui.Segmented(c, &r.searchTab, locales.Posts(), locales.Accounts()).Changed() {
 			r.submitSearch()
 		}
 	})
@@ -88,36 +88,36 @@ func (r *reader) timelineView(c *ui.Context, f *feedState) {
 		footer.Children(func() {
 			switch {
 			case f.busy:
-				loadingStatus(c, "正在加载…")
+				loadingStatus(c, locales.Loading())
 			case f.kind == "search" && f.query == "":
 				r.exploreBrowse(c, f)
 			case count == 0 && people == 0 && f.message == "":
-				label := "还没有动态。关注一些人后，他们的帖子会出现在这里。"
+				label := locales.NoPostsYetFollowPeopleToSeeTheirPostsHere()
 				if f.kind == "bookmarks" {
-					label = "还没有书签。"
+					label = locales.NoBookmarksYet()
 				}
 				if f.kind == "favorites" {
-					label = "还没有喜欢的帖子。"
+					label = locales.NoFavoritesYet()
 				}
 				if f.kind == "profile" {
-					label = "还没有可显示的帖子。"
+					label = locales.NoPostsToDisplayYet()
 				}
 				if f.kind == "search" {
-					label = "没有找到结果。帖子搜索范围取决于实例的索引能力。"
+					label = locales.NoResultsPostSearchDependsOnYourServerSIndex()
 				}
 				if f.kind == "following" || f.kind == "followers" {
-					label = "没有可显示的账号。列表可能为空，或未公开。"
+					label = locales.NoAccountsToDisplayTheListMayBeEmptyOrPrivate()
 				}
 				if f.kind == "notifications" {
-					label = "还没有通知。有人关注、转发、收藏或提到你时，会出现在这里。"
+					label = locales.NoNotificationsYetFollowsBoostsFavoritesAndMentionsAppearHere()
 				}
 				ui.Text(c, label).TextColor(c.Theme().TextMuted)
 			}
 			if f.loaded && !f.busy && f.message == "" {
 				if f.end {
-					ui.Text(c, "已经读到这里了。").FontSize(12).TextColor(c.Theme().TextMuted)
+					ui.Text(c, locales.YouAreAllCaughtUp()).FontSize(12).TextColor(c.Theme().TextMuted)
 				} else {
-					ui.Text(c, "继续向下阅读").FontSize(12).TextColor(c.Theme().TextMuted)
+					ui.Text(c, locales.KeepReading()).FontSize(12).TextColor(c.Theme().TextMuted)
 				}
 			}
 		})
@@ -127,23 +127,23 @@ func (r *reader) timelineView(c *ui.Context, f *feedState) {
 func notificationLabel(kind string) (string, *ui.SVG) {
 	switch kind {
 	case "mention":
-		return "提到了你", replyIcon
+		return locales.MentionedYou(), replyIcon
 	case "reblog":
-		return "转发了你的帖子", boostIcon
+		return locales.BoostedYourPost(), boostIcon
 	case "favourite":
-		return "收藏了你的帖子", heartIcon
+		return locales.FavoritedYourPost(), heartIcon
 	case "follow":
-		return "关注了你", navIcons[2]
+		return locales.FollowedYou(), navIcons[2]
 	case "follow_request":
-		return "请求关注你", navIcons[2]
+		return locales.RequestedToFollowYou(), navIcons[2]
 	case "poll":
-		return "投票已结束", bellIcon
+		return locales.PollEnded(), bellIcon
 	case "update":
-		return "编辑了帖子", bellIcon
+		return locales.EditedAPost(), bellIcon
 	case "status":
-		return "发布了新帖子", bellIcon
+		return locales.PublishedANewPost(), bellIcon
 	default:
-		return "通知", bellIcon
+		return locales.Notifications(), bellIcon
 	}
 }
 
@@ -218,7 +218,7 @@ func (r *reader) notificationRow(c *ui.Context, f *feedState, n mastodon.Notific
 				}
 				concealedContent(c, warning, expanded, false, content)
 			}
-			ui.Button(c, "查看帖子").AlignSelf(ui.Start).Background(ui.Transparent).BorderWidth(0).Padding(4, 0).FontSize(12).TextColor(t.TextMuted).OnClick(func() { r.openConversation(f, *relation) })
+			ui.Button(c, locales.ViewPost()).AlignSelf(ui.Start).Background(ui.Transparent).BorderWidth(0).Padding(4, 0).FontSize(12).TextColor(t.TextMuted).OnClick(func() { r.openConversation(f, *relation) })
 		}
 	})
 }
@@ -239,7 +239,7 @@ func (r *reader) accountRow(c *ui.Context, f *feedState, p mastodon.Account) {
 }
 
 func (r *reader) avatar(c *ui.Context, f *feedState, p mastodon.Account, size float32) {
-	r.accountAvatar(c, p.Name(), p.Avatar, size, p.AvatarStatic).Label("查看 " + p.Name()).OnClick(func() { r.openProfileFrom(f, p) })
+	r.accountAvatar(c, p.Name(), p.Avatar, size, p.AvatarStatic).Label(locales.View() + p.Name()).OnClick(func() { r.openProfileFrom(f, p) })
 }
 
 func (r *reader) profileHeader(c *ui.Context, f *feedState, p mastodon.Account) {
@@ -276,7 +276,7 @@ func (r *reader) profileHeader(c *ui.Context, f *feedState, p mastodon.Account) 
 						ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
 							ui.Text(c, field.Name).FontSize(11).FontWeight(600).TextColor(t.TextMuted).Shrink(1)
 							if field.VerifiedAt != "" {
-								ui.Icon(c, verifiedIcon).Size(13, 13).TextColor(t.TextMuted).Tooltip("此链接已由实例验证")
+								ui.Icon(c, verifiedIcon).Size(13, 13).TextColor(t.TextMuted).Tooltip(locales.ThisLinkWasVerifiedByTheServer())
 							}
 						})
 						r.renderRichText(c, mastodon.ParseText(field.Value, p.Emojis...), 13, nil, nil).FillWidth().LineHeight(1.45)
@@ -285,13 +285,13 @@ func (r *reader) profileHeader(c *ui.Context, f *feedState, p mastodon.Account) 
 			})
 		}
 		ui.Row(c).Gap(10).AlignItems(ui.Center).Children(func() {
-			ui.Text(c, fmt.Sprintf("%d 帖子", p.Statuses)).FontSize(12).TextColor(t.TextMuted).Shrink(1)
-			ui.Button(c, fmt.Sprintf("%d 正在关注", p.Following)).FontSize(12).Background(ui.Transparent).BorderWidth(0).Padding(4, 0).Shrink(1).OnClick(func() { r.openConnections(f, "following") })
-			ui.Button(c, fmt.Sprintf("%d 关注者", p.Followers)).FontSize(12).Background(ui.Transparent).BorderWidth(0).Padding(4, 0).Shrink(1).OnClick(func() { r.openConnections(f, "followers") })
+			ui.Text(c, locales.PostCount(p.Statuses)).FontSize(12).TextColor(t.TextMuted).Shrink(1)
+			ui.Button(c, locales.FollowingCount(p.Following)).FontSize(12).Background(ui.Transparent).BorderWidth(0).Padding(4, 0).Shrink(1).OnClick(func() { r.openConnections(f, "following") })
+			ui.Button(c, locales.FollowerCount(p.Followers)).FontSize(12).Background(ui.Transparent).BorderWidth(0).Padding(4, 0).Shrink(1).OnClick(func() { r.openConnections(f, "followers") })
 		})
 		if target := mastodon.SafeURL(p.URL); target != "" {
-			externalTextLink(c, "在浏览器中查看个人页", target)
+			externalTextLink(c, locales.ViewProfileInBrowser(), target)
 		}
-		ui.Text(c, "帖子").FontSize(14).FontWeight(600).Margin(4, 0, 0, 0)
+		ui.Text(c, locales.Posts()).FontSize(14).FontWeight(600).Margin(4, 0, 0, 0)
 	})
 }

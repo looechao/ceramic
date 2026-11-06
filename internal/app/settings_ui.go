@@ -1,6 +1,7 @@
 package app
 
 import (
+	"ceramic/locales"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -28,11 +29,27 @@ func (r *reader) settingsView(c *ui.Context) {
 		return
 	}
 	ui.DialogBase(c, &r.settingsOpen, func(backdrop, panel ui.Element) {
-		panel.Width(320).Padding(24).Radius(12).Background(c.Theme().Background).Label("设置")
+		panel.Width(320).Padding(24).Radius(12).Background(c.Theme().Background).Label(locales.Settings())
 		ui.Column(c).Gap(18).Children(func() {
-			ui.Text(c, "设置").FontSize(20).Bold()
-			ui.Text(c, "外观").FontSize(13)
-			if ui.Segmented(c, &r.appearance, "跟随系统", "浅色", "深色").Changed() {
+			ui.Text(c, locales.Settings()).FontSize(20).Bold()
+			ui.Text(c, locales.Language()).FontSize(13)
+			languageNames := []string{"简体中文", "English", "日本語", "한국어", "Español"}
+			languageTags := []string{"zh-Hans", "en", "ja", "ko", "es"}
+			selected := languageNames[0]
+			for i, tag := range languageTags {
+				if tag == c.Locale() {
+					selected = languageNames[i]
+				}
+			}
+			if ui.Select(c, &selected, languageNames).Label(locales.Language()).FillWidth().Changed() {
+				for i, name := range languageNames {
+					if selected == name {
+						mygo.App.SetLocale(languageTags[i])
+					}
+				}
+			}
+			ui.Text(c, locales.Appearance()).FontSize(13)
+			if ui.Segmented(c, &r.appearance, locales.System(), locales.Light(), locales.Dark()).Changed() {
 				if r.applyAppearance != nil {
 					r.applyAppearance(appearanceSources[r.appearance])
 				}
@@ -40,12 +57,12 @@ func (r *reader) settingsView(c *ui.Context) {
 					data, _ := json.Marshal(struct{ Appearance int }{r.appearance})
 					if err := os.MkdirAll(filepath.Dir(r.preferencesPath), 0700); err == nil {
 						if err = os.WriteFile(r.preferencesPath, data, 0600); err != nil {
-							r.message = "外观已切换，但未能保存设置。"
+							r.message = locales.AppearanceChangedButSettingsCouldNotBeSaved()
 						}
 					}
 				}
 			}
-			ui.Button(c, "完成").AlignSelf(ui.End).OnClick(func() { r.settingsOpen = false })
+			ui.Button(c, locales.Done()).AlignSelf(ui.End).OnClick(func() { r.settingsOpen = false })
 		})
 	})
 }

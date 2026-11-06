@@ -1,0 +1,370 @@
+{
+  "@@locale": "zh-Hans",
+  "Settings": "设置",
+  "Appearance": "外观",
+  "System": "跟随系统",
+  "Light": "浅色",
+  "Dark": "深色",
+  "Done": "完成",
+  "Language": "语言",
+  "Profile": "我的",
+  "Home": "首页",
+  "Notifications": "通知",
+  "Bookmarks": "书签",
+  "Favorites": "喜欢",
+  "Explore": "Explore",
+  "Browse": "Browse",
+  "Local": "Local",
+  "Federated": "Federated",
+  "ProfileLabel": "个人资料",
+  "Conversation": "对话",
+  "Following": "正在关注",
+  "Followers": "关注者",
+  "LogOut": "退出登录",
+  "WriteAPost": "写帖子",
+  "Refresh": "刷新",
+  "Retry": "重试",
+  "Public": "公开",
+  "QuietPublic": "低调公开",
+  "FollowersOnly": "仅关注者",
+  "PrivateMentions": "私密提及",
+  "Follow": "关注",
+  "Unfollow": "取消关注",
+  "CancelFollowRequest": "撤回关注申请",
+  "Blocked": "已屏蔽",
+  "CannotFollow": "无法关注",
+  "AwaitingApproval": "等待对方批准",
+  "FollowedYou": "关注了你",
+  "Reply": "回复",
+  "Boost": "转发",
+  "Undo": "取消{action}",
+  "SensitiveMedia": "敏感媒体",
+  "OpenOriginalPost": "打开原帖",
+  "OpenPostInBrowser": "在浏览器中打开原帖",
+  "HideContent": "收起内容",
+  "ClickToRevealContent": "点击显示内容",
+  "JustNow": "刚刚",
+  "Drafts": "草稿",
+  "ViewDrafts": "查看草稿",
+  "Publish": "发布",
+  "Processing": "正在处理…",
+  "NewPost": "新嘟文",
+  "ContentWarning": "内容警告",
+  "ContentWarningOptional": "内容警告（可选）",
+  "Visibility": "可见性",
+  "PostText": "帖子内容",
+  "WhatWouldYouLikeToShare": "有什么想分享的？",
+  "Poll": "投票",
+  "AddImages": "添加图片",
+  "Images": "图片",
+  "ImageDescriptionOptional": "图片描述（可选）",
+  "AddOption": "添加选项",
+  "MultipleChoice": "多选",
+  "SingleChoice": "单选",
+  "PollDuration": "投票时长",
+  "Duration5Minutes": "5 分钟",
+  "Duration30Minutes": "30 分钟",
+  "Duration1Hour": "1 小时",
+  "Duration6Hours": "6 小时",
+  "Duration1Day": "1 天",
+  "Duration3Days": "3 天",
+  "Duration7Days": "7 天",
+  "Published": "已发布。",
+  "PleaseLogInFirst": "请先登录。",
+  "BackToEditor": "返回编辑",
+  "New": "新建",
+  "Delete": "删除",
+  "NoDraftsYet": "还没有草稿",
+  "UnfinishedPost": "未完成的帖子",
+  "Search": "搜索",
+  "SearchQuery": "搜索内容",
+  "KeywordsPostLinkOrAccount": "关键词、帖子链接或账号",
+  "Posts": "帖子",
+  "Accounts": "账号",
+  "Loading": "正在加载…",
+  "YouAreAllCaughtUp": "已经读到这里了。",
+  "KeepReading": "继续向下阅读",
+  "ViewPost": "查看帖子",
+  "ViewProfileInBrowser": "在浏览器中查看个人页",
+  "Selected": "已选",
+  "Ended": "已结束",
+  "Voted": "已投票",
+  "VoteInBrowser": "在浏览器中投票",
+  "LogInToCeramic": "登录 Ceramic",
+  "Instance": "实例",
+  "InstanceAddress": "实例地址",
+  "InstanceDomain": "实例域名",
+  "ForExampleMastodonSocial": "例如 mastodon.social",
+  "Continue": "继续",
+  "Connecting": "正在连接…",
+  "WaitingForBrowserAuthorization": "等待浏览器授权…",
+  "CancelConnection": "取消连接",
+  "ImageViewer": "图片查看器",
+  "PreviousImage": "上一张图片",
+  "NextImage": "下一张图片",
+  "OpenOriginalImage": "打开原图",
+  "CloseImage": "关闭图片",
+  "LoadingImage": "正在加载图片",
+  "ImageCouldNotLoad": "图片未能加载",
+  "OpenImage": "打开图片",
+  "OpenMediaInBrowser": "在浏览器中打开媒体",
+  "CloseColumn": "关闭此列",
+  "ThisPostCannotBeBoosted": "此帖不可转发",
+  "UnknownVisibility": "可见性未知",
+  "CloseAndKeepDraft": "关闭并保留草稿",
+  "PostComposer": "发帖弹窗",
+  "ToggleContentWarning": "内容警告开关",
+  "Navigate": "Navigate",
+  "CloseCurrentColumnOrWindow": "关闭当前列或窗口",
+  "MissingPermissionsLogOutAndLogInAgain": "当前登录缺少权限，请退出后重新登录。",
+  "CouldNotLoadImageOpenTheOriginalToViewIt": "图片未能加载，可打开原图查看",
+  "ImagesMustBeNoLargerThan16Mb": "图片不能超过 16 MB",
+  "AppearanceChangedButSettingsCouldNotBeSaved": "外观已切换，但未能保存设置。",
+  "AuthorizeReadWriteFollowAndPushAccessInYourBrowser": "在浏览器中授权账号的读取、写入、关注与推送权限。",
+  "ChooseUpTo4Images": "最多添加 4 张图片，请重新选择。",
+  "ChooseAPngJpegOrGifImageUpTo24Megapixels": "请选择不超过 2400 万像素的 PNG、JPEG 或 GIF 图片",
+  "VisibleToEveryoneIncludingPublicTimelines": "所有人可见，可出现在公共时间线",
+  "VisibleToEveryoneExcludedFromPublicTimelines": "所有人可见，但不出现在公共时间线",
+  "VisibleToFollowersAndMentionedUsers": "关注者及帖子中被提及的用户可见",
+  "VisibleOnlyToMentionedUsers": "仅帖子中被提及的用户可见",
+  "TheServerReturnedAnUnknownVisibilityType": "服务器返回了未识别的可见性类型",
+  "HiddenByYourFilters": "已被你的过滤规则折叠",
+  "NoPostsYetFollowPeopleToSeeTheirPostsHere": "还没有动态。关注一些人后，他们的帖子会出现在这里。",
+  "NoBookmarksYet": "还没有书签。",
+  "NoFavoritesYet": "还没有喜欢的帖子。",
+  "NoPostsToDisplayYet": "还没有可显示的帖子。",
+  "NoResultsPostSearchDependsOnYourServerSIndex": "没有找到结果。帖子搜索范围取决于实例的索引能力。",
+  "NoAccountsToDisplayTheListMayBeEmptyOrPrivate": "没有可显示的账号。列表可能为空，或未公开。",
+  "NoNotificationsYetFollowsBoostsFavoritesAndMentionsAppearHere": "还没有通知。有人关注、转发、收藏或提到你时，会出现在这里。",
+  "MentionedYou": "提到了你",
+  "BoostedYourPost": "转发了你的帖子",
+  "FavoritedYourPost": "收藏了你的帖子",
+  "RequestedToFollowYou": "请求关注你",
+  "PollEnded": "投票已结束",
+  "EditedAPost": "编辑了帖子",
+  "PublishedANewPost": "发布了新帖子",
+  "ThisLinkWasVerifiedByTheServer": "此链接已由实例验证",
+  "LinkPreviewThumbnail": "外链预览缩略图",
+  "LoadingLinkThumbnail": "正在加载外链缩略图",
+  "CouldNotSaveDraftPleaseRetry": "草稿未能保存，请重试。",
+  "SavedOnThisDeviceContinueEditingAfterRestarting": "保存在这台设备，重启后可继续编辑。",
+  "EnterKeywordsToFindPostsOrAccounts": "输入关键词，查找帖子或账号。",
+  "PublicPostsFromThisServer": "来自本站的公开帖子",
+  "PublicFederatedPostsKnownToThisServer": "本站已知的联邦公开帖子",
+  "LogOutAndLogInAgainToReadFollowStatus": "请退出后重新登录以读取关注状态。",
+  "LoadingFollowStatus": "正在读取关注状态…",
+  "RetryFollowStatus": "重试关注状态",
+  "UpdatingFollowStatus": "正在更新关注状态",
+  "MissingPublishingPermissionLogOutAndLogInAgain": "当前登录缺少发帖权限，请退出后重新登录。",
+  "CouldNotPrepareThePostPleaseRetry": "无法准备发布，请重试。",
+  "PublishedButTheLocalDraftCouldNotBeDeletedDoNotPublishItAgain": "帖子已发布，但本地草稿未能删除；请勿重复发布。",
+  "DraftIdMismatch": "草稿标识不匹配",
+  "DraftIsTooLargeOrUnreadable": "草稿文件过大或无法读取",
+  "InvalidDraftImageCount": "草稿图片数量无效",
+  "InvalidDraftId": "无效的草稿标识",
+  "ImageDescription": "图片 {value0} 描述",
+  "RemoveImage": "移除图片 {value0}",
+  "MinutesAgo": "{value0} 分钟",
+  "HoursAgo": "{value0} 小时",
+  "CharacterCount": "{value0} 字",
+  "PollOption": "投票选项 {value0}",
+  "OptionNumber": "选项 {value0}",
+  "RemoveOption": "移除选项 {value0}",
+  "PostCount": "{value0} 帖子",
+  "FollowingCount": "{value0} 正在关注",
+  "FollowerCount": "{value0} 关注者",
+  "VoteCount": "{value0} 票",
+  "VoterCount": "{value0} 人参与",
+  "PollOptionResults": "{value0, number, integer}% · {value1} 票",
+  "UnreadNotifications": "{value0} · {value1} 条新通知",
+  "DraftImageCount": " · {value0} 张图片",
+  "PollLabel": " · 投票",
+  "CloseColumnLabel": "关闭此列 · ",
+  "ProfileLabelText": "我的 · ",
+  "WriteAPostLabel": "写帖子 · ",
+  "RefreshLabel": "刷新 ",
+  "View": "查看 ",
+  "Boosted": "{name} 转发了",
+  "OpenConversation": "打开对话 ",
+  "RevealContent": "展开隐藏内容：",
+  "DeleteDraft": "删除草稿 ",
+  "ResumeDraft": "继续编辑 ",
+  "Ends": "截止 ",
+  "CouldNotSaveDraft": "草稿未能保存：",
+  "CouldNotOpenDraft": "草稿未能打开：",
+  "CouldNotDeleteDraft": "草稿未能删除：",
+  "SomeDraftsCouldNotBeRead": "部分草稿未能读取：",
+  "DraftKeptYouCanRetry": "；草稿已保留，可重试。",
+  "ConnectingToServer": "正在连接实例…",
+  "AuthorizeInYourBrowserThenReturnToCeramic": "请在浏览器中授权，完成后返回 Ceramic。",
+  "@ImageDescription": {
+    "placeholders": {
+      "value0": {
+        "type": "int"
+      }
+    }
+  },
+  "@RemoveImage": {
+    "placeholders": {
+      "value0": {
+        "type": "int"
+      }
+    }
+  },
+  "@MinutesAgo": {
+    "placeholders": {
+      "value0": {
+        "type": "int"
+      }
+    }
+  },
+  "@HoursAgo": {
+    "placeholders": {
+      "value0": {
+        "type": "int"
+      }
+    }
+  },
+  "@CharacterCount": {
+    "placeholders": {
+      "value0": {
+        "type": "int"
+      }
+    }
+  },
+  "@PollOption": {
+    "placeholders": {
+      "value0": {
+        "type": "int"
+      }
+    }
+  },
+  "@OptionNumber": {
+    "placeholders": {
+      "value0": {
+        "type": "int"
+      }
+    }
+  },
+  "@RemoveOption": {
+    "placeholders": {
+      "value0": {
+        "type": "int"
+      }
+    }
+  },
+  "@PostCount": {
+    "placeholders": {
+      "value0": {
+        "type": "int"
+      }
+    }
+  },
+  "@FollowingCount": {
+    "placeholders": {
+      "value0": {
+        "type": "int"
+      }
+    }
+  },
+  "@FollowerCount": {
+    "placeholders": {
+      "value0": {
+        "type": "int"
+      }
+    }
+  },
+  "@VoteCount": {
+    "placeholders": {
+      "value0": {
+        "type": "int"
+      }
+    }
+  },
+  "@VoterCount": {
+    "placeholders": {
+      "value0": {
+        "type": "int"
+      }
+    }
+  },
+  "@PollOptionResults": {
+    "placeholders": {
+      "value0": {
+        "type": "double"
+      },
+      "value1": {
+        "type": "int"
+      }
+    }
+  },
+  "@UnreadNotifications": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      },
+      "value1": {
+        "type": "int"
+      }
+    }
+  },
+  "@DraftImageCount": {
+    "placeholders": {
+      "value0": {
+        "type": "int"
+      }
+    }
+  },
+  "LoadingAvatar": "正在加载 {name} 的头像",
+  "ServiceInvalidPostAction": "无效的帖子操作",
+  "ServicePermissionRequired": "当前登录缺少权限，请退出后重新登录。",
+  "ServicePostMismatch": "实例返回了不匹配的帖子，请刷新确认状态",
+  "ServiceInvalidInstance": "请输入实例域名，例如 mastodon.social，不要输入账号或页面地址",
+  "ServiceInvalidLink": "链接无效",
+  "ServiceInvalidCredentials": "实例未返回有效的应用凭据",
+  "ServiceAuthorizationCanceled": "授权已取消",
+  "ServiceBrowserUnavailable": "无法打开浏览器，请检查系统默认浏览器",
+  "ServiceAuthorizationRetry": "授权已取消，请重新连接",
+  "ServiceInvalidToken": "实例未返回有效的登录令牌",
+  "ServiceMissingRelationship": "实例未返回该账号的关注状态，请重试",
+  "ServiceAccountMismatch": "实例返回了不匹配的账号，请刷新确认状态",
+  "ServiceEmptyPost": "请输入帖子内容或添加图片",
+  "ServiceTooManyImages": "最多添加 4 张图片",
+  "ServiceMediaPollConflict": "图片与投票不能同时发布",
+  "ServicePollOptionCount": "投票需要 2 至 4 个选项",
+  "ServiceDuplicatePollOptions": "请填写不同的投票选项",
+  "ServiceInvalidPollDuration": "无效的投票时长",
+  "ServiceInvalidVisibility": "无效的可见性",
+  "ServiceMissingSubmissionID": "缺少提交标识",
+  "ServiceMediaPermissionRequired": "当前登录缺少图片权限，请退出后重新登录。",
+  "ServiceImageTooLarge": "请选择不超过 16 MB 的图片",
+  "ServiceUploadFailed": "图片上传失败，请检查网络后重试",
+  "ServiceInvalidMedia": "实例返回了无效的图片信息",
+  "ServiceMediaTimeout": "图片处理超时，请重试",
+  "ServiceMediaProcessingFailed": "实例未能处理图片，请重试",
+  "ServiceConnectionFailed": "无法连接实例，请检查域名和网络后重试",
+  "ServiceSessionExpired": "登录已失效，请退出后重新登录",
+  "ServiceAccessDenied": "实例拒绝访问，请检查账号权限",
+  "ServiceRateLimited": "请求过于频繁，请稍后重试",
+  "ServiceInvalidResponse": "实例返回了无法识别的数据，请确认它支持 Mastodon API",
+  "ServiceLoginRequired": "请先登录",
+  "ServiceInvalidStreamURL": "流式接口地址无效",
+  "ServiceInvalidStream": "流式接口未返回事件流",
+  "ServiceStreamEventTooLarge": "流式事件过大",
+  "ServiceUnknownAccountList": "未知的账号列表",
+  "ServiceSessionSaveFailed": "无法保存登录状态",
+  "ServiceSessionClearFailed": "无法清除登录状态，请重试",
+  "ServiceUnknownPostList": "未知的帖子列表",
+  "ServiceAuthorizationTimeout": "授权已超时，请重新连接",
+  "ServiceCallbackInvalid": "授权已过期或无效，请返回 Ceramic 重试。",
+  "ServiceCallbackFailed": "登录未完成，请返回 Ceramic 查看提示。",
+  "ServiceCallbackSuccess": "登录成功。可以关闭这个页面，回到 Ceramic 阅读时间线。",
+  "ServiceHTTPError": "实例返回 HTTP {status}，请稍后重试",
+  "@ServiceHTTPError": {
+    "placeholders": {
+      "status": {
+        "type": "int"
+      }
+    }
+  }
+}

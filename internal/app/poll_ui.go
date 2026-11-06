@@ -1,7 +1,7 @@
 package app
 
 import (
-	"fmt"
+	"ceramic/locales"
 	"slices"
 	"strings"
 	"time"
@@ -31,7 +31,7 @@ func (r *reader) pollView(c *ui.Context, p *mastodon.Poll, statusURL string) {
 		return
 	}
 	t := c.Theme()
-	ui.Column(c).FillWidth().Gap(6).Label("投票").Children(func() {
+	ui.Column(c).FillWidth().Gap(6).Label(locales.Poll()).Children(func() {
 		for i, option := range p.Options {
 			percent, published := pollPercentage(p, option)
 			ui.Box(c.Key(i)).FillWidth().Radius(7).Clip().Background(t.Surface).Children(func() {
@@ -41,37 +41,37 @@ func (r *reader) pollView(c *ui.Context, p *mastodon.Poll, statusURL string) {
 				ui.Row(c).FillWidth().Padding(8, 10).Gap(8).AlignItems(ui.Center).Children(func() {
 					r.emojiText(c, option.Title, p.Emojis, 13).Grow(1).Shrink(1)
 					if slices.Contains(p.OwnVotes, i) {
-						ui.Text(c, "已选").FontSize(11).TextColor(t.TextMuted)
+						ui.Text(c, locales.Selected()).FontSize(11).TextColor(t.TextMuted)
 					}
 					if published {
-						ui.Text(c, fmt.Sprintf("%.0f%% · %d 票", percent, *option.VotesCount)).FontSize(11).TextColor(t.TextMuted).Shrink(0)
+						ui.Text(c, locales.PollOptionResults(float64(percent), *option.VotesCount)).FontSize(11).TextColor(t.TextMuted).Shrink(0)
 					}
 				})
 			})
 		}
-		mode := "单选"
+		mode := locales.SingleChoice()
 		if p.Multiple {
-			mode = "多选"
+			mode = locales.MultipleChoice()
 		}
-		total := fmt.Sprintf("%d 票", p.VotesCount)
+		total := locales.VoteCount(p.VotesCount)
 		if p.VotersCount != nil {
-			total = fmt.Sprintf("%d 人参与", *p.VotersCount)
+			total = locales.VoterCount(*p.VotersCount)
 		}
 		parts := []string{mode, total}
 		expires, err := time.Parse(time.RFC3339, p.ExpiresAt)
 		ended := p.Expired || (err == nil && !expires.After(c.Now()))
 		if ended {
-			parts = append(parts, "已结束")
+			parts = append(parts, locales.Ended())
 		} else if err == nil {
-			parts = append(parts, "截止 "+expires.Local().Format("01-02 15:04"))
+			parts = append(parts, locales.Ends()+expires.Local().Format("01-02 15:04"))
 		}
 		if p.Voted {
-			parts = append(parts, "已投票")
+			parts = append(parts, locales.Voted())
 		}
 		ui.Text(c, strings.Join(parts, " · ")).FontSize(11).TextColor(t.TextMuted)
 		if !ended && !p.Voted {
 			if target := mastodon.SafeURL(statusURL); target != "" {
-				externalTextLink(c, "在浏览器中投票", target)
+				externalTextLink(c, locales.VoteInBrowser(), target)
 			}
 		}
 	})

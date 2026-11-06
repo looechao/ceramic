@@ -1,6 +1,7 @@
 package app
 
 import (
+	"ceramic/locales"
 	"encoding/json"
 	"strings"
 	"time"
@@ -179,7 +180,10 @@ func (r *reader) openConnections(source *feedState, kind string) {
 }
 
 var navigationPages = []string{"profile", "home", "notifications", "bookmarks", "favorites", "search"}
-var navigationLabels = []string{"我的", "首页", "通知", "书签", "喜欢", "Explore"}
+
+func navigationLabels() []string {
+	return []string{locales.Profile(), locales.Home(), locales.Notifications(), locales.Bookmarks(), locales.Favorites(), locales.Explore()}
+}
 
 // Column identity is scoped to a workspace; reopening keeps its loaded data and scroll.
 func sameColumn(a, b *feedState) bool {

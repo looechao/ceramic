@@ -1,6 +1,7 @@
 package app
 
 import (
+	"ceramic/locales"
 	"context"
 	"encoding/json"
 	"sort"
@@ -244,7 +245,7 @@ func (r *reader) loadFeed(f *feedState, more bool) {
 			}
 			f.busy = false
 			if err != nil {
-				f.message = err.Error()
+				f.message = localizedError(err)
 				return
 			}
 			firstLoad := !f.loaded
@@ -377,7 +378,7 @@ func statusFilter(p mastodon.Status) (hidden bool, warning string) {
 			hidden = true
 		}
 		if f.Filter.Action == "warn" {
-			warning = "已被你的过滤规则折叠"
+			warning = locales.HiddenByYourFilters()
 		}
 	}
 	return

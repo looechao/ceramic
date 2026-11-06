@@ -2,7 +2,6 @@ package mastodon
 
 import (
 	"encoding/json"
-	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -17,12 +16,12 @@ type Session struct {
 
 func saveSession(path string, s *Session) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
-		return errors.New("无法保存登录状态")
+		return MessageSessionSaveFailed
 	}
 	b, _ := json.Marshal(s)
 	f, err := os.CreateTemp(filepath.Dir(path), ".session-*")
 	if err != nil {
-		return errors.New("无法保存登录状态")
+		return MessageSessionSaveFailed
 	}
 	defer os.Remove(f.Name())
 	if _, err = f.Write(b); err != nil {
@@ -39,12 +38,12 @@ func (a *Client) Logout() error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	if err := os.Remove(a.path); err != nil && !os.IsNotExist(err) {
-		return errors.New("无法清除登录状态，请重试")
+		return MessageSessionClearFailed
 	}
 	a.version++
 	a.session = nil
 	a.pending = nil
-	a.loginError = ""
+	a.loginError = nil
 	return nil
 }
 

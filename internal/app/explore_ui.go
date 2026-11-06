@@ -1,6 +1,9 @@
 package app
 
-import "github.com/egoist/mygo/ui"
+import (
+	"ceramic/locales"
+	"github.com/egoist/mygo/ui"
+)
 
 var localBrowseIcon = bundledIcon("globe")
 var federatedBrowseIcon = bundledIcon("fediverse")
@@ -9,12 +12,12 @@ var federatedBrowseIcon = bundledIcon("fediverse")
 func (r *reader) exploreBrowse(c *ui.Context, source *feedState) {
 	t := c.Theme()
 	ui.Column(c).FillWidth().Gap(18).Children(func() {
-		ui.Text(c, "输入关键词，查找帖子或账号。").FontSize(13).TextColor(t.TextMuted)
-		ui.Text(c, "Browse").FontSize(16).FontWeight(600).Margin(12, 0, 0, 0)
+		ui.Text(c, locales.EnterKeywordsToFindPostsOrAccounts()).FontSize(13).TextColor(t.TextMuted)
+		ui.Text(c, locales.Browse()).FontSize(16).FontWeight(600).Margin(12, 0, 0, 0)
 		ui.Row(c).Gap(8).Children(func() {
 			for _, page := range []string{"local", "federated"} {
-				label := map[string]string{"local": "Local", "federated": "Federated"}[page]
-				hint := map[string]string{"local": "来自本站的公开帖子", "federated": "本站已知的联邦公开帖子"}[page]
+				label := map[string]string{"local": locales.Local(), "federated": locales.Federated()}[page]
+				hint := map[string]string{"local": locales.PublicPostsFromThisServer(), "federated": locales.PublicFederatedPostsKnownToThisServer()}[page]
 				icon := localBrowseIcon
 				if page == "federated" {
 					icon = federatedBrowseIcon

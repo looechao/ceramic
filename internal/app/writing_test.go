@@ -64,7 +64,7 @@ func TestPublishRetryRetainsDraftAndKey(t *testing.T) {
 	r := testReader(t)
 	r.session = &mastodon.Session{Instance: server.URL, Token: "test", Scopes: "write:statuses"}
 	callbacks := make(chan func(), 4)
-	d := &composer{text: "draft", audience: "公开", update: func(fn func()) { callbacks <- fn }}
+	d := &composer{text: "draft", audience: "public", update: func(fn func()) { callbacks <- fn }}
 	r.composer = d
 	apply := func() {
 		t.Helper()
@@ -124,7 +124,7 @@ func TestImagePublishRetryKeepsUploadedMedia(t *testing.T) {
 	r.session = &mastodon.Session{Instance: server.URL, Token: "test", Scopes: mastodon.Scopes}
 	callbacks := make(chan func(), 1)
 	// A PNG signature is sufficient for the transport test; decoding is covered by the picker.
-	d := &composer{audience: "公开", attachments: []composeAttachment{{name: "test.png", digest: "fixture", data: []byte("\x89PNG\r\n\x1a\n")}}, update: func(fn func()) { callbacks <- fn }}
+	d := &composer{audience: "public", attachments: []composeAttachment{{name: "test.png", digest: "fixture", data: []byte("\x89PNG\r\n\x1a\n")}}, update: func(fn func()) { callbacks <- fn }}
 	r.composer = d
 	for range 2 {
 		r.publish(d)
@@ -165,7 +165,7 @@ func TestLogoutCancelsPendingImagePublication(t *testing.T) {
 	r := testReader(t)
 	r.session = &mastodon.Session{Instance: server.URL, Token: "test", Scopes: mastodon.Scopes}
 	callbacks := make(chan func(), 1)
-	d := &composer{audience: "公开", attachments: []composeAttachment{{name: "test.png", digest: "fixture", data: []byte("\x89PNG\r\n\x1a\n")}}, update: func(fn func()) { callbacks <- fn }}
+	d := &composer{audience: "public", attachments: []composeAttachment{{name: "test.png", digest: "fixture", data: []byte("\x89PNG\r\n\x1a\n")}}, update: func(fn func()) { callbacks <- fn }}
 	r.composer = d
 	r.publish(d)
 	select {

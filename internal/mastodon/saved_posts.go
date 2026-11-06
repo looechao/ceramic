@@ -1,7 +1,6 @@
 package mastodon
 
 import (
-	"errors"
 	"net/url"
 )
 
@@ -9,13 +8,13 @@ import (
 func (a *Client) SavedPosts(kind, cursor string) ([]Status, string, error) {
 	endpoint := map[string]string{"bookmarks": "bookmarks", "favorites": "favourites"}[kind]
 	if endpoint == "" {
-		return nil, "", errors.New("未知的帖子列表")
+		return nil, "", MessageUnknownPostList
 	}
 	a.mu.Lock()
 	s := a.session
 	a.mu.Unlock()
 	if !s.HasScope("read:" + endpoint) {
-		return nil, "", errors.New("当前登录缺少权限，请退出后重新登录。")
+		return nil, "", MessagePermissionRequired
 	}
 	q := url.Values{"limit": {"30"}}
 	if cursor != "" {

@@ -2,6 +2,7 @@
 package app
 
 import (
+	"ceramic/locales"
 	"fmt"
 	"log"
 	"os"
@@ -20,7 +21,7 @@ func Run() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	service := mastodon.New(filepath.Join(dir, "Ceramic", "session.json"))
+	service := mastodon.New(filepath.Join(dir, "Ceramic", "session.json"), serviceMessage)
 	stop, err := service.StartCallbackServer()
 	if err != nil {
 		log.Fatal(err)
@@ -45,27 +46,48 @@ func Run() {
 		reader.update = window.Update
 		reader.closeWindow = window.Close
 		reader.openWriting = func() { reader.showComposer() }
-		if menu := mygo.App.Menu(); menu != nil {
-			menu = mygo.NewMenu(columnCloseMenu(menu.Items(), func() {
-				window.Update(func() {
-					reader.closeFocused()
-				})
-			}))
-			mygo.App.SetMenu(menu)
-			items := []*mygo.MenuItem{}
-			for i, page := range navigationPages {
-				title := navigationLabels[i]
-				items = append(items, &mygo.MenuItem{Label: title, Accelerator: fmt.Sprintf("CmdOrCtrl+%d", i+1), Click: func(_ *mygo.MenuItem, _ *mygo.Window) {
+		baseMenu := mygo.App.Menu()
+		rebuildMenu := func() {
+			if menu := baseMenu; menu != nil {
+				menuItems := columnCloseMenu(menu.Items(), func() {
 					window.Update(func() {
-						if reader.session != nil {
-							reader.navigate(page)
-						}
+						reader.closeFocused()
 					})
-				}})
+				})
+				if runtime.GOOS == "darwin" {
+					for _, item := range menuItems {
+						if item.Role == mygo.RoleAppMenu {
+							settings := &mygo.MenuItem{Label: locales.Settings() + "…", Accelerator: "CmdOrCtrl+,", Click: func(_ *mygo.MenuItem, _ *mygo.Window) {
+								window.Show()
+								window.Focus()
+								window.Update(func() { reader.settingsOpen = true })
+							}}
+							// Place Settings after About and its separator.
+							at := min(2, len(item.Submenu))
+							item.Submenu = append(item.Submenu[:at], append([]*mygo.MenuItem{settings, mygo.Separator()}, item.Submenu[at:]...)...)
+							break
+						}
+					}
+				}
+				menu = mygo.NewMenu(menuItems)
+				mygo.App.SetMenu(menu)
+				items := []*mygo.MenuItem{}
+				for i, page := range navigationPages {
+					title := navigationLabels()[i]
+					items = append(items, &mygo.MenuItem{Label: title, Accelerator: fmt.Sprintf("CmdOrCtrl+%d", i+1), Click: func(_ *mygo.MenuItem, _ *mygo.Window) {
+						window.Update(func() {
+							if reader.session != nil {
+								reader.navigate(page)
+							}
+						})
+					}})
+				}
+				items = append(items, &mygo.MenuItem{Label: locales.WriteAPost(), Accelerator: "CmdOrCtrl+N", Click: func(_ *mygo.MenuItem, _ *mygo.Window) { window.Update(reader.openWriting) }}, mygo.Separator(), &mygo.MenuItem{Label: locales.Refresh(), Accelerator: "CmdOrCtrl+R", Click: func(_ *mygo.MenuItem, _ *mygo.Window) { window.Update(func() { reader.load(false) }) }})
+				menu.Append(&mygo.MenuItem{Label: locales.Navigate(), Submenu: items})
 			}
-			items = append(items, &mygo.MenuItem{Label: "写帖子", Accelerator: "CmdOrCtrl+N", Click: func(_ *mygo.MenuItem, _ *mygo.Window) { window.Update(reader.openWriting) }}, mygo.Separator(), &mygo.MenuItem{Label: "刷新", Accelerator: "CmdOrCtrl+R", Click: func(_ *mygo.MenuItem, _ *mygo.Window) { window.Update(func() { reader.load(false) }) }})
-			menu.Append(&mygo.MenuItem{Label: "Navigate", Submenu: items})
 		}
+		rebuildMenu()
+		mygo.App.OnLocaleChanged(func(string) { rebuildMenu() })
 		window.OnClose(func(e *mygo.CloseEvent) {
 			if reader.composer != nil && !reader.saveDraft(reader.composer) {
 				e.PreventDefault()
@@ -88,7 +110,7 @@ func columnCloseMenu(items []*mygo.MenuItem, close func()) []*mygo.MenuItem {
 	result := make([]*mygo.MenuItem, 0, len(items))
 	for _, item := range items {
 		if item.Role == mygo.RoleClose {
-			result = append(result, &mygo.MenuItem{Label: "关闭当前列或窗口", Accelerator: "CmdOrCtrl+W", Click: func(_ *mygo.MenuItem, _ *mygo.Window) { close() }})
+			result = append(result, &mygo.MenuItem{Label: locales.CloseCurrentColumnOrWindow(), Accelerator: "CmdOrCtrl+W", Click: func(_ *mygo.MenuItem, _ *mygo.Window) { close() }})
 		} else {
 			copy := &mygo.MenuItem{ID: item.ID, Label: item.Label, Type: item.Type, Role: item.Role, Accelerator: item.Accelerator, Disabled: item.Disabled, Hidden: item.Hidden, Checked: item.Checked, Click: item.Click}
 			if item.Submenu != nil {
