@@ -38,7 +38,8 @@ type LinkCard struct {
 }
 
 type Status struct {
-	Card *LinkCard `json:"card"`
+	Visibility string    `json:"visibility"`
+	Card       *LinkCard `json:"card"`
 
 	ID         string  `json:"id"`
 	Content    string  `json:"content"`
