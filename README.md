@@ -66,6 +66,19 @@ CERAMIC_SCREENSHOTS=1 go test -run TestNative ./...
 
 最后一条命令会使用 MyGo 的原生 CPU 渲染器在 `build/qa/` 生成登录页、时间线、紧凑窗口及深色模式截图。截图使用明确的测试数据，不是实际账号内容。
 
+## 宣传页
+
+`site/` 是一个静态页面，没有构建步骤，中英双语，浅色和深色跟随系统。本地预览：
+
+```sh
+python3 -m http.server 4173 --directory site
+```
+
+部署到 Cloudflare Pages：连接本仓库，Framework preset 选 None，Build command 留空，Build output directory 填 `site`。`site/_headers` 设置安全头和图标缓存。
+
+页面里的小人路径来自 `internal/app/mascot/body.svg`，改动小人形状时一并更新 `site/index.html` 中的 `blob-body`。页面上的数字（4 MB 安装包、空闲 CPU 低于 1%）测于 Ceramic 0.1.0，版本变化后需要重新测量。
+
+
 ## 文件结构
 
 - `main.go`：只启动 `internal/app`
