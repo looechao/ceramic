@@ -12,6 +12,7 @@ import (
 )
 
 type imageEntry struct {
+	animation      []byte
 	bitmap         *ui.Bitmap
 	failed         bool
 	used           uint64
@@ -46,11 +47,16 @@ func (r *reader) photo(raw string) *imageEntry {
 			if err != nil {
 				return err
 			}
+			var animation []byte
+			if avatarGIF(data) {
+				animation = data
+			}
 			r.update(func() {
 				if r.images[raw] != entry {
 					return
 				}
 				entry.bitmap = bitmap
+				entry.animation = animation
 				entry.shown, entry.pixelsReleased = false, false
 				entry.failed = false
 				r.trimImages()
@@ -105,6 +111,7 @@ func (r *reader) trimImages() {
 		var oldest string
 		tick := ^uint64(0)
 		for key, e := range r.images {
+			bytes += len(e.animation)
 			if e.bitmap != nil {
 				w, h := e.bitmap.Size()
 				bytes += w * h * 4

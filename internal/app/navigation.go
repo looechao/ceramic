@@ -27,9 +27,13 @@ func (r *reader) ensureProfile() {
 	}
 	if r.workspaces == nil {
 		r.workspaces = map[string]*workspace{
+			"bookmarks":     {columns: []*feedState{r.bookmarks}},
+			"favorites":     {columns: []*feedState{r.favorites}},
 			"home":          {columns: []*feedState{r.home}},
 			"search":        {columns: []*feedState{r.searchFeed}},
 			"profile":       {columns: []*feedState{r.ownProfile}},
+			"local":         {columns: []*feedState{{kind: "local"}}},
+			"federated":     {columns: []*feedState{{kind: "federated"}}},
 			"notifications": {columns: []*feedState{r.notifications}},
 		}
 	}
@@ -68,15 +72,13 @@ func (r *reader) appendColumn(source, detail *feedState) {
 			if f != source {
 				continue
 			}
-			if detail.kind == "conversation" {
-				for _, existing := range ws.columns {
-					if existing.kind == "conversation" && existing.focalID == detail.focalID {
-						r.selected = page
-						r.focusColumn(ws, existing)
-						ws.reveal = false
-						ws.revealFocus = true
-						return
-					}
+			for _, existing := range ws.columns {
+				if sameColumn(existing, detail) {
+					r.selected = page
+					r.focusColumn(ws, existing)
+					ws.reveal = false
+					ws.revealFocus = true
+					return
 				}
 			}
 			detail.source = source
@@ -148,9 +150,9 @@ func (r *reader) closeFocused() {
 
 func (r *reader) submitSearch() {
 	q := strings.TrimSpace(r.query)
-	kind := "accounts"
+	kind := "statuses"
 	if r.searchTab == 1 {
-		kind = "statuses"
+		kind = "accounts"
 	}
 	r.searchFeed = &feedState{kind: "search", query: q, searchKind: kind}
 	r.ensureProfile()
@@ -167,4 +169,21 @@ func (r *reader) openConnections(source *feedState, kind string) {
 		return
 	}
 	r.appendColumn(source, &feedState{kind: kind, profile: source.profile})
+}
+
+var navigationPages = []string{"profile", "home", "notifications", "bookmarks", "favorites", "search"}
+var navigationLabels = []string{"我的", "首页", "通知", "书签", "喜欢", "Explore"}
+
+// Column identity is scoped to a workspace; reopening keeps its loaded data and scroll.
+func sameColumn(a, b *feedState) bool {
+	if a.kind != b.kind {
+		return false
+	}
+	switch a.kind {
+	case "conversation":
+		return a.focalID != "" && a.focalID == b.focalID
+	case "profile", "followers", "following":
+		return a.profile.ID != "" && a.profile.ID == b.profile.ID
+	}
+	return false
 }

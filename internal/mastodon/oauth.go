@@ -16,7 +16,7 @@ import (
 	"time"
 )
 
-const Scopes = "read:accounts read:statuses read:search read:notifications"
+const Scopes = "read write follow push"
 
 type pendingLogin struct {
 	Instance, ClientID, Secret, State, Redirect string
@@ -158,6 +158,7 @@ func (a *Client) callback(w http.ResponseWriter, r *http.Request) {
 	}
 	var token struct {
 		AccessToken string `json:"access_token"`
+		Scope       string `json:"scope"`
 	}
 	if err == nil {
 		err = a.request("POST", p.Instance+"/oauth/token", "", url.Values{"grant_type": {"authorization_code"}, "client_id": {p.ClientID}, "client_secret": {p.Secret}, "redirect_uri": {p.Redirect}, "code": {r.URL.Query().Get("code")}}, &token)
@@ -176,7 +177,11 @@ func (a *Client) callback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err == nil {
-		s := &Session{Instance: p.Instance, Token: token.AccessToken, Account: me, Scopes: Scopes}
+		granted := token.Scope
+		if granted == "" {
+			granted = Scopes
+		}
+		s := &Session{Instance: p.Instance, Token: token.AccessToken, Account: me, Scopes: granted}
 		err = saveSession(a.path, s)
 		if err == nil {
 			a.session = s

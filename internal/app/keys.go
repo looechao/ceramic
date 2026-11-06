@@ -41,9 +41,6 @@ func (r *reader) readingKeys(c *ui.Context) {
 		return
 	}
 	scroll := &f.scroll
-	if f.preview != nil {
-		scroll = &f.previewScroll
-	}
 	_, height := c.Size()
 	half := max(float32(80), (height-2*columnGap-48)/2)
 	for _, item := range []struct {
@@ -143,7 +140,7 @@ func (r *reader) advanceReadingScroll(c *ui.Context) {
 	}
 	ws := r.workspaces[r.selected]
 	if r.typing || ws == nil || ws.focused != m.feed || !r.keyboardTarget.Focused() ||
-		(m.feed.preview == nil && m.scroll != &m.feed.scroll) || (m.feed.preview != nil && m.scroll != &m.feed.previewScroll) {
+		m.feed.preview != nil || m.scroll != &m.feed.scroll {
 		r.readingScroll = nil
 		return
 	}

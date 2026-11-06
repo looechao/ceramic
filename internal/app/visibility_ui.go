@@ -2,14 +2,6 @@ package app
 
 import "github.com/egoist/mygo/ui"
 
-var (
-	publicIcon            = lineIcon(`<circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18"/>`)
-	quietPublicIcon       = lineIcon(`<path d="M20.9 13A9 9 0 0 1 11 3.1 9 9 0 1 0 20.9 13Z"/>`)
-	followersIcon         = lineIcon(`<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/>`)
-	privateMentionIcon    = lineIcon(`<path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H4l-2 2V11.5a9.5 9.5 0 0 1 19 0Z"/><path d="M7 11h10M7 15h6"/>`)
-	unknownVisibilityIcon = lineIcon(`<circle cx="12" cy="12" r="9"/><path d="M9.5 8a2.5 2.5 0 1 1 4 2c-1.5 1-1.5 1-1.5 3M12 17h.01"/>`)
-)
-
 func visibilityBadge(c *ui.Context, visibility string) {
 	var label, hint string
 	var icon *ui.SVG

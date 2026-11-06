@@ -2,7 +2,6 @@ package app
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/egoist/mygo/ui"
@@ -14,18 +13,14 @@ func (r *reader) searchHeader(c *ui.Context) {
 	ui.Column(c).Padding(12, 14).Gap(10).Children(func() {
 
 		ui.Row(c).Gap(8).Children(func() {
-			input := ui.SearchField(c, &r.query).Label("搜索内容").Placeholder("账号、关键词或帖子链接").Grow(1).OnSubmit(r.submitSearch)
+			input := ui.SearchField(c, &r.query).Label("搜索内容").Placeholder("关键词、帖子链接或账号").Grow(1).OnSubmit(r.submitSearch)
 			if input.Focused() {
 				r.typing = true
 			}
 			ui.Button(c, "搜索").OnClick(r.submitSearch)
 		})
-		if ui.Segmented(c, &r.searchTab, "账号", "帖子").Changed() {
+		if ui.Segmented(c, &r.searchTab, "帖子", "账号").Changed() {
 			r.submitSearch()
-		}
-		if !r.searchAllowed && !strings.Contains(" "+r.session.Scopes+" ", " read:search ") {
-			ui.Text(c, "此登录尚未记录搜索权限；若搜索被拒绝，请补充授权。").FontSize(12).TextColor(c.Theme().TextMuted)
-			ui.Button(c, "授权只读搜索").Disabled(r.authorizing || r.searchFeed.busy).OnClick(func() { r.feedState = r.searchFeed; r.instance = r.session.Instance; r.login() })
 		}
 	})
 }
@@ -93,11 +88,17 @@ func (r *reader) timelineView(c *ui.Context, f *feedState) {
 		footer.Children(func() {
 			switch {
 			case f.busy:
-				ui.Text(c, "正在加载…").TextColor(c.Theme().TextMuted)
+				loadingStatus(c, "正在加载…")
 			case f.kind == "search" && f.query == "":
-				ui.Text(c, "输入关键词，查找账号或帖子。").TextColor(c.Theme().TextMuted)
+				ui.Text(c, "输入关键词，查找帖子或账号。").TextColor(c.Theme().TextMuted)
 			case count == 0 && people == 0 && f.message == "":
 				label := "还没有动态。关注一些人后，他们的帖子会出现在这里。"
+				if f.kind == "bookmarks" {
+					label = "还没有书签。"
+				}
+				if f.kind == "favorites" {
+					label = "还没有喜欢的帖子。"
+				}
 				if f.kind == "profile" {
 					label = "还没有可显示的帖子。"
 				}
@@ -169,7 +170,6 @@ func (r *reader) notificationRow(c *ui.Context, f *feedState, n mastodon.Notific
 		}
 	}
 	label, icon := notificationLabel(n.Type)
-	row := ui.Column(c).Padding(12, 16).Gap(6).BorderWidth(0, 0, 1, 0).BorderColor(postDivider(c))
 	var relation *mastodon.Status
 	if n.Status != nil {
 		s := *n.Status
@@ -178,7 +178,7 @@ func (r *reader) notificationRow(c *ui.Context, f *feedState, n mastodon.Notific
 		}
 		relation = &s
 	}
-	row.Children(func() {
+	r.listSurface(c, f, ui.Transparent, func(hover *listHoverState) {
 		ui.Row(c).Gap(6).Children(func() {
 			ui.Icon(c, icon).Size(14, 14).TextColor(t.Accent)
 			ui.Text(c, label).FontSize(12).TextColor(t.TextMuted)
@@ -190,16 +190,20 @@ func (r *reader) notificationRow(c *ui.Context, f *feedState, n mastodon.Notific
 		ui.Row(c).Gap(10).AlignItems(ui.Start).Children(func() {
 			r.avatar(c, f, n.Account, 34)
 			ui.Column(c).Grow(1).Shrink(1).Gap(2).Children(func() {
-				ui.Button(c, n.Account.Name()).Background(ui.Transparent).BorderWidth(0).Padding(0).FontSize(13).FontWeight(600).Shrink(1).MaxLines(1).OnClick(func() { r.openProfileFrom(f, n.Account) })
-				ui.Text(c, "@"+n.Account.Acct).FontSize(11).TextColor(t.TextMuted)
+				r.accountName(c, f, n.Account, 13).FontWeight(600).Shrink(1)
+				ui.Text(c, "@"+n.Account.Acct).FontSize(11).TextColor(t.TextMuted).MaxLines(1)
 			})
 		})
 		if relation != nil {
 			visibilityBadge(c, relation.Visibility)
 			content := func() {
-				renderRichText(c, mastodon.ParseText(relation.Content), 13, func() {
+				r.renderRichText(c, mastodon.ParseText(relation.Content, relation.Emojis...), 13, func() {
 					r.openConversation(f, *relation)
-				}, func(ev ui.InputEvent) { r.postTextInput(f, ev) })
+				}, func(ev ui.InputEvent) {
+					hover.input(ev, true)
+					r.postTextInput(f, ev)
+				})
+				r.pollView(c, relation.Poll, relation.URL)
 			}
 			if warning == "" {
 				content()
@@ -214,107 +218,80 @@ func (r *reader) notificationRow(c *ui.Context, f *feedState, n mastodon.Notific
 				}
 				concealedContent(c, warning, expanded, false, content)
 			}
-			ui.Button(c, "查看帖子").FontSize(12).OnClick(func() { r.openConversation(f, *relation) })
+			ui.Button(c, "查看帖子").AlignSelf(ui.Start).Background(ui.Transparent).BorderWidth(0).Padding(4, 0).FontSize(12).TextColor(t.TextMuted).OnClick(func() { r.openConversation(f, *relation) })
 		}
 	})
 }
 
-// accountHoverDuration keeps pointer feedback brief without animating layout.
-const accountHoverDuration = 140 * time.Millisecond
-
 func (r *reader) accountRow(c *ui.Context, f *feedState, p mastodon.Account) {
 	t := c.Theme()
-	// The hit area stays still while its contents lift, avoiding hover flicker
-	// at the edges and preserving the virtual list's row measurements.
-	hit := ui.Column(c).FillWidth().Padding(4, 8).
-		OnClick(func() { r.openProfileFrom(f, p) })
-	target := float32(0)
-	if hit.Hovered() {
-		target = 1
-	}
-	if hit.Pressed() {
-		target = 0.25
-	}
-	lift := hit.Animate("account-hover", target, accountHoverDuration)
-	movement := lift
-	if c.Preferences().ReduceMotion {
-		movement = 0
-	}
-	paper := ui.Hex("#ffffff")
-	shadowAlpha := float32(0.08)
-	if t.Dark {
-		paper = ui.Hex("#232325")
-		shadowAlpha = 0.22
-	}
-	hit.Children(func() {
-		row := ui.Row(c).FillWidth().Padding(10, 14).Gap(12).Radius(8).
-			Background(paper.Mix(t.SurfaceHover, lift*0.3)).
-			Translate(0, -2*movement)
-		if !c.Preferences().HighContrast {
-			row.Shadow(0, 3*lift, 7*lift, 0, ui.Hex("#000000").Alpha(shadowAlpha*lift))
-		}
-		row.Children(func() {
+	r.listSurface(c, f, ui.Transparent, func(_ *listHoverState) {
+		ui.Row(c).FillWidth().Gap(12).AlignItems(ui.Center).Children(func() {
 			r.avatar(c, f, p, 40)
 			ui.Column(c).Grow(1).Shrink(1).Gap(4).Children(func() {
 				ui.Row(c).Children(func() {
-					ui.Button(c, p.Name()).Background(ui.Transparent).BorderWidth(0).Padding(0).Bold().OnClick(func() { r.openProfileFrom(f, p) })
+					r.accountName(c, f, p, 14).Bold().Shrink(1)
 				})
 				ui.Text(c, "@"+p.Acct).FontSize(12).TextColor(t.TextMuted)
 			})
 		})
-	})
+	}).OnClick(func() { r.openProfileFrom(f, p) })
 }
 
 func (r *reader) avatar(c *ui.Context, f *feedState, p mastodon.Account, size float32) {
-	var bitmap *ui.Bitmap
-	if entry := r.photo(p.Avatar); entry != nil {
-		bitmap = entry.bitmap
-	}
-	avatarImage(c, p.Name(), bitmap, size).Label("查看 " + p.Name()).OnClick(func() { r.openProfileFrom(f, p) })
+	r.accountAvatar(c, p.Name(), p.Avatar, size, p.AvatarStatic).Label("查看 " + p.Name()).OnClick(func() { r.openProfileFrom(f, p) })
 }
 
 func (r *reader) profileHeader(c *ui.Context, f *feedState, p mastodon.Account) {
-	ui.Column(c).Padding(22).Gap(12).BorderWidth(0, 0, 1, 0).BorderColor(c.Theme().Border).Children(func() {
-		r.avatar(c, f, p, 64)
-		ui.Text(c, p.Name()).FontSize(23).Bold()
-		ui.Text(c, "@"+p.Acct).FontSize(12).TextColor(c.Theme().TextMuted)
-		richText(c, mastodon.ParseText(p.Note), 14)
-		ui.Row(c).Gap(12).AlignItems(ui.Center).Children(func() {
-			ui.Text(c, fmt.Sprintf("%d 帖子", p.Statuses)).FontSize(12).TextColor(c.Theme().TextMuted)
-			ui.Button(c, fmt.Sprintf("%d 正在关注", p.Following)).FontSize(12).Background(ui.Transparent).BorderWidth(0).Padding(4, 0).OnClick(func() { r.openConnections(f, "following") })
-			ui.Button(c, fmt.Sprintf("%d 关注者", p.Followers)).FontSize(12).Background(ui.Transparent).BorderWidth(0).Padding(4, 0).OnClick(func() { r.openConnections(f, "followers") })
+	t := c.Theme()
+	ui.Column(c).Padding(22).Gap(20).BorderWidth(0, 0, 1, 0).BorderColor(t.Border).Children(func() {
+		identity := func() {
+			ui.Column(c).Grow(1).Shrink(1).Gap(5).Children(func() {
+				r.emojiText(c, p.Name(), p.Emojis, 23).FontWeight(600)
+				ui.Text(c, "@"+p.Acct).FontSize(12).TextColor(t.TextMuted).Selectable()
+			})
+		}
+		if r.session != nil && p.ID != "" && !r.isSelf(p.ID) {
+			ui.Column(c).Gap(12).Children(func() {
+				ui.Row(c).FillWidth().Gap(14).AlignItems(ui.Center).Children(func() {
+					r.avatar(c, f, p, 56)
+					ui.Spacer(c)
+					r.profileRelationship(c, f, p)
+				})
+				identity()
+			})
+		} else {
+			ui.Row(c).Gap(14).AlignItems(ui.Center).Children(func() {
+				r.avatar(c, f, p, 56)
+				identity()
+			})
+		}
+		if runs := mastodon.ParseText(p.Note, p.Emojis...); len(runs) > 0 {
+			r.renderRichText(c, runs, 14, nil, nil).LineHeight(1.65).FillWidth()
+		}
+		if len(p.Fields) > 0 {
+			ui.Column(c).FillWidth().Gap(2).Children(func() {
+				for i, field := range p.Fields {
+					ui.Column(c.Key(i)).FillWidth().Padding(12).Gap(5).Radius(4).Background(t.Text.Alpha(.035)).Children(func() {
+						ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
+							ui.Text(c, field.Name).FontSize(11).FontWeight(600).TextColor(t.TextMuted).Shrink(1)
+							if field.VerifiedAt != "" {
+								ui.Icon(c, verifiedIcon).Size(13, 13).TextColor(t.TextMuted).Tooltip("此链接已由实例验证")
+							}
+						})
+						r.renderRichText(c, mastodon.ParseText(field.Value, p.Emojis...), 13, nil, nil).FillWidth().LineHeight(1.45)
+					})
+				}
+			})
+		}
+		ui.Row(c).Gap(10).AlignItems(ui.Center).Children(func() {
+			ui.Text(c, fmt.Sprintf("%d 帖子", p.Statuses)).FontSize(12).TextColor(t.TextMuted).Shrink(1)
+			ui.Button(c, fmt.Sprintf("%d 正在关注", p.Following)).FontSize(12).Background(ui.Transparent).BorderWidth(0).Padding(4, 0).Shrink(1).OnClick(func() { r.openConnections(f, "following") })
+			ui.Button(c, fmt.Sprintf("%d 关注者", p.Followers)).FontSize(12).Background(ui.Transparent).BorderWidth(0).Padding(4, 0).Shrink(1).OnClick(func() { r.openConnections(f, "followers") })
 		})
 		if target := mastodon.SafeURL(p.URL); target != "" {
-			ui.Link(c, "在浏览器中查看个人页 ↗", target).FontSize(12)
+			externalTextLink(c, "在浏览器中查看个人页", target)
 		}
-		ui.Text(c, "帖子").FontSize(14).Bold().MarginY(6)
-	})
-}
-
-func (r *reader) previewView(c *ui.Context, f *feedState) {
-	m := *f.preview
-	ui.Scroll(c).TrackScroll(&f.previewScroll).Grow(1).Children(func() {
-		ui.Column(c).Padding(18).Gap(12).Children(func() {
-			ui.Button(c, "关闭图片").OnClick(func() { f.preview = nil })
-			source := m.URL
-			if source == "" {
-				source = m.Preview
-			}
-			entry := r.photo(source)
-			if entry != nil && entry.bitmap != nil {
-				_, h := c.Size()
-				ui.Image(c, entry.bitmap).FillWidth().Height(max(240, h-180)).Fit(ui.Contain).Label(m.Description)
-			} else if entry != nil && !entry.failed {
-				ui.Text(c, "正在加载图片…")
-			} else {
-				ui.Text(c, "图片未能加载，可在浏览器中查看。")
-			}
-			if m.Description != "" {
-				ui.Text(c, m.Description).Selectable().FontSize(13)
-			}
-			if target := mastodon.SafeURL(source); target != "" {
-				ui.Link(c, "打开原图 ↗", target)
-			}
-		})
+		ui.Text(c, "帖子").FontSize(14).FontWeight(600).Margin(4, 0, 0, 0)
 	})
 }

@@ -89,3 +89,26 @@ func TestNativeNotificationReadingAnchorSurvivesPoll(t *testing.T) {
 		t.Fatalf("head refresh displaced reading anchor: %v -> %v", before, after)
 	}
 }
+
+func TestNativeNotificationLayout(t *testing.T) {
+	r := testReader(t)
+	r.session = &mastodon.Session{Account: json.RawMessage(`{"id":"me"}`)}
+	r.notifications.notifications = []mastodon.Notification{
+		{ID: "follow", Type: "follow", Account: mastodon.Account{ID: "a", DisplayName: "Sunshower_Lazy", Acct: "Sunshower_Lazy@mastodon.social"}},
+		{ID: "poll", Type: "poll", Account: mastodon.Account{ID: "b", DisplayName: "Eltrac :Dragonite: :Gengar:", Acct: "eltrac@eltr.ac"}, Status: &mastodon.Status{ID: "s", Visibility: "public", Content: "<p>正在考虑把《大脑充血》改成月刊，纠结发刊日期，所以放个投票在这里</p><p>当然我也不一定参考投票结果（bushi</p>"}},
+	}
+	r.notifications.loaded, r.notifications.end = true, true
+	r.navigate("notifications")
+	tt := ui.NewTester(r.view, 760, 820)
+	savePreview(t, tt, "native-notification-layout")
+	tt.SetSize(420, 560)
+	savePreview(t, tt, "native-notification-layout-compact")
+	tt.SetDark(true)
+	savePreview(t, tt, "native-notification-layout-dark")
+	if err := tt.Click("Sunshower_Lazy"); err != nil {
+		t.Fatal(err)
+	}
+	if len(r.workspaces["notifications"].columns) != 2 {
+		t.Fatal("actor must still open profile")
+	}
+}

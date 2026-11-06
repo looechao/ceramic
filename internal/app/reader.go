@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"sort"
-	"strings"
 	"time"
 
+	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 
 	"ceramic/internal/imagecache"
@@ -21,8 +21,8 @@ type postView struct {
 }
 
 type feedState struct {
+	authRequired         bool
 	readingJump          int
-	previewScroll        ui.ScrollState
 	scroll               ui.ScrollState
 	source               *feedState
 	failedMore           bool
@@ -39,19 +39,31 @@ type feedState struct {
 	query, searchKind    string
 	offset               int
 	preview              *mastodon.Media
+	previewItems         []mastodon.Media
+	previewIndex         int
 	width                float32
 	focalID              string
 }
 
 type reader struct {
-	keyboardTarget ui.Element
-	readingScroll  *readingMotion
-	typing         bool
-	pendingG       time.Time
-	diskImages     *imagecache.Cache
-	closeWindow    func()
-	authFeed       *feedState
-	searchAllowed  bool
+	applyAppearance      func(mygo.ThemeSource)
+	settingsOpen         bool
+	appearance           int
+	preferencesPath      string
+	relationships        map[string]*relationshipState
+	parentWindow         *mygo.Window
+	interactions         map[string]bool
+	composer             *composer
+	openWriting          func()
+	bookmarks, favorites *feedState
+	keyboardTarget       ui.Element
+	readingScroll        *readingMotion
+	typing               bool
+	pendingG             time.Time
+	diskImages           *imagecache.Cache
+	closeWindow          func()
+	authFeed             *feedState
+	searchAllowed        bool
 	*feedState
 	service                      *mastodon.Client
 	update                       func(func())
@@ -77,7 +89,7 @@ func newReader(service *mastodon.Client) *reader {
 	s, _, _ := service.Snapshot()
 	home := &feedState{kind: "home"}
 	return &reader{diskImages: imagecache.New(imagecache.DefaultDir()), service: service, session: s, feedState: home, home: home,
-		searchFeed: &feedState{kind: "search", searchKind: "accounts"}, notifications: &feedState{kind: "notifications"}, selected: "home",
+		bookmarks: &feedState{kind: "bookmarks"}, favorites: &feedState{kind: "favorites"}, searchFeed: &feedState{kind: "search", searchKind: "statuses"}, notifications: &feedState{kind: "notifications"}, selected: "home",
 		images: map[string]*imageEntry{}, imageSlots: make(chan struct{}, 4)}
 }
 
@@ -178,6 +190,9 @@ func (r *reader) loadFeed(f *feedState, more bool) {
 	if f.kind == "search" && f.query == "" {
 		return
 	}
+	if f.kind == "profile" && !more {
+		r.loadRelationship(f.profile.ID)
+	}
 	f.busy = true
 	f.failedMore = more
 	f.message = ""
@@ -197,6 +212,10 @@ func (r *reader) loadFeed(f *feedState, more bool) {
 		var err error
 		person := f.profile
 		switch f.kind {
+		case "local", "federated":
+			posts, err = r.service.PublicTimeline(f.kind == "local", cursor)
+		case "bookmarks", "favorites":
+			posts, next, err = r.service.SavedPosts(f.kind, cursor)
 		case "following", "followers":
 			people, next, err = r.service.AccountConnections(f.profile.ID, f.kind, cursor)
 		case "notifications":
@@ -251,6 +270,10 @@ func (r *reader) loadFeed(f *feedState, more bool) {
 				}
 			} else {
 				f.applyPosts(posts, more)
+				if f.kind == "bookmarks" || f.kind == "favorites" {
+					f.cursor = next
+					f.end = next == "" || next == cursor || len(posts) == 0
+				}
 			}
 			if f.kind == "conversation" {
 				f.end = true
@@ -308,7 +331,7 @@ func (r *feedState) applyNotifications(items []mastodon.Notification, more bool)
 }
 
 func (r *reader) hasScope(scope string) bool {
-	return r.session != nil && (strings.Contains(" "+r.session.Scopes+" ", " "+scope+" ") || strings.Contains(" "+r.session.Scopes+" ", " read "))
+	return r.session.HasScope(scope)
 }
 
 func (r *feedState) applyPosts(posts []mastodon.Status, more bool) {
@@ -332,7 +355,7 @@ func (r *feedState) applyPosts(posts []mastodon.Status, more bool) {
 		if p.Reblog != nil {
 			body = *p.Reblog
 		}
-		r.posts = append(r.posts, &postView{status: p, runs: mastodon.ParseText(body.Content), warning: warning})
+		r.posts = append(r.posts, &postView{status: p, runs: mastodon.ParseText(body.Content, body.Emojis...), warning: warning})
 	}
 	previous := r.cursor
 	if len(posts) > 0 {

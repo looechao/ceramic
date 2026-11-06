@@ -27,7 +27,10 @@ func Run() {
 	}
 	defer stop()
 	reader := newReader(service)
+	reader.applyAppearance = mygo.Theme.SetSource
+	reader.loadPreferences(filepath.Join(dir, "Ceramic", "preferences.json"))
 	mygo.App.WhenReady(func() {
+		mygo.Theme.SetSource(appearanceSources[reader.appearance])
 		options := mygo.WindowOptions{Title: "Ceramic", Width: 1240, Height: 820, MinWidth: 420, MinHeight: 560, Content: ui.View(reader.view)}
 		// Elsewhere the system's title bar stays, because its buttons would cover
 		// the toolbar of whichever column reaches the right edge.
@@ -38,14 +41,24 @@ func Run() {
 			options.Vibrancy = mygo.VibrancySidebar
 		}
 		window := mygo.NewWindow(options)
+		reader.parentWindow = window
 		reader.update = window.Update
 		reader.closeWindow = window.Close
+		reader.openWriting = func() { reader.showComposer() }
 		if menu := mygo.App.Menu(); menu != nil {
-			menu = mygo.NewMenu(columnCloseMenu(menu.Items(), func() { window.Update(reader.closeFocused) }))
+			menu = mygo.NewMenu(columnCloseMenu(menu.Items(), func() {
+				window.Update(func() {
+					if d := reader.composer; d != nil && d.window != nil && d.window.IsFocused() {
+						d.close()
+						return
+					}
+					reader.closeFocused()
+				})
+			}))
 			mygo.App.SetMenu(menu)
 			items := []*mygo.MenuItem{}
-			for i, page := range []string{"profile", "home", "notifications", "search"} {
-				title := []string{"我的", "首页", "通知", "Search"}[i]
+			for i, page := range navigationPages {
+				title := navigationLabels[i]
 				items = append(items, &mygo.MenuItem{Label: title, Accelerator: fmt.Sprintf("CmdOrCtrl+%d", i+1), Click: func(_ *mygo.MenuItem, _ *mygo.Window) {
 					window.Update(func() {
 						if reader.session != nil {
@@ -54,7 +67,7 @@ func Run() {
 					})
 				}})
 			}
-			items = append(items, mygo.Separator(), &mygo.MenuItem{Label: "刷新", Accelerator: "CmdOrCtrl+R", Click: func(_ *mygo.MenuItem, _ *mygo.Window) { window.Update(func() { reader.load(false) }) }})
+			items = append(items, &mygo.MenuItem{Label: "写帖子", Accelerator: "CmdOrCtrl+N", Click: func(_ *mygo.MenuItem, _ *mygo.Window) { window.Update(reader.openWriting) }}, mygo.Separator(), &mygo.MenuItem{Label: "刷新", Accelerator: "CmdOrCtrl+R", Click: func(_ *mygo.MenuItem, _ *mygo.Window) { window.Update(func() { reader.load(false) }) }})
 			menu.Append(&mygo.MenuItem{Label: "Navigate", Submenu: items})
 		}
 		window.OnClosed(func() { mygo.App.Quit() })

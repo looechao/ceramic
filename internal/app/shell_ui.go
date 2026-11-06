@@ -40,10 +40,15 @@ func (r *reader) view(c *ui.Context) {
 		s, _, message := r.service.Snapshot()
 		if s != nil && s != r.session {
 			r.session = s
+			r.relationships = nil
 			r.authorizing = false
+			if r.composer != nil && r.composer.window != nil {
+				r.composer.update(func() {})
+			}
 			r.startStream()
 			if r.authFeed != nil {
 				r.authFeed.message = ""
+				r.authFeed.authRequired = false
 				r.loadFeed(r.authFeed, false)
 			} else {
 				r.message = ""
@@ -62,6 +67,7 @@ func (r *reader) view(c *ui.Context) {
 	}
 	if r.session != nil {
 		r.shell(c)
+		r.settingsView(c)
 		return
 	}
 	if c.Vibrancy() {
@@ -80,18 +86,15 @@ func (r *reader) view(c *ui.Context) {
 func (r *reader) shell(c *ui.Context) {
 	r.typing = false
 	r.ensureProfile()
-	if c.Shortcut(ui.Cmd, ui.Key1) {
-		r.navigate("profile")
+	for i, page := range navigationPages {
+		if c.Shortcut(ui.Cmd, []ui.Key{ui.Key1, ui.Key2, ui.Key3, ui.Key4, ui.Key5, ui.Key6}[i]) {
+			r.navigate(page)
+		}
 	}
-	if c.Shortcut(ui.Cmd, ui.Key2) {
-		r.navigate("home")
+	if c.Shortcut(ui.Cmd, ui.KeyN) && r.openWriting != nil {
+		r.openWriting()
 	}
-	if c.Shortcut(ui.Cmd, ui.Key3) {
-		r.navigate("notifications")
-	}
-	if c.Shortcut(ui.Cmd, ui.Key4) {
-		r.navigate("search")
-	}
+
 	if c.Shortcut(ui.Cmd, ui.KeyW) {
 		r.closeFocused()
 	}
@@ -142,18 +145,20 @@ func (r *reader) shell(c *ui.Context) {
 					continue
 				}
 				f.width = width
-				column := ui.Column(c.Key(f)).Width(width).Shrink(0).FillHeight().Background(paper).Radius(12).Clip().BorderWidth(1).BorderColor(t.Border.Alpha(0.5)).Shadow(0, 2, 8, 0, ui.Hex("#000000").Alpha(0.06))
+				column := ui.Column(c.Key(f)).Width(width).Shrink(0).FillHeight().Background(paper).Radius(12).Clip().BorderWidth(1).BorderColor(t.Text.Alpha(0.08)).Shadow(0, 2, 8, 0, ui.Hex("#000000").Alpha(0.04))
 				column.Focusable()
+				if c.Preferences().HighContrast {
+					column.BorderColor(t.Border)
+				}
 				if ws.focused == f {
 					r.keyboardTarget = column
-					r.advanceReadingScroll(c)
+					if f.preview == nil {
+						r.advanceReadingScroll(c)
+					}
 				}
 				column.HandleInput(func(ev ui.InputEvent) bool {
 					r.readingScrollInput(ev)
 					scroll := &f.scroll
-					if f.preview != nil {
-						scroll = &f.previewScroll
-					}
 					if ev.Y < 48 {
 						scroll = nil
 					}
@@ -165,8 +170,8 @@ func (r *reader) shell(c *ui.Context) {
 					}
 					return false
 				}).OnClick(func() { r.focusColumn(ws, f) })
-				if ws.focused == f {
-					column.BorderColor(t.Accent.Alpha(0.35)).Shadow(0, 4, 12, 0, ui.Hex("#000000").Alpha(0.14))
+				if ws.focused == f && len(ws.columns) > 1 && !c.Preferences().HighContrast {
+					column.BorderColor(t.Accent.Alpha(0.2)).Shadow(0, 2, 8, 0, ui.Hex("#000000").Alpha(0.07))
 				}
 				if ws.revealFocus && ws.focused == f {
 					column.ScrollIntoView()
@@ -176,9 +181,6 @@ func (r *reader) shell(c *ui.Context) {
 					// Apply jumps before List/TrackScroll consume this frame's position.
 					if f.readingJump != 0 {
 						scroll := &f.scroll
-						if f.preview != nil {
-							scroll = &f.previewScroll
-						}
 						if f.readingJump > 0 {
 							scroll.Y = 1e9
 							if f.preview == nil {
@@ -201,7 +203,11 @@ func (r *reader) shell(c *ui.Context) {
 			}
 		})
 	})
-	r.readingKeys(c)
+	if ws := r.workspaces[r.selected]; ws != nil && ws.focused != nil && ws.focused.preview != nil {
+		r.previewView(c, ws.focused)
+	} else {
+		r.readingKeys(c)
+	}
 }
 
 // Include a full neighboring column on either side so ordinary horizontal
@@ -224,44 +230,32 @@ func (r *reader) pane(c *ui.Context, f *feedState, ws *workspace, index int, war
 		header = ui.Hex("#2b2b2e")
 	}
 	ui.Toolbar(c, func() {
-		if f.preview != nil {
-			ui.Button(c, "返回").OnClick(func() { f.preview = nil })
-		}
+
 		if index > 0 {
 			ui.ButtonBase(c).Size(28, 28).Label("关闭此列").Tooltip("关闭此列 · " + shortcutHint("W")).OnClick(func() { r.closeColumn(ws, f) }).Children(func() { ui.Icon(c, closeIcon).Size(18, 18).TextColor(t.TextMuted) })
 		}
-		title := map[string]string{"home": "Home", "search": "Search", "profile": "Profile", "conversation": "Conversation", "notifications": "通知", "following": "正在关注", "followers": "关注者"}[f.kind]
+		title := map[string]string{"home": "首页", "search": "Explore", "local": "Local", "federated": "Federated", "profile": "个人资料", "conversation": "对话", "notifications": "通知", "bookmarks": "书签", "favorites": "喜欢", "following": "正在关注", "followers": "关注者"}[f.kind]
 		if index > 0 && f.kind == "profile" {
 			title = f.profile.Name()
 		}
-		ui.Text(c, title).FontSize(14).FontWeight(600)
+		r.emojiText(c, title, f.profile.Emojis, 14).FontWeight(600)
 		ui.Spacer(c)
 		ui.ButtonBase(c).Size(28, 28).Label("刷新 " + title).Tooltip("刷新 " + title).Disabled(f.busy).OnClick(func() { r.loadFeed(f, false) }).Children(func() { ui.Icon(c, refreshIcon).Size(16, 16).TextColor(t.TextMuted) })
-	}).Background(header).Height(48).Padding(8, 16).BorderWidth(0, 0, 1, 0).BorderColor(t.Border)
+	}).Background(header).Height(48).Padding(8, 16).BorderWidth(0, 0, 1, 0).BorderColor(postDivider(c))
 	if !warm {
 		return
 	}
 	ui.Column(c).Grow(1).Shrink(1).FillWidth().Background(paper).Children(func() {
+		scope := map[string]string{"bookmarks": "read:bookmarks", "favorites": "read:favourites"}[f.kind]
+		if scope != "" && !r.hasScope(scope) {
+			ui.Text(c, "当前登录缺少权限，请退出后重新登录。").Padding(16)
+			return
+		}
 		if f.message != "" {
 			ui.Text(c, f.message).FontSize(12).Padding(10, 14).Background(t.Surface)
-			if !f.busy && !r.authorizing {
+			if !f.busy && !r.authorizing && !f.authRequired {
 				ui.Button(c, "重试").Margin(4, 14).OnClick(func() { r.loadFeed(f, f.failedMore) })
 			}
-		}
-		if r.authorizing && (f.kind == "search" || f.kind == "notifications") {
-			ui.Button(c, "取消授权").Margin(8, 14).OnClick(r.cancelAuthorization)
-		}
-		if f.kind == "notifications" && r.session != nil && !r.hasScope("read:notifications") && !r.authorizing {
-			ui.Text(c, "这次登录还没有通知权限，补充授权一次即可读取通知。").FontSize(12).TextColor(t.TextMuted).Padding(10, 14)
-			ui.Button(c, "授权只读通知").Margin(4, 14).Disabled(f.busy).OnClick(func() {
-				r.feedState = f
-				r.instance = r.session.Instance
-				r.login()
-			})
-		}
-		if f.preview != nil {
-			r.previewView(c, f)
-			return
 		}
 		if f.kind == "search" {
 			r.searchHeader(c)
@@ -292,38 +286,43 @@ func (r *reader) sidebar(c *ui.Context) {
 		if runtime.GOOS == "darwin" {
 			ui.Box(c).FillWidth().Height(max(52, c.TitleBar().Height)).DragWindow()
 		}
-		ui.Column(c).FillWidth().Grow(1).Padding(12, 20).Gap(12).Children(func() {
+		ui.Column(c).FillWidth().Grow(1).Padding(8, 20).Gap(4).Children(func() {
 
 			bg := ui.Transparent
 			if r.selected == "profile" {
 				bg = t.Text.Alpha(0.09)
 			}
-			ui.ButtonBase(c).Size(48, 48).Radius(10).Background(bg).Label("我的").Tooltip("我的 · " + shortcutHint("1")).ContextMenu(func(m *ui.Menu) {
-				if r.session != nil && m.Item("退出登录").Chosen() {
-					r.logout()
-				}
-			}).OnClick(func() {
-				if r.session != nil {
-					r.navigate("profile")
-				} else {
-					r.selected = "profile"
-				}
-			}).Children(func() {
+			avatar := ui.ButtonBase(c).Size(48, 48).Radius(10).Background(bg).Label("我的").Tooltip("我的 · " + shortcutHint("1"))
+			if r.selected == "profile" && r.session != nil {
+				avatar.Menu(func(m *ui.Menu) {
+					if m.Item("设置").Chosen() {
+						r.settingsOpen = true
+					}
+					if m.Item("退出登录").Chosen() {
+						r.logout()
+					}
+				})
+			} else {
+				avatar.OnClick(func() {
+					if r.session != nil {
+						r.navigate("profile")
+					} else {
+						r.selected = "profile"
+					}
+				})
+			}
+			avatar.Children(func() {
 				if r.session == nil {
 					ui.Icon(c, navIcons[2]).Size(24, 24).TextColor(t.TextMuted)
 					return
 				}
 				var me mastodon.Account
 				_ = json.Unmarshal(r.session.Account, &me)
-				var bitmap *ui.Bitmap
-				if e := r.photo(me.Avatar); e != nil {
-					bitmap = e.bitmap
-				}
-				avatarImage(c, me.Name(), bitmap, 32)
+				r.accountAvatar(c, me.Name(), me.Avatar, 32, me.AvatarStatic)
 			})
-			for i, page := range []string{"home", "notifications", "search"} {
-				label := []string{"首页", "通知", "Search"}[i]
-				icon := []*ui.SVG{navIcons[0], bellIcon, navIcons[1]}[i]
+			for i, page := range navigationPages[1:] {
+				label := navigationLabels[i+1]
+				icon := []*ui.SVG{navIcons[0], bellIcon, bookmarkIcon, heartIcon, navIcons[1]}[i]
 				bg, fg := ui.Transparent, t.TextMuted
 				if r.selected == page {
 					bg, fg = t.Text.Alpha(0.09), t.Accent
@@ -358,6 +357,21 @@ func (r *reader) sidebar(c *ui.Context) {
 					}
 				})
 			}
+			ui.Spacer(c)
+			ui.Text(c, "Browse").FontSize(10).TextColor(t.TextMuted).AlignSelf(ui.Center)
+			for _, page := range []string{"local", "federated"} {
+				label := map[string]string{"local": "Local", "federated": "Federated"}[page]
+				bg := ui.Transparent
+				if r.selected == page {
+					bg = t.Text.Alpha(.09)
+				}
+				ui.ButtonBase(c.Key(page)).Size(48, 30).Radius(8).Background(bg).Label(label).Tooltip(label).Disabled(r.session == nil).OnClick(func() { r.navigate(page) }).Children(func() { ui.Text(c, label).FontSize(10) })
+			}
+			ui.ButtonBase(c).Size(48, 44).Radius(10).Label("写帖子").Tooltip("写帖子 · " + shortcutHint("N")).Disabled(r.session == nil).OnClick(func() {
+				if r.openWriting != nil {
+					r.openWriting()
+				}
+			}).Children(func() { ui.Icon(c, writingIcon).Size(22, 22).TextColor(t.Text) })
 		})
 	})
 }

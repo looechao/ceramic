@@ -50,19 +50,32 @@ func (r *reader) logout() {
 	}
 	r.stopStream()
 	r.unread = 0
+	r.interactions = nil
+	r.relationships = nil
 	r.generation++
 	r.session = nil
 	r.authorizing = false
 	r.home = &feedState{kind: "home"}
 	r.feedState = r.home
-	r.searchFeed = &feedState{kind: "search", searchKind: "accounts"}
+	r.searchFeed = &feedState{kind: "search", searchKind: "statuses"}
 	r.notifications = &feedState{kind: "notifications"}
+	r.bookmarks = &feedState{kind: "bookmarks"}
+	r.favorites = &feedState{kind: "favorites"}
+	if r.composer != nil && r.composer.cancelPublish != nil {
+		r.composer.cancelPublish()
+	}
+	if r.composer != nil && r.composer.close != nil {
+		r.composer.busy = false
+		r.composer.close()
+	}
+	r.composer = nil
 	r.ownProfile = nil
 	r.workspaces = nil
 	r.authFeed = nil
 	r.searchAllowed = false
 	r.selected = "home"
 	r.query = ""
+	r.searchTab = 0
 	r.images = map[string]*imageEntry{}
 }
 
@@ -148,14 +161,19 @@ func (r *reader) loginView(c *ui.Context) {
 				if r.authorizing {
 					label = "等待浏览器授权…"
 				}
-				ui.PrimaryButton(c, label).Height(40).Padding(8, 24).Radius(20).Margin(24, 0, 0, 0).Disabled(r.busy || r.authorizing).OnClick(r.login)
+				ui.Row(c).Gap(8).AlignItems(ui.Center).Margin(24, 0, 0, 0).Children(func() {
+					if r.busy || r.authorizing {
+						ui.Spinner(c).Size(16, 16).Label(label)
+					}
+					ui.PrimaryButton(c, label).Height(40).Padding(8, 24).Radius(20).Disabled(r.busy || r.authorizing).OnClick(r.login)
+				})
 				if r.message != "" {
 					ui.Text(c, r.message).FontSize(12).LineHeight(1.5).TextColor(t.TextMuted).FillWidth().Margin(16, 0, 0, 0)
 				}
 				if r.authorizing {
 					ui.Button(c, "取消连接").Margin(12, 0, 0, 0).OnClick(r.cancelAuthorization)
 				}
-				ui.Text(c, "在浏览器中安全授权，仅申请读取权限。").FontSize(11).TextColor(t.TextMuted).Margin(32, 0, 0, 0)
+				ui.Text(c, "在浏览器中授权账号的读取、写入、关注与推送权限。").FontSize(11).TextColor(t.TextMuted).Margin(32, 0, 0, 0)
 			})
 		})
 	})

@@ -74,7 +74,7 @@ func TestNativeTimeline(t *testing.T) {
 	r.applyPosts([]mastodon.Status{{ID: "3", Content: "<p>这是一条用于检查原生排版的测试动态。</p><p>文字直接由 Go 组件渲染，链接也可以 <a href=\"https://example.com\">点击打开</a>。</p>", Account: mastodon.Account{DisplayName: "林间散步", Acct: "forest@example.com"}, URL: "https://example.com/3", CreatedAt: "2026-11-05T05:00:00Z"}, {ID: "2", Content: "<p>折叠内容测试。</p>", Spoiler: "内容警告", Account: mastodon.Account{DisplayName: "远山", Acct: "mountain@example.com"}, URL: "https://example.com/2"}}, false)
 	tt := ui.NewTester(r.view, 760, 820)
 	savePreview(t, tt, "native-timeline")
-	if !tt.HasText("Home") {
+	if !tt.HasText("首页") {
 		t.Fatal(tt.Texts())
 	}
 	if err := tt.Click("展开隐藏内容：内容警告"); err != nil {
@@ -99,7 +99,8 @@ func TestNativeTimeline(t *testing.T) {
 	savePreview(t, tt, "native-timeline-compact")
 	tt.SetDark(true)
 	savePreview(t, tt, "native-timeline-dark")
-	if err := tt.RightClick("我的"); err != nil {
+	tt.Click("我的")
+	if err := tt.Click("我的"); err != nil {
 		t.Fatal(err)
 	}
 	if err := tt.ChooseMenuItem("退出登录"); err != nil {
