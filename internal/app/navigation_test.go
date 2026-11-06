@@ -31,10 +31,10 @@ func TestNativeNavigation(t *testing.T) {
 	if !r.posts[0].expanded {
 		t.Fatal("CW closed")
 	}
-	if err := tt.Click("Search"); err != nil {
+	if err := tt.Click("Explore"); err != nil {
 		t.Fatal(err)
 	}
-	if r.kind != "search" || !tt.HasText("授权只读搜索") {
+	if r.kind != "search" || tt.HasText("补充搜索权限") || r.searchKind != "statuses" {
 		t.Fatal(tt.Texts())
 	}
 	r.query = "forest"
@@ -140,7 +140,7 @@ func TestNativeColumnsAndMedia(t *testing.T) {
 	r.searchFeed.loaded = true
 	r.searchFeed.end = true
 	tt := ui.NewTester(r.view, 1240, 820)
-	if !tt.HasText("刷新 Home") || tt.HasText("刷新 Search") || tt.HasText("刷新 Profile") {
+	if !tt.HasText("刷新 首页") || tt.HasText("刷新 Explore") || tt.HasText("刷新 个人资料") {
 		t.Fatal("only active tab root should be visible")
 	}
 	savePreview(t, tt, "native-columns-light")
@@ -186,7 +186,7 @@ func TestNativeColumnsAndMedia(t *testing.T) {
 	tt.SetDark(true)
 	r.navigate("search")
 	tt.Frame()
-	if tt.HasText("刷新 Home") || !tt.HasText("刷新 Search") {
+	if tt.HasText("刷新 首页") || !tt.HasText("刷新 Explore") {
 		t.Fatal("tab roots mixed")
 	}
 	r.openProfileFrom(r.searchFeed, author)
@@ -197,7 +197,7 @@ func TestNativeColumnsAndMedia(t *testing.T) {
 		t.Fatal("Home path lost")
 	}
 	tt.SetSize(420, 560)
-	if tt.HasText("刷新 Home") || !tt.HasText("刷新 林间散步") {
+	if tt.HasText("刷新 首页") || !tt.HasText("刷新 林间散步") {
 		t.Fatal("compact should show latest detail")
 	}
 	savePreview(t, tt, "native-columns-compact")
@@ -213,7 +213,7 @@ func TestNativeColumnsAndMedia(t *testing.T) {
 	r.navigate("home")
 	r.closeFocused()
 	tt.SetSize(1240, 560)
-	if r.feedState != r.home || !tt.HasText("刷新 Home") {
+	if r.feedState != r.home || !tt.HasText("刷新 首页") {
 		t.Fatal("root not restored")
 	}
 	savePreview(t, tt, "native-columns-short")
@@ -334,7 +334,7 @@ func TestSidebarAccountAndWindowControls(t *testing.T) {
 	r := testReader(t)
 	tt := ui.NewTester(r.view, 420, 560)
 	tt.SetTitleBar(ui.TitleBar{Height: 52, Left: 88})
-	if !tt.HasText("我的") || !tt.HasText("首页") || !tt.HasText("Search") {
+	if !tt.HasText("我的") || !tt.HasText("首页") || !tt.HasText("Explore") {
 		t.Fatal("signed-out sidebar missing")
 	}
 	mine, ok := tt.Find("我的")

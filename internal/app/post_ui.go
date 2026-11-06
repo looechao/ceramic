@@ -15,11 +15,11 @@ func (r *reader) post(c *ui.Context, f *feedState, p *postView) {
 	if s.Reblog != nil {
 		s = *s.Reblog
 	}
-	r.postSurface(c, f, postTint(p), func(hover *postHoverState) {
+	r.listSurface(c, f, postTint(p), func(hover *listHoverState) {
 		if p.status.Reblog != nil {
 			ui.Row(c).Gap(6).Margin(0, 0, 2, 54).Children(func() {
 				ui.Icon(c, boostIcon).Size(13, 13).TextColor(t.TextMuted)
-				ui.Text(c, p.status.Account.Name()+" 转发了").FontSize(11).TextColor(t.TextMuted)
+				r.emojiText(c, p.status.Account.Name()+" 转发了", p.status.Account.Emojis, 11).TextColor(t.TextMuted)
 			})
 		}
 		ui.Row(c).Gap(12).AlignItems(ui.Start).Children(func() {
@@ -27,14 +27,15 @@ func (r *reader) post(c *ui.Context, f *feedState, p *postView) {
 			ui.Column(c).Grow(1).Shrink(1).Gap(6).Children(func() {
 				ui.Column(c).Gap(2).Children(func() {
 					ui.Row(c).Gap(8).Children(func() {
-						ui.Button(c, s.Account.Name()).Background(ui.Transparent).BorderWidth(0).Padding(0).FontWeight(600).FontSize(14).Shrink(1).MaxLines(1).OnClick(func() { r.openProfileFrom(f, s.Account) })
+						r.accountName(c, f, s.Account, 14).FontWeight(600).Shrink(1)
 						ui.Spacer(c)
 						if date, err := time.Parse(time.RFC3339, s.CreatedAt); err == nil {
 							ui.Text(c, relativeTime(date)).FontSize(11).TextColor(t.TextMuted).Tooltip(date.Local().Format("2006-01-02 15:04"))
 						}
 					})
 					ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
-						ui.Text(c, "@"+s.Account.Acct).FontSize(12).TextColor(t.TextMuted).Grow(1).Shrink(1).MaxLines(1)
+						ui.Text(c, "@"+s.Account.Acct).OnClick(func() { r.openProfileFrom(f, s.Account) }).FontSize(12).TextColor(t.TextMuted).Shrink(1).MaxLines(1)
+						ui.Spacer(c)
 						visibilityBadge(c, s.Visibility)
 					})
 				})
@@ -45,7 +46,7 @@ func (r *reader) post(c *ui.Context, f *feedState, p *postView) {
 							ui.Text(c, "回复").FontSize(11).TextColor(t.TextMuted)
 						})
 					}
-					renderRichText(c, p.runs, 14, func() {
+					r.renderRichText(c, p.runs, 14, func() {
 						if f.preview == nil {
 							r.openConversation(f, s)
 						}
@@ -53,6 +54,7 @@ func (r *reader) post(c *ui.Context, f *feedState, p *postView) {
 						hover.input(ev, true)
 						r.postTextInput(f, ev)
 					})
+					r.pollView(c, s.Poll, s.URL)
 					if s.Card != nil && len(s.Media) == 0 {
 						r.linkPreview(c, *s.Card)
 					}
@@ -61,7 +63,7 @@ func (r *reader) post(c *ui.Context, f *feedState, p *postView) {
 							ui.Row(c.Key(i)).Gap(8).Children(func() {
 								for j := i; j < min(i+2, len(s.Media)); j++ {
 									m := s.Media[j]
-									ui.Column(c.Key(j)).Grow(1).Basis(0).Children(func() { r.media(c, f, m, len(s.Media) == 1) })
+									ui.Column(c.Key(j)).Grow(1).Basis(0).Children(func() { r.media(c, f, m, len(s.Media) == 1, s.Media...) })
 								}
 							})
 						}
@@ -87,10 +89,31 @@ func (r *reader) post(c *ui.Context, f *feedState, p *postView) {
 				r.postFooter(c, f, s)
 			})
 		})
+	}).Label("打开对话 " + s.ID).OnClick(func() {
+		if f.preview == nil {
+			r.openConversation(f, s)
+		}
 	})
 }
 
-func (r *reader) media(c *ui.Context, f *feedState, m mastodon.Media, single bool) {
+// Reserve the same geometry before and after decoding, including servers
+// that omit dimensions. Multi-image rows keep their shared thumbnail height.
+func mediaSlotHeight(m mastodon.Media, width float32, single bool) float32 {
+	if !single {
+		return 146
+	}
+	dimensions := m.Meta.Small
+	if dimensions.Width <= 0 || dimensions.Height <= 0 {
+		dimensions = m.Meta.Original
+	}
+	ratio := float32(9.0 / 16.0)
+	if dimensions.Width > 0 && dimensions.Height > 0 {
+		ratio = float32(dimensions.Height) / float32(dimensions.Width)
+	}
+	return max(1, min(340, width*ratio))
+}
+
+func (r *reader) media(c *ui.Context, f *feedState, m mastodon.Media, single bool, gallery ...mastodon.Media) {
 	ui.Column(c).Gap(6).Children(func() {
 		if m.Type == "image" {
 			preview := m.Preview
@@ -98,37 +121,26 @@ func (r *reader) media(c *ui.Context, f *feedState, m mastodon.Media, single boo
 				preview = m.URL
 			}
 			entry := r.photo(preview)
-			if entry != nil && entry.bitmap != nil {
-				available := max(1, f.width-86)
-				height := float32(146)
-				if single {
-					bw, bh := entry.bitmap.Size()
-					height = min(340, available*float32(bh)/float32(bw))
+			height := mediaSlotHeight(m, max(1, f.width-86), single)
+			ui.Box(c).FillWidth().Height(height).Radius(10).Clip().Background(c.Theme().Surface).AlignItems(ui.Center).Justify(ui.Center).Children(func() {
+				if entry != nil && entry.bitmap != nil {
+					ui.Image(c, entry.bitmap).FillWidth().Height(height).Fit(ui.Cover).Radius(10).Label(m.Description).OnClick(func() {
+						r.openImage(f, m, gallery)
+					})
+				} else if entry == nil || entry.failed {
+					ui.Column(c).Gap(6).AlignItems(ui.Center).Children(func() {
+						ui.Text(c, "图片未能加载").FontSize(12).TextColor(c.Theme().TextMuted)
+						if target := mastodon.SafeURL(m.URL); target != "" {
+							externalTextLink(c, "打开图片", target)
+						}
+					})
+				} else {
+					ui.Spinner(c).Size(18, 18).Label("正在加载图片")
 				}
-				ui.Image(c, entry.bitmap).FillWidth().Height(max(1, height)).Fit(ui.Cover).Radius(10).Label(m.Description).OnClick(func() { copy := m; f.preview = &copy })
-			} else {
-				label := "正在加载图片…"
-				if entry == nil || entry.failed {
-					label = "图片未能加载，可在浏览器中查看"
-				}
-				ui.Text(c, label).Padding(18).TextColor(c.Theme().TextMuted)
-			}
+			})
 		}
-		showExternal := m.Type != "image"
-		if m.Type == "image" {
-			source := m.Preview
-			if source == "" {
-				source = m.URL
-			}
-			entry := r.photo(source)
-			showExternal = entry == nil || entry.failed
-		}
-		if target := mastodon.SafeURL(m.URL); target != "" && showExternal {
-			label := "打开图片 ↗"
-			if m.Type != "image" {
-				label = "在浏览器中打开媒体 ↗"
-			}
-			ui.Link(c, label, target).FontSize(12)
+		if target := mastodon.SafeURL(m.URL); target != "" && m.Type != "image" {
+			externalTextLink(c, "在浏览器中打开媒体", target)
 		}
 	})
 }
@@ -140,8 +152,16 @@ func (r *reader) linkPreview(c *ui.Context, card mastodon.LinkCard) {
 	}
 	t := c.Theme()
 	ui.Row(c).Gap(10).Padding(10).Radius(7).Background(t.Surface).AlignItems(ui.Start).Children(func() {
-		if e := r.photo(card.Image); e != nil && e.bitmap != nil {
-			ui.Image(c, e.bitmap).Size(64, 64).Shrink(0).Fit(ui.Cover).Radius(5).Label("外链预览缩略图")
+		if e := r.photo(card.Image); e != nil {
+			ui.Box(c).Size(64, 64).Shrink(0).Radius(5).AlignItems(ui.Center).Justify(ui.Center).Children(func() {
+				if e.bitmap != nil {
+					ui.Image(c, e.bitmap).Size(64, 64).Fit(ui.Cover).Radius(5).Label("外链预览缩略图")
+				} else if !e.failed && !e.ready {
+					ui.Spinner(c).Size(18, 18).Label("正在加载外链缩略图")
+				} else {
+					ui.Icon(c, externalIcon).Size(18, 18).TextColor(t.TextMuted)
+				}
+			})
 		}
 		ui.Column(c).Grow(1).Shrink(1).Gap(4).Children(func() {
 			if card.Provider != "" {
@@ -162,29 +182,90 @@ func (r *reader) linkPreview(c *ui.Context, card mastodon.LinkCard) {
 func (r *reader) postFooter(c *ui.Context, f *feedState, s mastodon.Status) {
 	t := c.Theme()
 	services := c.Services()
-	ui.Row(c).Margin(5, 0, 0, 0).Gap(18).Children(func() {
+	ui.Row(c).Margin(5, 0, 0, 0).Gap(4).Children(func() {
 		for i, item := range []struct {
-			icon  *ui.SVG
-			count int
-			label string
-		}{{replyIcon, s.Replies, "回复"}, {boostIcon, s.Reblogs, "转发"}, {heartIcon, s.Favourites, "喜欢"}} {
-			var e ui.Element
-			if i == 0 {
-				e = ui.ButtonBase(c.Key(i)).OnClick(func() { r.openConversation(f, s) })
-			} else {
-				e = ui.Row(c.Key(i))
+			icon          *ui.SVG
+			count         int
+			label, action string
+			active        bool
+		}{
+			{replyIcon, s.Replies, "回复", "", false},
+			{boostIcon, s.Reblogs, "转发", "reblog", s.Reblogged},
+			{heartIcon, s.Favourites, "喜欢", "favourite", s.Favourited},
+			{bookmarkIcon, 0, "书签", "bookmark", s.Bookmarked},
+		} {
+			if i == 3 {
+				ui.Spacer(c)
 			}
-			e.Padding(0).Justify(ui.Start).Grow(1).Gap(5).Height(28).Label(fmt.Sprintf("%s %d", item.label, item.count)).Tooltip(fmt.Sprintf("%s %d", item.label, item.count)).Children(func() {
-				ui.Icon(c, item.icon).Size(16, 16).TextColor(t.TextMuted)
+			action, label := item.action, item.label
+			if item.active {
+				action = "un" + action
+				label = "取消" + label
+			}
+			hint := label
+			if i != 3 {
+				hint = fmt.Sprintf("%s %d", label, item.count)
+			}
+			disabled := i != 0 && (r.interactions[s.ID] || r.session == nil)
+			if i == 1 && !r.canBoost(s) {
+				disabled = true
+				hint = "此帖不可转发"
+			}
+			ink := t.Text
+			icon := item.icon
+			if i == 2 {
+				ink = ui.Hex("#ce3150")
+				if t.Dark {
+					ink = ui.Hex("#ff718b")
+				}
+				if item.active {
+					icon = heartFilledIcon
+				}
+			}
+			button := ui.ButtonBase(c.Key(i)).Padding(0, 6).MinWidth(30).Shrink(0).Justify(ui.Center).Gap(4).Height(30).Radius(15).Label(hint).Tooltip(hint).Disabled(disabled).OnClick(func() {
+				if i == 0 {
+					r.openConversation(f, s)
+				} else {
+					r.interact(f, s, action)
+				}
+			})
+			fg := postActionStyle(c, button, ink, item.active, disabled)
+			button.Children(func() {
+				ui.Icon(c, icon).Size(16, 16).TextColor(fg)
 				if item.count > 0 {
-					ui.Text(c, fmt.Sprint(item.count)).FontSize(11).TextColor(t.TextMuted)
+					ui.Text(c, fmt.Sprint(item.count)).FontSize(11).TextColor(fg)
 				}
 			})
 		}
 		if target := mastodon.SafeURL(s.URL); target != "" {
-			ui.ButtonBase(c).Size(24, 24).Label("打开原帖").Tooltip("在浏览器中打开原帖").OnClick(func() { services.OpenURL(target) }).Children(func() { ui.Icon(c, externalIcon).Size(15, 15).TextColor(t.TextMuted) })
+			button := ui.ButtonBase(c).Size(30, 30).Radius(15).Label("打开原帖").Tooltip("在浏览器中打开原帖").OnClick(func() { services.OpenURL(target) })
+			fg := postActionStyle(c, button, t.Text, false, false)
+			button.Children(func() { ui.Icon(c, externalIcon).Size(15, 15).TextColor(fg) })
 		}
 	})
+}
+
+// Frequent actions respond immediately, without animation or layout movement.
+func postActionStyle(c *ui.Context, button ui.Element, ink ui.Color, active, disabled bool) ui.Color {
+	fg := c.Theme().TextMuted
+	if active {
+		fg = ink
+	}
+	bg := ui.Transparent
+	if !disabled {
+		if button.Hovered() {
+			fg = ink
+			bg = ink.Alpha(.09)
+		}
+		if button.Pressed() {
+			fg = ink
+			bg = ink.Alpha(.17)
+		}
+	} else {
+		fg = fg.Alpha(.45)
+	}
+	button.Background(bg)
+	return fg
 }
 
 func concealedContent(c *ui.Context, warning string, expanded *bool, media bool, content func()) {
@@ -232,15 +313,16 @@ func (r *reader) postTextInput(f *feedState, ev ui.InputEvent) {
 	}
 }
 
-func renderRichText(c *ui.Context, runs []mastodon.TextRun, size float32, open func(), input func(ui.InputEvent)) {
+func renderRichText(c *ui.Context, runs []mastodon.TextRun, size float32, open func(), input func(ui.InputEvent), loaders ...func(mastodon.CustomEmoji) *ui.Bitmap) ui.Element {
 	paragraph := ui.RichText(c).FontSize(size).LineHeight(1.55).Selectable()
+	var onInput func(ui.InputEvent) bool
 	if open == nil {
 		paragraph.OnClick(func() {})
 	} else {
 		gesture := ui.Local(paragraph, "selection-gesture", func() textSelectionGesture { return textSelectionGesture{} })
 		start, end := paragraph.TextSelection()
 		selected := start != end
-		paragraph.HandleInput(func(ev ui.InputEvent) bool {
+		onInput = func(ev ui.InputEvent) bool {
 			if input != nil {
 				input(ev)
 			}
@@ -257,28 +339,32 @@ func renderRichText(c *ui.Context, runs []mastodon.TextRun, size float32, open f
 				gesture.suppress = gesture.suppress || dx*dx+dy*dy > 9
 			}
 			return false
-		}).OnClick(func() {
+		}
+		paragraph.OnClick(func() {
 			if !selected && !gesture.suppress {
 				open()
 			}
 		})
 	}
-	paragraph.Children(func() {
-		for _, run := range runs {
-			var e ui.Element
-			if run.URL != "" {
-				e = ui.Link(c, run.Text, run.URL)
-			} else {
-				e = ui.Text(c, run.Text)
-			}
-			if run.Bold {
-				e.Bold()
-			}
-			if run.Italic {
-				e.Italic()
-			}
+	var loader func(mastodon.CustomEmoji) *ui.Bitmap
+	if len(loaders) > 0 {
+		loader = loaders[0]
+	}
+	copyEmoji := appendRichRuns(c, paragraph, runs, size, loader)
+	paragraph.HandleInput(func(ev ui.InputEvent) bool {
+		if copyEmoji != nil && copyEmoji(ev) {
+			return true
 		}
+		if onInput != nil {
+			return onInput(ev)
+		}
+		if input != nil {
+			input(ev)
+		}
+		return false
 	})
+
+	return paragraph
 }
 
 func relativeTime(date time.Time) string {

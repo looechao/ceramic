@@ -117,3 +117,66 @@ func TestPostFastDragDoesNotNavigate(t *testing.T) {
 		t.Fatal("ordinary click after fast drag did not open conversation")
 	}
 }
+
+func TestPostBlankAreaAndControls(t *testing.T) {
+	for _, target := range []string{"blank", "handle", "avatar", "name", "link", "like"} {
+		t.Run(target, func(t *testing.T) {
+			r := testReader(t)
+			r.session = &mastodon.Session{Scopes: mastodon.Scopes, Account: json.RawMessage(`{"id":"me"}`)}
+			post := mastodon.Status{ID: "post", Content: `<p>Body <a href="https://example.org">Link</a></p>`, Account: mastodon.Account{ID: "author", DisplayName: "Author", Acct: "author"}}
+			r.home.applyPosts([]mastodon.Status{post}, false)
+			r.home.loaded, r.home.end = true, true
+			tt := ui.NewTester(r.view, 1240, 820)
+			switch target {
+			case "blank":
+				b, _ := tt.Find("Author")
+				tt.ClickAt(b.X+220, b.Y+8)
+			case "handle":
+				tt.Click("@author")
+			case "avatar":
+				tt.Click("查看 Author")
+			case "name":
+				tt.Click("Author")
+			case "link":
+				tt.Click("Link")
+			case "like":
+				tt.Click("喜欢 0")
+			}
+			ws := r.workspaces["home"]
+			switch target {
+			case "blank":
+				if len(ws.columns) != 2 || ws.focused.kind != "conversation" {
+					t.Fatal("blank area did not open conversation")
+				}
+			case "handle", "avatar", "name":
+				if len(ws.columns) != 2 || ws.focused.kind != "profile" {
+					t.Fatal("account control did not open only profile")
+				}
+			default:
+				if len(ws.columns) != 1 {
+					t.Fatal("nested control opened conversation")
+				}
+			}
+		})
+	}
+}
+
+func TestProfileAndConnectionsReuseColumns(t *testing.T) {
+	r := testReader(t)
+	r.session = &mastodon.Session{Account: json.RawMessage(`{"id":"me"}`)}
+	person := mastodon.Account{ID: "person"}
+	r.openProfileFrom(r.home, person)
+	ws := r.workspaces["home"]
+	profile := ws.focused
+	profile.scroll.Y = 123
+	r.openProfileFrom(r.home, person)
+	if len(ws.columns) != 2 || ws.focused != profile || profile.scroll.Y != 123 {
+		t.Fatal("duplicate profile or lost reading position")
+	}
+	r.openConnections(profile, "followers")
+	followers := ws.focused
+	r.openConnections(profile, "followers")
+	if len(ws.columns) != 3 || ws.focused != followers {
+		t.Fatal("duplicate followers")
+	}
+}

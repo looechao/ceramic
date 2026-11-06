@@ -49,13 +49,24 @@ func (a *Client) request(method, endpoint, token string, form url.Values, out an
 }
 
 func (a *Client) requestHeaders(method, endpoint, token string, form url.Values, out any) (http.Header, error) {
+	return a.requestExtra(method, endpoint, token, form, out, nil)
+}
+
+func (a *Client) requestExtra(method, endpoint, token string, form url.Values, out any, headers http.Header) (http.Header, error) {
+	return a.requestExtraContext(context.Background(), method, endpoint, token, form, out, headers)
+}
+
+func (a *Client) requestExtraContext(ctx context.Context, method, endpoint, token string, form url.Values, out any, headers http.Header) (http.Header, error) {
 	var body io.Reader
 	if form != nil {
 		body = strings.NewReader(form.Encode())
 	}
-	req, err := http.NewRequest(method, endpoint, body)
+	req, err := http.NewRequestWithContext(ctx, method, endpoint, body)
 	if err != nil {
 		return nil, err
+	}
+	for key, values := range headers {
+		req.Header[key] = values
 	}
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", "Ceramic/0.1")

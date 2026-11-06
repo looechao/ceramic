@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 type Session struct {
@@ -52,4 +53,18 @@ func (a *Client) SetSession(s *Session) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	a.session = s
+}
+
+// HasScope respects read/write parent scopes without treating read as write.
+func (s *Session) HasScope(scope string) bool {
+	if s == nil {
+		return false
+	}
+	parent, _, _ := strings.Cut(scope, ":")
+	for _, granted := range strings.Fields(s.Scopes) {
+		if granted == scope || granted == parent {
+			return true
+		}
+	}
+	return false
 }

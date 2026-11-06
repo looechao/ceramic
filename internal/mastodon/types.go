@@ -2,17 +2,32 @@
 // about the interface.
 package mastodon
 
+type AccountField struct {
+	Name       string `json:"name"`
+	Value      string `json:"value"`
+	VerifiedAt string `json:"verified_at"`
+}
+
+type CustomEmoji struct {
+	Shortcode string `json:"shortcode"`
+	URL       string `json:"url"`
+	StaticURL string `json:"static_url"`
+}
+
 type Account struct {
-	ID          string `json:"id"`
-	Username    string `json:"username"`
-	DisplayName string `json:"display_name"`
-	Acct        string `json:"acct"`
-	Avatar      string `json:"avatar_static"`
-	Note        string `json:"note"`
-	URL         string `json:"url"`
-	Followers   int    `json:"followers_count"`
-	Following   int    `json:"following_count"`
-	Statuses    int    `json:"statuses_count"`
+	Emojis       []CustomEmoji  `json:"emojis"`
+	Fields       []AccountField `json:"fields"`
+	ID           string         `json:"id"`
+	Username     string         `json:"username"`
+	DisplayName  string         `json:"display_name"`
+	Acct         string         `json:"acct"`
+	Avatar       string         `json:"avatar"`
+	AvatarStatic string         `json:"avatar_static"`
+	Note         string         `json:"note"`
+	URL          string         `json:"url"`
+	Followers    int            `json:"followers_count"`
+	Following    int            `json:"following_count"`
+	Statuses     int            `json:"statuses_count"`
 }
 
 func (a Account) Name() string {
@@ -22,11 +37,22 @@ func (a Account) Name() string {
 	return a.Username
 }
 
+type MediaDimensions struct {
+	Width  int `json:"width"`
+	Height int `json:"height"`
+}
+
+type MediaMeta struct {
+	Original MediaDimensions `json:"original"`
+	Small    MediaDimensions `json:"small"`
+}
+
 type Media struct {
-	Type        string `json:"type"`
-	URL         string `json:"url"`
-	Preview     string `json:"preview_url"`
-	Description string `json:"description"`
+	Meta        MediaMeta `json:"meta"`
+	Type        string    `json:"type"`
+	URL         string    `json:"url"`
+	Preview     string    `json:"preview_url"`
+	Description string    `json:"description"`
 }
 
 type LinkCard struct {
@@ -37,9 +63,32 @@ type LinkCard struct {
 	Provider    string `json:"provider_name"`
 }
 
+type PollOption struct {
+	Title      string `json:"title"`
+	VotesCount *int   `json:"votes_count"`
+}
+
+type Poll struct {
+	Emojis      []CustomEmoji `json:"emojis"`
+	ID          string        `json:"id"`
+	ExpiresAt   string        `json:"expires_at"`
+	Expired     bool          `json:"expired"`
+	Multiple    bool          `json:"multiple"`
+	VotesCount  int           `json:"votes_count"`
+	VotersCount *int          `json:"voters_count"`
+	Voted       bool          `json:"voted"`
+	OwnVotes    []int         `json:"own_votes"`
+	Options     []PollOption  `json:"options"`
+}
+
 type Status struct {
-	Visibility string    `json:"visibility"`
-	Card       *LinkCard `json:"card"`
+	Emojis     []CustomEmoji `json:"emojis"`
+	Poll       *Poll         `json:"poll"`
+	Favourited bool          `json:"favourited"`
+	Reblogged  bool          `json:"reblogged"`
+	Bookmarked bool          `json:"bookmarked"`
+	Visibility string        `json:"visibility"`
+	Card       *LinkCard     `json:"card"`
 
 	ID         string  `json:"id"`
 	Content    string  `json:"content"`

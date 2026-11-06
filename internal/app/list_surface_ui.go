@@ -6,14 +6,14 @@ import (
 	"github.com/egoist/mygo/ui"
 )
 
-const postHoverDuration = 140 * time.Millisecond
+const listHoverDuration = 140 * time.Millisecond
 
-type postHoverState struct {
+type listHoverState struct {
 	pressed, selecting bool
 	lift, frozen       float32
 }
 
-func (h *postHoverState) input(ev ui.InputEvent, text bool) {
+func (h *listHoverState) input(ev ui.InputEvent, text bool) {
 	switch ev.Kind {
 	case ui.InputPointerDown:
 		if ev.Button == 0 {
@@ -24,11 +24,11 @@ func (h *postHoverState) input(ev ui.InputEvent, text bool) {
 	}
 }
 
-func (r *reader) postSurface(c *ui.Context, f *feedState, tint ui.Color, content func(*postHoverState)) {
+func (r *reader) listSurface(c *ui.Context, f *feedState, tint ui.Color, content func(*listHoverState)) ui.Element {
 	t := c.Theme()
 	// Only the inner surface moves. The list measurement and hover boundary stay put.
 	hit := ui.Column(c).FillWidth().Padding(4, 8)
-	hover := ui.Local(hit, "post-hover-state", func() postHoverState { return postHoverState{} })
+	hover := ui.Local(hit, "list-hover-state", func() listHoverState { return listHoverState{} })
 	hit.HandleInput(func(ev ui.InputEvent) bool {
 		hover.input(ev, false)
 		r.postTextInput(f, ev)
@@ -41,7 +41,7 @@ func (r *reader) postSurface(c *ui.Context, f *feedState, tint ui.Color, content
 	if hover.pressed && !hover.selecting {
 		target = 0.25
 	}
-	lift := hit.Animate("post-hover", target, postHoverDuration)
+	lift := hit.Animate("list-hover", target, listHoverDuration)
 	if hover.selecting {
 		lift = hover.frozen
 	}
@@ -69,4 +69,5 @@ func (r *reader) postSurface(c *ui.Context, f *feedState, tint ui.Color, content
 		}
 		row.Children(func() { content(hover) })
 	})
+	return hit
 }

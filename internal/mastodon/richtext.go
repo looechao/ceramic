@@ -2,12 +2,14 @@ package mastodon
 
 import (
 	"net/url"
+	"regexp"
 	"strings"
 
 	"golang.org/x/net/html"
 )
 
 type TextRun struct {
+	Emoji        *CustomEmoji
 	Text, URL    string
 	Bold, Italic bool
 }
@@ -21,7 +23,7 @@ func SafeURL(raw string) string {
 }
 
 // Decode Mastodon HTML into native text runs; no HTML renderer executes it.
-func ParseText(source string) []TextRun {
+func ParseText(source string, emojis ...CustomEmoji) []TextRun {
 	doc, err := html.Parse(strings.NewReader(source))
 	if err != nil {
 		return []TextRun{{Text: source}}
@@ -48,6 +50,14 @@ func ParseText(source string) []TextRun {
 				style.Bold = true
 			case "em", "i":
 				style.Italic = true
+			case "img":
+				for _, attribute := range n.Attr {
+					if attribute.Key == "alt" {
+						add(attribute.Val, style)
+						break
+					}
+				}
+				return
 			case "br":
 				add("\n", style)
 				return
@@ -82,5 +92,47 @@ func ParseText(source string) []TextRun {
 		}
 		runs = runs[:len(runs)-1]
 	}
-	return runs
+	return ExpandEmojis(runs, emojis)
+}
+
+var emojiShortcode = regexp.MustCompile(`:[A-Za-z0-9_]+:`)
+
+// Expand only the owning account/status's emoji dictionary, never a global one.
+func ExpandEmojis(runs []TextRun, emojis []CustomEmoji) []TextRun {
+	if len(emojis) == 0 {
+		return runs
+	}
+	known := map[string]*CustomEmoji{}
+	for i := range emojis {
+		emoji := &emojis[i]
+		if SafeURL(emoji.StaticURL) != "" || SafeURL(emoji.URL) != "" {
+			known[":"+emoji.Shortcode+":"] = emoji
+		}
+	}
+	var out []TextRun
+	for _, run := range runs {
+		start := 0
+		for _, at := range emojiShortcode.FindAllStringIndex(run.Text, -1) {
+			emoji := known[run.Text[at[0]:at[1]]]
+			if emoji == nil {
+				continue
+			}
+			if at[0] > start {
+				text := run
+				text.Text = run.Text[start:at[0]]
+				out = append(out, text)
+			}
+			object := run
+			object.Text = run.Text[at[0]:at[1]]
+			object.Emoji = emoji
+			out = append(out, object)
+			start = at[1]
+		}
+		if start < len(run.Text) {
+			text := run
+			text.Text = run.Text[start:]
+			out = append(out, text)
+		}
+	}
+	return out
 }
