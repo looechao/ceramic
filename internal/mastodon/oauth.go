@@ -5,7 +5,6 @@ import (
 	"crypto/subtle"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -39,7 +38,7 @@ func NormalizeInstance(raw string) (string, error) {
 	}
 	u, err := url.Parse(raw)
 	if err != nil || u.Scheme != "https" || u.Hostname() == "" || u.User != nil || (u.Path != "" && u.Path != "/") || u.RawQuery != "" || u.Fragment != "" {
-		return "", errors.New("请输入实例域名，例如 mastodon.social，不要输入账号或页面地址")
+		return "", MessageInvalidInstance
 	}
 	return "https://" + u.Host, nil
 }
@@ -47,7 +46,7 @@ func NormalizeInstance(raw string) (string, error) {
 func openBrowser(raw string) error {
 	u, err := url.Parse(raw)
 	if err != nil || u.Scheme != "https" || u.Host == "" {
-		return errors.New("链接无效")
+		return MessageInvalidLink
 	}
 	switch runtime.GOOS {
 	case "darwin":
@@ -88,12 +87,12 @@ func (a *Client) StartCallbackServer() (func() error, error) {
 	return server.Close, nil
 }
 
-func (a *Client) Snapshot() (*Session, bool, string) {
+func (a *Client) Snapshot() (*Session, bool, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	if a.pending != nil && time.Now().After(a.pending.Expires) {
 		a.pending = nil
-		a.loginError = "授权已超时，请重新连接"
+		a.loginError = MessageAuthorizationTimeout
 	}
 	return a.session, a.pending != nil, a.loginError
 }
@@ -106,7 +105,7 @@ func (a *Client) Login(instance string) error {
 	a.mu.Lock()
 	a.version++
 	version := a.version
-	a.loginError = ""
+	a.loginError = nil
 	a.mu.Unlock()
 	redirect := a.origin + "/oauth/callback"
 	var app struct {
@@ -117,17 +116,17 @@ func (a *Client) Login(instance string) error {
 		return err
 	}
 	if app.ID == "" || app.Secret == "" {
-		return errors.New("实例未返回有效的应用凭据")
+		return MessageInvalidCredentials
 	}
 	p := &pendingLogin{Instance: instance, ClientID: app.ID, Secret: app.Secret, State: randomKey(), Redirect: redirect, Expires: time.Now().Add(10 * time.Minute)}
 	a.mu.Lock()
 	if version != a.version {
 		a.mu.Unlock()
-		return errors.New("授权已取消")
+		return MessageAuthorizationCanceled
 	}
 	p.Version = version
 	a.pending = p
-	a.loginError = ""
+	a.loginError = nil
 	a.mu.Unlock()
 	authURL := instance + "/oauth/authorize?" + url.Values{"response_type": {"code"}, "client_id": {p.ClientID}, "redirect_uri": {redirect}, "scope": {Scopes}, "state": {p.State}}.Encode()
 	if err = a.open(authURL); err != nil {
@@ -136,7 +135,7 @@ func (a *Client) Login(instance string) error {
 			a.pending = nil
 		}
 		a.mu.Unlock()
-		return errors.New("无法打开浏览器，请检查系统默认浏览器")
+		return MessageBrowserUnavailable
 	}
 	return nil
 }
@@ -146,7 +145,7 @@ func (a *Client) callback(w http.ResponseWriter, r *http.Request) {
 	p := a.pending
 	if p == nil || time.Now().After(p.Expires) || subtle.ConstantTimeCompare([]byte(r.URL.Query().Get("state")), []byte(p.State)) != 1 {
 		a.mu.Unlock()
-		http.Error(w, "授权已过期或无效，请返回 Ceramic 重试。", 400)
+		http.Error(w, a.message(MessageCallbackInvalid), 400)
 		return
 	}
 	// Consume the state before exchanging the code, preventing callback replay.
@@ -154,7 +153,7 @@ func (a *Client) callback(w http.ResponseWriter, r *http.Request) {
 	a.mu.Unlock()
 	var err error
 	if r.URL.Query().Get("error") != "" || r.URL.Query().Get("code") == "" {
-		err = errors.New("授权已取消，请重新连接")
+		err = MessageAuthorizationRetry
 	}
 	var token struct {
 		AccessToken string `json:"access_token"`
@@ -164,7 +163,7 @@ func (a *Client) callback(w http.ResponseWriter, r *http.Request) {
 		err = a.request("POST", p.Instance+"/oauth/token", "", url.Values{"grant_type": {"authorization_code"}, "client_id": {p.ClientID}, "client_secret": {p.Secret}, "redirect_uri": {p.Redirect}, "code": {r.URL.Query().Get("code")}}, &token)
 	}
 	if err == nil && token.AccessToken == "" {
-		err = errors.New("实例未返回有效的登录令牌")
+		err = MessageInvalidToken
 	}
 	var me json.RawMessage
 	if err == nil {
@@ -173,7 +172,7 @@ func (a *Client) callback(w http.ResponseWriter, r *http.Request) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	if p.Version != a.version {
-		http.Error(w, "授权已取消", 400)
+		http.Error(w, a.message(MessageAuthorizationCanceled), 400)
 		return
 	}
 	if err == nil {
@@ -185,17 +184,17 @@ func (a *Client) callback(w http.ResponseWriter, r *http.Request) {
 		err = saveSession(a.path, s)
 		if err == nil {
 			a.session = s
-			a.loginError = ""
+			a.loginError = nil
 		}
 	}
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	if err != nil {
-		a.loginError = err.Error()
+		a.loginError = err
 		w.WriteHeader(400)
-		fmt.Fprint(w, "登录未完成，请返回 Ceramic 查看提示。")
+		fmt.Fprint(w, a.message(MessageCallbackFailed))
 		return
 	}
-	fmt.Fprint(w, "登录成功。可以关闭这个页面，回到 Ceramic 阅读时间线。")
+	fmt.Fprint(w, a.message(MessageCallbackSuccess))
 }
 
 func (a *Client) CancelLogin() {
@@ -203,5 +202,5 @@ func (a *Client) CancelLogin() {
 	defer a.mu.Unlock()
 	a.version++
 	a.pending = nil
-	a.loginError = ""
+	a.loginError = nil
 }

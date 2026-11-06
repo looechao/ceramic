@@ -1,6 +1,7 @@
 package app
 
 import (
+	"ceramic/locales"
 	"encoding/json"
 	"fmt"
 	"runtime"
@@ -51,12 +52,12 @@ func (r *reader) view(c *ui.Context) {
 				r.message = ""
 				r.load(false)
 			}
-		} else if message != "" {
+		} else if message != nil {
 			r.authorizing = false
 			if r.authFeed != nil {
-				r.authFeed.message = message
+				r.authFeed.message = localizedError(message)
 			} else {
-				r.message = message
+				r.message = localizedError(message)
 			}
 		} else {
 			c.After(500 * time.Millisecond)
@@ -249,15 +250,15 @@ func (r *reader) pane(c *ui.Context, f *feedState, ws *workspace, index int, war
 	ui.Toolbar(c, func() {
 
 		if index > 0 {
-			ui.ButtonBase(c).Size(28, 28).Label("关闭此列").Tooltip("关闭此列 · " + shortcutHint("W")).OnClick(func() { r.closeColumn(ws, f) }).Children(func() { ui.Icon(c, closeIcon).Size(18, 18).TextColor(t.TextMuted) })
+			ui.ButtonBase(c).Size(28, 28).Label(locales.CloseColumn()).Tooltip(locales.CloseColumnLabel() + shortcutHint("W")).OnClick(func() { r.closeColumn(ws, f) }).Children(func() { ui.Icon(c, closeIcon).Size(18, 18).TextColor(t.TextMuted) })
 		}
-		title := map[string]string{"home": "首页", "search": "Explore", "local": "Local", "federated": "Federated", "profile": "个人资料", "conversation": "对话", "notifications": "通知", "bookmarks": "书签", "favorites": "喜欢", "following": "正在关注", "followers": "关注者"}[f.kind]
+		title := map[string]string{"home": locales.Home(), "search": locales.Explore(), "local": locales.Local(), "federated": locales.Federated(), "profile": locales.ProfileLabel(), "conversation": locales.Conversation(), "notifications": locales.Notifications(), "bookmarks": locales.Bookmarks(), "favorites": locales.Favorites(), "following": locales.Following(), "followers": locales.Followers()}[f.kind]
 		if index > 0 && f.kind == "profile" {
 			title = f.profile.Name()
 		}
 		r.emojiText(c, title, f.profile.Emojis, 14).FontWeight(600)
 		ui.Spacer(c)
-		ui.ButtonBase(c).Size(28, 28).Label("刷新 " + title).Tooltip("刷新 " + title).Disabled(f.busy).OnClick(func() { r.loadFeed(f, false) }).Children(func() { ui.Icon(c, refreshIcon).Size(16, 16).TextColor(t.TextMuted) })
+		ui.ButtonBase(c).Size(28, 28).Label(locales.RefreshLabel() + title).Tooltip(locales.RefreshLabel() + title).Disabled(f.busy).OnClick(func() { r.loadFeed(f, false) }).Children(func() { ui.Icon(c, refreshIcon).Size(16, 16).TextColor(t.TextMuted) })
 	}).Background(header).Height(48).Padding(8, 16).BorderWidth(0, 0, 1, 0).BorderColor(postDivider(c))
 	if !warm {
 		return
@@ -265,13 +266,13 @@ func (r *reader) pane(c *ui.Context, f *feedState, ws *workspace, index int, war
 	ui.Column(c).Grow(1).Shrink(1).FillWidth().Background(paper).Children(func() {
 		scope := map[string]string{"bookmarks": "read:bookmarks", "favorites": "read:favourites"}[f.kind]
 		if scope != "" && !r.hasScope(scope) {
-			ui.Text(c, "当前登录缺少权限，请退出后重新登录。").Padding(16)
+			ui.Text(c, locales.MissingPermissionsLogOutAndLogInAgain()).Padding(16)
 			return
 		}
 		if f.message != "" {
 			ui.Text(c, f.message).FontSize(12).Padding(10, 14).Background(t.Surface)
 			if !f.busy && !r.authorizing && !f.authRequired {
-				ui.Button(c, "重试").Margin(4, 14).OnClick(func() { r.loadFeed(f, f.failedMore) })
+				ui.Button(c, locales.Retry()).Margin(4, 14).OnClick(func() { r.loadFeed(f, f.failedMore) })
 			}
 		}
 		if f.kind == "search" {
@@ -309,13 +310,13 @@ func (r *reader) sidebar(c *ui.Context) {
 			if r.selected == "profile" {
 				bg = t.Text.Alpha(0.09)
 			}
-			avatar := ui.ButtonBase(c).Size(48, 48).Radius(10).Background(bg).Label("我的").Tooltip("我的 · " + shortcutHint("1"))
+			avatar := ui.ButtonBase(c).Size(48, 48).Radius(10).Background(bg).Label(locales.Profile()).Tooltip(locales.ProfileLabelText() + shortcutHint("1"))
 			if r.selected == "profile" && r.session != nil {
 				avatar.Menu(func(m *ui.Menu) {
-					if m.Item("设置").Chosen() {
+					if m.Item(locales.Settings()).Chosen() {
 						r.settingsOpen = true
 					}
-					if m.Item("退出登录").Chosen() {
+					if m.Item(locales.LogOut()).Chosen() {
 						r.logout()
 					}
 				})
@@ -338,7 +339,7 @@ func (r *reader) sidebar(c *ui.Context) {
 				r.accountAvatar(c, me.Name(), me.Avatar, 32, me.AvatarStatic)
 			})
 			for i, page := range navigationPages[1:] {
-				label := navigationLabels[i+1]
+				label := navigationLabels()[i+1]
 				icon := []*ui.SVG{navIcons[0], bellIcon, bookmarkIcon, heartIcon, navIcons[1]}[i]
 				bg, fg := ui.Transparent, t.TextMuted
 				if r.selected == page {
@@ -359,7 +360,7 @@ func (r *reader) sidebar(c *ui.Context) {
 					if r.selected != page {
 						fg = alert
 					}
-					tooltip = fmt.Sprintf("%s · %d 条新通知", label, unread)
+					tooltip = locales.UnreadNotifications(label, unread)
 				}
 				ui.ButtonBase(c.Key(page)).Size(48, 44).Radius(10).Background(bg).Label(label).Tooltip(tooltip).OnClick(func() {
 					if r.session != nil {
@@ -375,7 +376,7 @@ func (r *reader) sidebar(c *ui.Context) {
 				})
 			}
 			ui.Spacer(c)
-			ui.ButtonBase(c).Size(48, 44).Radius(10).Label("写帖子").Tooltip("写帖子 · " + shortcutHint("N")).Disabled(r.session == nil).OnClick(func() {
+			ui.ButtonBase(c).Size(48, 44).Radius(10).Label(locales.WriteAPost()).Tooltip(locales.WriteAPostLabel() + shortcutHint("N")).Disabled(r.session == nil).OnClick(func() {
 				if r.openWriting != nil {
 					r.openWriting()
 				}

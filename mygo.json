@@ -6,5 +6,9 @@
   "out": "build",
   "linux": {
     "webview": false
+  },
+  "i18n": {
+    "dir": "locales",
+    "source": "zh-Hans"
   }
 }

@@ -1,6 +1,7 @@
 package app
 
 import (
+	"ceramic/locales"
 	"encoding/json"
 	"strings"
 
@@ -16,7 +17,7 @@ func (r *reader) login() {
 	}
 	instance, err := mastodon.NormalizeInstance(r.instance)
 	if err != nil {
-		r.message = err.Error()
+		r.message = localizedError(err)
 		return
 	}
 	f := r.feedState
@@ -24,7 +25,7 @@ func (r *reader) login() {
 	gen := r.generation
 	r.busy = true
 	r.authorizing = true
-	r.message = "正在连接实例…"
+	r.message = locales.ConnectingToServer()
 	go func() {
 		err := r.service.Login(instance)
 		r.update(func() {
@@ -34,11 +35,11 @@ func (r *reader) login() {
 			f.busy = false
 			if err != nil {
 				r.authorizing = false
-				f.message = err.Error()
+				f.message = localizedError(err)
 				return
 			}
 			r.authorizing = true
-			f.message = "请在浏览器中授权，完成后返回 Ceramic。"
+			f.message = locales.AuthorizeInYourBrowserThenReturnToCeramic()
 		})
 	}()
 }
@@ -48,7 +49,7 @@ func (r *reader) logout() {
 		return
 	}
 	if err := r.service.Logout(); err != nil {
-		r.message = err.Error()
+		r.message = localizedError(err)
 		return
 	}
 	r.stopStream()
@@ -88,7 +89,7 @@ func (r *reader) cancelAuthorization() {
 	r.service.CancelLogin()
 	r.authorizing = false
 	for _, f := range []*feedState{r.authFeed, r.feedState, r.home, r.searchFeed, r.notifications, r.ownProfile} {
-		if f != nil && (f.message == "正在连接实例…" || f.message == "请在浏览器中授权，完成后返回 Ceramic。") {
+		if f != nil && f == r.authFeed {
 			f.busy = false
 			f.message = ""
 		}
@@ -155,16 +156,16 @@ func (r *reader) loginView(c *ui.Context) {
 		ui.Column(c).FillWidth().MinHeight(max(0, height-52)).Padding(24).AlignItems(ui.Center).Justify(ui.Center).Children(func() {
 			ui.Column(c).FillWidth().MaxWidth(360).AlignItems(ui.Center).Children(func() {
 				ui.Image(c, loginLogo).Size(88, 88).Fit(ui.Contain).Label("Ceramic")
-				ui.Text(c, "登录 Ceramic").FontSize(28).FontWeight(600).Margin(16, 0, 32, 0)
-				ui.Text(c, "实例").FontSize(13).TextColor(t.TextMuted).Margin(0, 0, 8, 0)
-				ui.Autocomplete(c.Key("instance"), &r.instance, instanceSuggestions(r.instance)).Label("实例地址").Placeholder("实例域名").FillWidth().Height(46).Disabled(r.busy || r.authorizing).OnSubmit(r.login)
-				ui.Text(c, "例如 mastodon.social").FontSize(12).TextColor(t.TextMuted).Margin(10, 0, 0, 0)
-				label := "继续"
+				ui.Text(c, locales.LogInToCeramic()).FontSize(28).FontWeight(600).Margin(16, 0, 32, 0)
+				ui.Text(c, locales.Instance()).FontSize(13).TextColor(t.TextMuted).Margin(0, 0, 8, 0)
+				ui.Autocomplete(c.Key("instance"), &r.instance, instanceSuggestions(r.instance)).Label(locales.InstanceAddress()).Placeholder(locales.InstanceDomain()).FillWidth().Height(46).Disabled(r.busy || r.authorizing).OnSubmit(r.login)
+				ui.Text(c, locales.ForExampleMastodonSocial()).FontSize(12).TextColor(t.TextMuted).Margin(10, 0, 0, 0)
+				label := locales.Continue()
 				if r.busy {
-					label = "正在连接…"
+					label = locales.Connecting()
 				}
 				if r.authorizing {
-					label = "等待浏览器授权…"
+					label = locales.WaitingForBrowserAuthorization()
 				}
 				ui.Row(c).Gap(8).AlignItems(ui.Center).Margin(24, 0, 0, 0).Children(func() {
 					if r.busy || r.authorizing {
@@ -176,9 +177,9 @@ func (r *reader) loginView(c *ui.Context) {
 					ui.Text(c, r.message).FontSize(12).LineHeight(1.5).TextColor(t.TextMuted).FillWidth().Margin(16, 0, 0, 0)
 				}
 				if r.authorizing {
-					ui.Button(c, "取消连接").Margin(12, 0, 0, 0).OnClick(r.cancelAuthorization)
+					ui.Button(c, locales.CancelConnection()).Margin(12, 0, 0, 0).OnClick(r.cancelAuthorization)
 				}
-				ui.Text(c, "在浏览器中授权账号的读取、写入、关注与推送权限。").FontSize(11).TextColor(t.TextMuted).Margin(32, 0, 0, 0)
+				ui.Text(c, locales.AuthorizeReadWriteFollowAndPushAccessInYourBrowser()).FontSize(11).TextColor(t.TextMuted).Margin(32, 0, 0, 0)
 			})
 		})
 	})

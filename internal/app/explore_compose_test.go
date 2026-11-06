@@ -84,7 +84,7 @@ func TestAppearancePersists(t *testing.T) {
 func TestNativeComposerPollAndImages(t *testing.T) {
 	r := testReader(t)
 	r.session = &mastodon.Session{Scopes: mastodon.Scopes, Account: json.RawMessage(`{"id":"me","acct":"reader@example.social"}`)}
-	d := &composer{audience: "公开", text: "周末想去哪儿？", pollDuration: "1 天"}
+	d := &composer{audience: "public", text: "周末想去哪儿？", pollDuration: 86400}
 	r.composer = d
 	tt := ui.NewTester(func(c *ui.Context) { r.composeView(c, d) }, 560, 680)
 	tt.Click("投票")

@@ -2,7 +2,9 @@ package app
 
 import (
 	"bytes"
+	"ceramic/locales"
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"image"
 	_ "image/gif"
@@ -34,7 +36,7 @@ func readComposeImage(path string) (composeAttachment, error) {
 		return a, err
 	}
 	if len(data) > 16<<20 {
-		return a, fmt.Errorf("图片不能超过 16 MB")
+		return a, errors.New(locales.ImagesMustBeNoLargerThan16Mb())
 	}
 	bitmap, err := decodeComposeImage(data)
 	if err != nil {
@@ -52,7 +54,7 @@ func (r *reader) chooseImages(d *composer) {
 	d.busy = true
 	d.message = ""
 	go func() {
-		paths, err := mygo.Dialog.Open(mygo.OpenDialogOptions{Parent: parent, Title: "添加图片", Multiple: true, Filters: []mygo.FileFilter{{Name: "图片", Extensions: []string{"png", "jpg", "jpeg", "gif"}}}})
+		paths, err := mygo.Dialog.Open(mygo.OpenDialogOptions{Parent: parent, Title: locales.AddImages(), Multiple: true, Filters: []mygo.FileFilter{{Name: locales.Images(), Extensions: []string{"png", "jpg", "jpeg", "gif"}}}})
 		var additions []composeAttachment
 		if err == nil {
 			for _, path := range paths {
@@ -73,11 +75,11 @@ func (r *reader) chooseImages(d *composer) {
 				return
 			}
 			if err != nil {
-				d.message = err.Error()
+				d.message = localizedError(err)
 				return
 			}
 			if len(paths)+len(d.attachments) > 4 {
-				d.message = "最多添加 4 张图片，请重新选择。"
+				d.message = locales.ChooseUpTo4Images()
 				return
 			}
 			d.attachments = append(d.attachments, additions...)
@@ -92,8 +94,8 @@ func (r *reader) composeImages(c *ui.Context, d *composer) {
 			if a.bitmap != nil {
 				ui.Image(c, a.bitmap).Size(64, 64).Fit(ui.Cover).Radius(6).Label(a.name)
 			}
-			ui.TextInput(c, &a.description).Label(fmt.Sprintf("图片 %d 描述", i+1)).Placeholder("图片描述（可选）").Grow(1).Disabled(d.busy)
-			imageControl(c, closeIcon, fmt.Sprintf("移除图片 %d", i+1), d.busy, func() { d.attachments = append(d.attachments[:i], d.attachments[i+1:]...) })
+			ui.TextInput(c, &a.description).Label(locales.ImageDescription(i + 1)).Placeholder(locales.ImageDescriptionOptional()).Grow(1).Disabled(d.busy)
+			imageControl(c, closeIcon, locales.RemoveImage(i+1), d.busy, func() { d.attachments = append(d.attachments[:i], d.attachments[i+1:]...) })
 		})
 	}
 }
@@ -101,7 +103,7 @@ func (r *reader) composeImages(c *ui.Context, d *composer) {
 func boundedComposeBitmap(data []byte) (*ui.Bitmap, error) {
 	config, _, err := image.DecodeConfig(bytes.NewReader(data))
 	if err != nil || config.Width <= 0 || config.Height <= 0 || int64(config.Width)*int64(config.Height) > 24000000 {
-		return nil, fmt.Errorf("请选择不超过 2400 万像素的 PNG、JPEG 或 GIF 图片")
+		return nil, errors.New(locales.ChooseAPngJpegOrGifImageUpTo24Megapixels())
 	}
 	return ui.DecodeBitmap(data)
 }

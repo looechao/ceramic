@@ -1,6 +1,7 @@
 package app
 
 import (
+	"ceramic/locales"
 	"fmt"
 	"time"
 
@@ -19,7 +20,7 @@ func (r *reader) post(c *ui.Context, f *feedState, p *postView) {
 		if p.status.Reblog != nil {
 			ui.Row(c).Gap(6).Margin(0, 0, 2, 54).Children(func() {
 				ui.Icon(c, boostIcon).Size(13, 13).TextColor(t.TextMuted)
-				r.emojiText(c, p.status.Account.Name()+" 转发了", p.status.Account.Emojis, 11).TextColor(t.TextMuted)
+				r.emojiText(c, locales.Boosted(p.status.Account.Name()), p.status.Account.Emojis, 11).TextColor(t.TextMuted)
 			})
 		}
 		ui.Row(c).Gap(12).AlignItems(ui.Start).Children(func() {
@@ -43,7 +44,7 @@ func (r *reader) post(c *ui.Context, f *feedState, p *postView) {
 					if s.ReplyTo != "" {
 						ui.Row(c).Gap(5).Children(func() {
 							ui.Icon(c, replyIcon).Size(12, 12).TextColor(t.TextMuted)
-							ui.Text(c, "回复").FontSize(11).TextColor(t.TextMuted)
+							ui.Text(c, locales.Reply()).FontSize(11).TextColor(t.TextMuted)
 						})
 					}
 					r.renderRichText(c, p.runs, 14, func() {
@@ -69,7 +70,7 @@ func (r *reader) post(c *ui.Context, f *feedState, p *postView) {
 						}
 					}
 					if s.Sensitive && s.Spoiler == "" && len(s.Media) > 0 {
-						concealedContent(c, "敏感媒体", &p.mediaExpanded, true, mediaView)
+						concealedContent(c, locales.SensitiveMedia(), &p.mediaExpanded, true, mediaView)
 					} else {
 						mediaView()
 					}
@@ -89,7 +90,7 @@ func (r *reader) post(c *ui.Context, f *feedState, p *postView) {
 				r.postFooter(c, f, s)
 			})
 		})
-	}).Label("打开对话 " + s.ID).OnClick(func() {
+	}).Label(locales.OpenConversation() + s.ID).OnClick(func() {
 		if f.preview == nil {
 			r.openConversation(f, s)
 		}
@@ -129,18 +130,18 @@ func (r *reader) media(c *ui.Context, f *feedState, m mastodon.Media, single boo
 					})
 				} else if entry == nil || entry.failed {
 					ui.Column(c).Gap(6).AlignItems(ui.Center).Children(func() {
-						ui.Text(c, "图片未能加载").FontSize(12).TextColor(c.Theme().TextMuted)
+						ui.Text(c, locales.ImageCouldNotLoad()).FontSize(12).TextColor(c.Theme().TextMuted)
 						if target := mastodon.SafeURL(m.URL); target != "" {
-							externalTextLink(c, "打开图片", target)
+							externalTextLink(c, locales.OpenImage(), target)
 						}
 					})
 				} else {
-					ui.Spinner(c).Size(18, 18).Label("正在加载图片")
+					ui.Spinner(c).Size(18, 18).Label(locales.LoadingImage())
 				}
 			})
 		}
 		if target := mastodon.SafeURL(m.URL); target != "" && m.Type != "image" {
-			externalTextLink(c, "在浏览器中打开媒体", target)
+			externalTextLink(c, locales.OpenMediaInBrowser(), target)
 		}
 	})
 }
@@ -155,9 +156,9 @@ func (r *reader) linkPreview(c *ui.Context, card mastodon.LinkCard) {
 		if e := r.photo(card.Image); e != nil {
 			ui.Box(c).Size(64, 64).Shrink(0).Radius(5).AlignItems(ui.Center).Justify(ui.Center).Children(func() {
 				if e.bitmap != nil {
-					ui.Image(c, e.bitmap).Size(64, 64).Fit(ui.Cover).Radius(5).Label("外链预览缩略图")
+					ui.Image(c, e.bitmap).Size(64, 64).Fit(ui.Cover).Radius(5).Label(locales.LinkPreviewThumbnail())
 				} else if !e.failed && !e.ready {
-					ui.Spinner(c).Size(18, 18).Label("正在加载外链缩略图")
+					ui.Spinner(c).Size(18, 18).Label(locales.LoadingLinkThumbnail())
 				} else {
 					ui.Icon(c, externalIcon).Size(18, 18).TextColor(t.TextMuted)
 				}
@@ -189,10 +190,10 @@ func (r *reader) postFooter(c *ui.Context, f *feedState, s mastodon.Status) {
 			label, action string
 			active        bool
 		}{
-			{replyIcon, s.Replies, "回复", "", false},
-			{boostIcon, s.Reblogs, "转发", "reblog", s.Reblogged},
-			{heartIcon, s.Favourites, "喜欢", "favourite", s.Favourited},
-			{bookmarkIcon, 0, "书签", "bookmark", s.Bookmarked},
+			{replyIcon, s.Replies, locales.Reply(), "", false},
+			{boostIcon, s.Reblogs, locales.Boost(), "reblog", s.Reblogged},
+			{heartIcon, s.Favourites, locales.Favorites(), "favourite", s.Favourited},
+			{bookmarkIcon, 0, locales.Bookmarks(), "bookmark", s.Bookmarked},
 		} {
 			if i == 3 {
 				ui.Spacer(c)
@@ -200,7 +201,7 @@ func (r *reader) postFooter(c *ui.Context, f *feedState, s mastodon.Status) {
 			action, label := item.action, item.label
 			if item.active {
 				action = "un" + action
-				label = "取消" + label
+				label = locales.Undo(label)
 			}
 			hint := label
 			if i != 3 {
@@ -209,7 +210,7 @@ func (r *reader) postFooter(c *ui.Context, f *feedState, s mastodon.Status) {
 			disabled := i != 0 && (r.interactions[s.ID] || r.session == nil)
 			if i == 1 && !r.canBoost(s) {
 				disabled = true
-				hint = "此帖不可转发"
+				hint = locales.ThisPostCannotBeBoosted()
 			}
 			ink := t.Text
 			icon := item.icon
@@ -238,7 +239,7 @@ func (r *reader) postFooter(c *ui.Context, f *feedState, s mastodon.Status) {
 			})
 		}
 		if target := mastodon.SafeURL(s.URL); target != "" {
-			button := ui.ButtonBase(c).Size(30, 30).Radius(15).Label("打开原帖").Tooltip("在浏览器中打开原帖").OnClick(func() { services.OpenURL(target) })
+			button := ui.ButtonBase(c).Size(30, 30).Radius(15).Label(locales.OpenOriginalPost()).Tooltip(locales.OpenPostInBrowser()).OnClick(func() { services.OpenURL(target) })
 			fg := postActionStyle(c, button, t.Text, false, false)
 			button.Children(func() { ui.Icon(c, externalIcon).Size(15, 15).TextColor(fg) })
 		}
@@ -273,7 +274,7 @@ func concealedContent(c *ui.Context, warning string, expanded *bool, media bool,
 	ui.Text(c, warning).FontSize(13).FontWeight(500).LineHeight(1.45)
 	if *expanded {
 		ui.Row(c).Children(func() {
-			ui.Button(c, "收起内容").FontSize(12).Padding(5, 10).Radius(8).OnClick(func() { *expanded = false })
+			ui.Button(c, locales.HideContent()).FontSize(12).Padding(5, 10).Radius(8).OnClick(func() { *expanded = false })
 		})
 		content()
 		return
@@ -283,7 +284,7 @@ func concealedContent(c *ui.Context, warning string, expanded *bool, media bool,
 	if media {
 		height = 100
 	}
-	ui.ButtonBase(c).Label("展开隐藏内容：" + warning).Tooltip("点击显示内容").OnClick(func() { *expanded = true }).Padding(0).FillWidth().Height(height).Clip().Radius(7).Background(t.Text.Alpha(0.025)).Children(func() {
+	ui.ButtonBase(c).Label(locales.RevealContent() + warning).Tooltip(locales.ClickToRevealContent()).OnClick(func() { *expanded = true }).Padding(0).FillWidth().Height(height).Clip().Radius(7).Background(t.Text.Alpha(0.025)).Children(func() {
 		ui.Column(c).FillWidth().Padding(12).Gap(9).Blur(5).IgnoreInput(true).Children(func() {
 			ui.Box(c).FillWidth().Height(9).Radius(4).Background(t.Text.Alpha(0.18))
 			ui.Box(c).WidthPercent(83).Height(9).Radius(4).Background(t.Text.Alpha(0.14))
@@ -373,13 +374,13 @@ func relativeTime(date time.Time) string {
 		return date.Local().Format("01-02 15:04")
 	}
 	if d < time.Minute {
-		return "刚刚"
+		return locales.JustNow()
 	}
 	if d < time.Hour {
-		return fmt.Sprintf("%d 分钟", int(d.Minutes()))
+		return locales.MinutesAgo(int(d.Minutes()))
 	}
 	if d < 24*time.Hour {
-		return fmt.Sprintf("%d 小时", int(d.Hours()))
+		return locales.HoursAgo(int(d.Hours()))
 	}
 	return date.Local().Format("01-02")
 }

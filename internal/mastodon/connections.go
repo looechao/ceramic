@@ -1,7 +1,6 @@
 package mastodon
 
 import (
-	"errors"
 	"net/http"
 	"net/url"
 	"strings"
@@ -11,13 +10,13 @@ import (
 // Only the cursor is reused: every request stays on the authenticated instance.
 func (a *Client) AccountConnections(id, kind, cursor string) ([]Account, string, error) {
 	if kind != "following" && kind != "followers" {
-		return nil, "", errors.New("未知的账号列表")
+		return nil, "", MessageUnknownAccountList
 	}
 	a.mu.Lock()
 	s := a.session
 	a.mu.Unlock()
 	if s == nil {
-		return nil, "", errors.New("请先登录")
+		return nil, "", MessageLoginRequired
 	}
 	q := url.Values{"limit": {"40"}}
 	if cursor != "" {

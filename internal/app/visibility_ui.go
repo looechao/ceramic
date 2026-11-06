@@ -1,6 +1,9 @@
 package app
 
-import "github.com/egoist/mygo/ui"
+import (
+	"ceramic/locales"
+	"github.com/egoist/mygo/ui"
+)
 
 func visibilityBadge(c *ui.Context, visibility string) {
 	var label, hint string
@@ -8,19 +11,19 @@ func visibilityBadge(c *ui.Context, visibility string) {
 	restricted := false
 	switch visibility {
 	case "public":
-		label, hint, icon = "公开", "所有人可见，可出现在公共时间线", publicIcon
+		label, hint, icon = locales.Public(), locales.VisibleToEveryoneIncludingPublicTimelines(), publicIcon
 	case "unlisted":
-		label, hint, icon = "低调公开", "所有人可见，但不出现在公共时间线", quietPublicIcon
+		label, hint, icon = locales.QuietPublic(), locales.VisibleToEveryoneExcludedFromPublicTimelines(), quietPublicIcon
 	case "private":
-		label, hint, icon = "仅关注者", "关注者及帖子中被提及的用户可见", followersIcon
+		label, hint, icon = locales.FollowersOnly(), locales.VisibleToFollowersAndMentionedUsers(), followersIcon
 		restricted = true
 	case "direct":
-		label, hint, icon = "私密提及", "仅帖子中被提及的用户可见", privateMentionIcon
+		label, hint, icon = locales.PrivateMentions(), locales.VisibleOnlyToMentionedUsers(), privateMentionIcon
 		restricted = true
 	case "":
 		return
 	default:
-		label, hint, icon = "可见性未知", "服务器返回了未识别的可见性类型", unknownVisibilityIcon
+		label, hint, icon = locales.UnknownVisibility(), locales.TheServerReturnedAnUnknownVisibilityType(), unknownVisibilityIcon
 	}
 	fg := c.Theme().TextMuted
 	if restricted {

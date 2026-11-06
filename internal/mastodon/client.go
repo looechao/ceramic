@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -19,18 +18,22 @@ import (
 const requestTimeout = 25 * time.Second
 
 type Client struct {
-	mu           sync.Mutex
-	origin, path string
-	session      *Session
-	pending      *pendingLogin
-	loginError   string
-	version      uint64
-	client       *http.Client
-	open         func(string) error
+	mu            sync.Mutex
+	origin, path  string
+	session       *Session
+	pending       *pendingLogin
+	loginError    error
+	formatMessage func(Message) string
+	version       uint64
+	client        *http.Client
+	open          func(string) error
 }
 
-func New(path string) *Client {
+func New(path string, formatters ...func(Message) string) *Client {
 	a := &Client{path: path, client: &http.Client{Timeout: requestTimeout, CheckRedirect: func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse }}, open: openBrowser}
+	if len(formatters) > 0 {
+		a.formatMessage = formatters[0]
+	}
 	b, err := os.ReadFile(path)
 	if err == nil {
 		var s Session
@@ -78,22 +81,22 @@ func (a *Client) requestExtraContext(ctx context.Context, method, endpoint, toke
 	}
 	res, err := a.client.Do(req)
 	if err != nil {
-		return nil, errors.New("无法连接实例，请检查域名和网络后重试")
+		return nil, MessageConnectionFailed
 	}
 	defer res.Body.Close()
 	if res.StatusCode < 200 || res.StatusCode >= 300 {
 		switch res.StatusCode {
 		case 401:
-			return nil, errors.New("登录已失效，请退出后重新登录")
+			return nil, MessageSessionExpired
 		case 403:
-			return nil, errors.New("实例拒绝访问，请检查账号权限")
+			return nil, MessageAccessDenied
 		case 429:
-			return nil, errors.New("请求过于频繁，请稍后重试")
+			return nil, MessageRateLimited
 		}
-		return nil, fmt.Errorf("实例返回 HTTP %d，请稍后重试", res.StatusCode)
+		return nil, HTTPError{Status: res.StatusCode}
 	}
 	if err := json.NewDecoder(io.LimitReader(res.Body, 8<<20)).Decode(out); err != nil {
-		return nil, errors.New("实例返回了无法识别的数据，请确认它支持 Mastodon API")
+		return nil, MessageInvalidResponse
 	}
 	return res.Header, nil
 }
@@ -103,7 +106,7 @@ func (a *Client) Timeline(cursor string) ([]Status, error) {
 	s := a.session
 	a.mu.Unlock()
 	if s == nil {
-		return nil, errors.New("请先登录")
+		return nil, MessageLoginRequired
 	}
 	q := url.Values{"limit": {"30"}}
 	if cursor != "" {
@@ -122,7 +125,7 @@ func (a *Client) readAPI(path string, q url.Values, out any) error {
 	s := a.session
 	a.mu.Unlock()
 	if s == nil {
-		return errors.New("请先登录")
+		return MessageLoginRequired
 	}
 	return a.request("GET", s.Instance+path+"?"+q.Encode(), s.Token, nil, out)
 }
@@ -169,7 +172,7 @@ func (a *Client) StreamUser(ctx context.Context, onEvent func(event string, data
 	s := a.session
 	a.mu.Unlock()
 	if s == nil {
-		return errors.New("请先登录")
+		return MessageLoginRequired
 	}
 	discovery, err := http.NewRequestWithContext(ctx, http.MethodGet, s.Instance+"/api/v1/streaming", nil)
 	if err != nil {
@@ -193,11 +196,11 @@ func (a *Client) StreamUser(ctx context.Context, onEvent func(event string, data
 	case http.StatusNotFound:
 		// No separate streaming host configured.
 	default:
-		return fmt.Errorf("流式发现接口返回 HTTP %d", response.StatusCode)
+		return HTTPError{Status: response.StatusCode}
 	}
 	if endpoint.Host == "" || endpoint.User != nil ||
 		(endpoint.Scheme != "https" && !(endpoint.Scheme == "http" && discovery.URL.Scheme == "http" && endpoint.Host == discovery.URL.Host)) {
-		return errors.New("流式接口地址无效")
+		return MessageInvalidStreamURL
 	}
 	endpoint.Path, endpoint.RawPath = "/api/v1/streaming/user/notification", ""
 	endpoint.RawQuery, endpoint.Fragment = "", ""
@@ -218,10 +221,10 @@ func (a *Client) StreamUser(ctx context.Context, onEvent func(event string, data
 	}
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
-		return fmt.Errorf("流式接口返回 HTTP %d", res.StatusCode)
+		return HTTPError{Status: res.StatusCode}
 	}
 	if !strings.HasPrefix(res.Header.Get("Content-Type"), "text/event-stream") {
-		return errors.New("流式接口未返回事件流")
+		return MessageInvalidStream
 	}
 	scanner := bufio.NewScanner(res.Body)
 	scanner.Buffer(make([]byte, 0, 64*1024), 1<<20)
@@ -248,7 +251,7 @@ func (a *Client) StreamUser(ctx context.Context, onEvent func(event string, data
 			}
 			data = append(data, bytes.TrimPrefix(line[len("data:"):], []byte(" "))...)
 			if len(data) > 1<<20 {
-				return errors.New("流式事件过大")
+				return MessageStreamEventTooLarge
 			}
 		}
 	}

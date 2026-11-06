@@ -2,6 +2,7 @@ package app
 
 import (
 	"ceramic/internal/mastodon"
+	"ceramic/locales"
 	"encoding/json"
 )
 
@@ -32,7 +33,7 @@ func (r *reader) interact(f *feedState, s mastodon.Status, action string) {
 	}
 	if !r.hasScope(mastodon.InteractionScope(action)) {
 		f.authRequired = true
-		f.message = "当前登录缺少权限，请退出后重新登录。"
+		f.message = locales.MissingPermissionsLogOutAndLogInAgain()
 		return
 	}
 	if r.interactions == nil {
@@ -49,7 +50,7 @@ func (r *reader) interact(f *feedState, s mastodon.Status, action string) {
 			}
 			delete(r.interactions, s.ID)
 			if err != nil {
-				f.message = err.Error()
+				f.message = localizedError(err)
 				return
 			}
 			r.syncInteraction(updated, action)

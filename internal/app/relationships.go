@@ -2,6 +2,7 @@ package app
 
 import (
 	"ceramic/internal/mastodon"
+	"ceramic/locales"
 	"encoding/json"
 )
 
@@ -48,7 +49,7 @@ func (r *reader) loadRelationship(id string) {
 			}
 			state.busy = false
 			if err != nil {
-				state.message = err.Error()
+				state.message = localizedError(err)
 				return
 			}
 			state.value, state.loaded = value, true
@@ -66,7 +67,7 @@ func (r *reader) toggleFollow(f *feedState, id string) {
 	}
 	if !r.session.CanWriteFollows() {
 		f.authRequired = true
-		f.message = "当前登录缺少权限，请退出后重新登录。"
+		f.message = locales.MissingPermissionsLogOutAndLogInAgain()
 		return
 	}
 	follow := !state.value.Following && !state.value.Requested
@@ -83,7 +84,7 @@ func (r *reader) toggleFollow(f *feedState, id string) {
 			}
 			state.busy = false
 			if err != nil {
-				state.message = err.Error()
+				state.message = localizedError(err)
 				return
 			}
 			state.value, state.loaded = value, true

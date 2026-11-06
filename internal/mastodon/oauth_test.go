@@ -123,7 +123,7 @@ func TestOnlyOAuthCallbackIsServed(t *testing.T) {
 	}
 	a.pending = &pendingLogin{Expires: time.Now().Add(-time.Second)}
 	_, pending, message := a.Snapshot()
-	if pending || message == "" {
+	if pending || message == nil {
 		t.Fatal("timeout missing")
 	}
 }
