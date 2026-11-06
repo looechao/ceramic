@@ -7,7 +7,7 @@ import (
 	"github.com/egoist/mygo/ui"
 )
 
-// Lucide icons, distributed with their ISC/MIT license.
+// Lucide icons (ISC/MIT) and the Fediverse community logo (CC0).
 //
 //go:embed icons/*.svg icons/LICENSE
 var iconFiles embed.FS

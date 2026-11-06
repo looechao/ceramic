@@ -36,13 +36,9 @@ func readComposeImage(path string) (composeAttachment, error) {
 	if len(data) > 16<<20 {
 		return a, fmt.Errorf("图片不能超过 16 MB")
 	}
-	config, format, err := image.DecodeConfig(bytes.NewReader(data))
-	if err != nil || config.Width <= 0 || config.Height <= 0 || int64(config.Width)*int64(config.Height) > 24000000 {
-		return a, fmt.Errorf("请选择不超过 2400 万像素的 PNG、JPEG 或 GIF 图片")
-	}
-	bitmap, err := ui.DecodeBitmap(data)
+	bitmap, err := decodeComposeImage(data)
 	if err != nil {
-		return a, fmt.Errorf("无法读取 %s 图片", format)
+		return a, err
 	}
 	a = composeAttachment{name: filepath.Base(path), data: data, bitmap: bitmap, digest: fmt.Sprintf("%x", sha256.Sum256(data))}
 	return a, nil
@@ -52,7 +48,7 @@ func (r *reader) chooseImages(d *composer) {
 	if d.busy || d.pollEnabled || d.update == nil {
 		return
 	}
-	parent, update, gen := d.window, d.update, r.generation
+	parent, update, gen := r.parentWindow, d.update, r.generation
 	d.busy = true
 	d.message = ""
 	go func() {
@@ -100,4 +96,12 @@ func (r *reader) composeImages(c *ui.Context, d *composer) {
 			imageControl(c, closeIcon, fmt.Sprintf("移除图片 %d", i+1), d.busy, func() { d.attachments = append(d.attachments[:i], d.attachments[i+1:]...) })
 		})
 	}
+}
+
+func boundedComposeBitmap(data []byte) (*ui.Bitmap, error) {
+	config, _, err := image.DecodeConfig(bytes.NewReader(data))
+	if err != nil || config.Width <= 0 || config.Height <= 0 || int64(config.Width)*int64(config.Height) > 24000000 {
+		return nil, fmt.Errorf("请选择不超过 2400 万像素的 PNG、JPEG 或 GIF 图片")
+	}
+	return ui.DecodeBitmap(data)
 }

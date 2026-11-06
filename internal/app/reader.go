@@ -46,6 +46,8 @@ type feedState struct {
 }
 
 type reader struct {
+	drafts               []savedDraft
+	draftsOwner          string
 	applyAppearance      func(mygo.ThemeSource)
 	settingsOpen         bool
 	appearance           int

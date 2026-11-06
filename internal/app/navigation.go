@@ -32,14 +32,15 @@ func (r *reader) ensureProfile() {
 			"home":          {columns: []*feedState{r.home}},
 			"search":        {columns: []*feedState{r.searchFeed}},
 			"profile":       {columns: []*feedState{r.ownProfile}},
-			"local":         {columns: []*feedState{{kind: "local"}}},
-			"federated":     {columns: []*feedState{{kind: "federated"}}},
 			"notifications": {columns: []*feedState{r.notifications}},
 		}
 	}
 }
 
 func (r *reader) navigate(page string) {
+	if r.composer != nil && r.composer.open {
+		return
+	}
 	if r.session == nil {
 		return
 	}
@@ -138,6 +139,12 @@ func (r *reader) closeColumn(ws *workspace, f *feedState) {
 }
 
 func (r *reader) closeFocused() {
+	if r.composer != nil && r.composer.open {
+		if r.composer.close != nil {
+			r.composer.close()
+		}
+		return
+	}
 	ws := r.workspaces[r.selected]
 	if ws == nil || ws.focused == nil || ws.focused == ws.columns[0] {
 		if r.closeWindow != nil {
@@ -180,6 +187,8 @@ func sameColumn(a, b *feedState) bool {
 		return false
 	}
 	switch a.kind {
+	case "local", "federated":
+		return true
 	case "conversation":
 		return a.focalID != "" && a.focalID == b.focalID
 	case "profile", "followers", "following":

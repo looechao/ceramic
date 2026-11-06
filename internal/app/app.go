@@ -48,10 +48,6 @@ func Run() {
 		if menu := mygo.App.Menu(); menu != nil {
 			menu = mygo.NewMenu(columnCloseMenu(menu.Items(), func() {
 				window.Update(func() {
-					if d := reader.composer; d != nil && d.window != nil && d.window.IsFocused() {
-						d.close()
-						return
-					}
 					reader.closeFocused()
 				})
 			}))
@@ -70,6 +66,12 @@ func Run() {
 			items = append(items, &mygo.MenuItem{Label: "写帖子", Accelerator: "CmdOrCtrl+N", Click: func(_ *mygo.MenuItem, _ *mygo.Window) { window.Update(reader.openWriting) }}, mygo.Separator(), &mygo.MenuItem{Label: "刷新", Accelerator: "CmdOrCtrl+R", Click: func(_ *mygo.MenuItem, _ *mygo.Window) { window.Update(func() { reader.load(false) }) }})
 			menu.Append(&mygo.MenuItem{Label: "Navigate", Submenu: items})
 		}
+		window.OnClose(func(e *mygo.CloseEvent) {
+			if reader.composer != nil && !reader.saveDraft(reader.composer) {
+				e.PreventDefault()
+				reader.composer.open = true
+			}
+		})
 		window.OnClosed(func() { mygo.App.Quit() })
 		if reader.session != nil {
 			reader.load(false)

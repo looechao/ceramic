@@ -42,9 +42,6 @@ func (r *reader) view(c *ui.Context) {
 			r.session = s
 			r.relationships = nil
 			r.authorizing = false
-			if r.composer != nil && r.composer.window != nil {
-				r.composer.update(func() {})
-			}
 			r.startStream()
 			if r.authFeed != nil {
 				r.authFeed.message = ""
@@ -136,78 +133,98 @@ func (r *reader) shell(c *ui.Context) {
 		if t.Dark {
 			paper = ui.Hex("#232325")
 		}
-		ui.ScrollHorizontal(c.Key(ws)).TrackScroll(&ws.scroll).Grow(1).Shrink(1).FillHeight().Padding(columnGap).Gap(columnGap).Background(backdrop).HandleInput(func(ev ui.InputEvent) bool {
-			r.readingScrollInput(ev)
-			return ws.trackpad.scroll(ev, &ws.scroll, nil)
-		}).Children(func() {
-			for i, f := range ws.columns {
-				if compact && f != ws.focused {
-					continue
-				}
-				f.width = width
-				column := ui.Column(c.Key(f)).Width(width).Shrink(0).FillHeight().Background(paper).Radius(12).Clip().BorderWidth(1).BorderColor(t.Text.Alpha(0.08)).Shadow(0, 2, 8, 0, ui.Hex("#000000").Alpha(0.04))
-				column.Focusable()
-				if c.Preferences().HighContrast {
-					column.BorderColor(t.Border)
-				}
-				if ws.focused == f {
-					r.keyboardTarget = column
-					if f.preview == nil {
-						r.advanceReadingScroll(c)
-					}
-				}
-				column.HandleInput(func(ev ui.InputEvent) bool {
-					r.readingScrollInput(ev)
-					scroll := &f.scroll
-					if ev.Y < 48 {
-						scroll = nil
-					}
-					if ws.trackpad.scroll(ev, &ws.scroll, scroll) {
-						return true
-					}
-					if ev.Kind == ui.InputPointerDown {
-						r.focusColumn(ws, f)
-					}
-					return false
-				}).OnClick(func() { r.focusColumn(ws, f) })
-				if ws.focused == f && len(ws.columns) > 1 && !c.Preferences().HighContrast {
-					column.BorderColor(t.Accent.Alpha(0.2)).Shadow(0, 2, 8, 0, ui.Hex("#000000").Alpha(0.07))
-				}
-				if ws.revealFocus && ws.focused == f {
-					column.ScrollIntoView()
-					ws.revealFocus = false
-				}
-				column.Children(func() {
-					// Apply jumps before List/TrackScroll consume this frame's position.
-					if f.readingJump != 0 {
-						scroll := &f.scroll
-						if f.readingJump > 0 {
-							scroll.Y = 1e9
-							if f.preview == nil {
-								f.list.ScrollToEnd()
-							}
-						} else {
-							scroll.Y = 0
-							if f.preview == nil {
-								f.list.ScrollTo(0, ui.Start)
-							}
-						}
-						f.readingJump = 0
-					}
-					// Keep the column shell and toolbar for layout, focus and
-					// accessibility. Distant bodies retain their feed/ListState,
-					// but do not build rows or request images until approached.
-					warm := compact || f == ws.focused || columnNearViewport(i, len(ws.columns), width, available, ws.scroll.X)
-					r.pane(c, f, ws, i, warm)
-				})
+		shown := len(ws.columns)
+		if compact {
+			shown = 1
+		}
+		used := float32(shown)*width + float32(shown-1)*columnGap
+		area := ui.Box(c).Grow(1).Shrink(1).FillHeight()
+		area.Children(func() {
+			r.columns(c, ws, compact, width, available, backdrop, paper)
+			free := float32(0)
+			if !compact {
+				free = available - used
 			}
+			r.mascot(c, area, columnGap+used, free)
 		})
 	})
-	if ws := r.workspaces[r.selected]; ws != nil && ws.focused != nil && ws.focused.preview != nil {
+	if r.composer != nil && r.composer.open {
+		r.composePopup(c)
+	} else if ws := r.workspaces[r.selected]; ws != nil && ws.focused != nil && ws.focused.preview != nil {
 		r.previewView(c, ws.focused)
 	} else {
 		r.readingKeys(c)
 	}
+}
+
+func (r *reader) columns(c *ui.Context, ws *workspace, compact bool, width, available float32, backdrop, paper ui.Color) {
+	t := c.Theme()
+	ui.ScrollHorizontal(c.Key(ws)).TrackScroll(&ws.scroll).Fill().Padding(columnGap).Gap(columnGap).Background(backdrop).HandleInput(func(ev ui.InputEvent) bool {
+		r.readingScrollInput(ev)
+		return ws.trackpad.scroll(ev, &ws.scroll, nil)
+	}).Children(func() {
+		for i, f := range ws.columns {
+			if compact && f != ws.focused {
+				continue
+			}
+			f.width = width
+			column := ui.Column(c.Key(f)).Width(width).Shrink(0).FillHeight().Background(paper).Radius(12).Clip().BorderWidth(1).BorderColor(t.Text.Alpha(0.08)).Shadow(0, 2, 8, 0, ui.Hex("#000000").Alpha(0.04))
+			column.Focusable()
+			if c.Preferences().HighContrast {
+				column.BorderColor(t.Border)
+			}
+			if ws.focused == f {
+				r.keyboardTarget = column
+				if f.preview == nil {
+					r.advanceReadingScroll(c)
+				}
+			}
+			column.HandleInput(func(ev ui.InputEvent) bool {
+				r.readingScrollInput(ev)
+				scroll := &f.scroll
+				if ev.Y < 48 {
+					scroll = nil
+				}
+				if ws.trackpad.scroll(ev, &ws.scroll, scroll) {
+					return true
+				}
+				if ev.Kind == ui.InputPointerDown {
+					r.focusColumn(ws, f)
+				}
+				return false
+			}).OnClick(func() { r.focusColumn(ws, f) })
+			if ws.focused == f && len(ws.columns) > 1 && !c.Preferences().HighContrast {
+				column.BorderColor(t.Accent.Alpha(0.2)).Shadow(0, 2, 8, 0, ui.Hex("#000000").Alpha(0.07))
+			}
+			if ws.revealFocus && ws.focused == f {
+				column.ScrollIntoView()
+				ws.revealFocus = false
+			}
+			column.Children(func() {
+				// Apply jumps before List/TrackScroll consume this frame's position.
+				if f.readingJump != 0 {
+					scroll := &f.scroll
+					if f.readingJump > 0 {
+						scroll.Y = 1e9
+						if f.preview == nil {
+							f.list.ScrollToEnd()
+						}
+					} else {
+						scroll.Y = 0
+						if f.preview == nil {
+							f.list.ScrollTo(0, ui.Start)
+						}
+					}
+					f.readingJump = 0
+				}
+				// Keep the column shell and toolbar for layout, focus and
+				// accessibility. Distant bodies retain their feed/ListState,
+				// but do not build rows or request images until approached.
+				warm := compact || f == ws.focused || columnNearViewport(i, len(ws.columns), width, available, ws.scroll.X)
+				r.pane(c, f, ws, i, warm)
+			})
+		}
+	})
 }
 
 // Include a full neighboring column on either side so ordinary horizontal
@@ -358,15 +375,6 @@ func (r *reader) sidebar(c *ui.Context) {
 				})
 			}
 			ui.Spacer(c)
-			ui.Text(c, "Browse").FontSize(10).TextColor(t.TextMuted).AlignSelf(ui.Center)
-			for _, page := range []string{"local", "federated"} {
-				label := map[string]string{"local": "Local", "federated": "Federated"}[page]
-				bg := ui.Transparent
-				if r.selected == page {
-					bg = t.Text.Alpha(.09)
-				}
-				ui.ButtonBase(c.Key(page)).Size(48, 30).Radius(8).Background(bg).Label(label).Tooltip(label).Disabled(r.session == nil).OnClick(func() { r.navigate(page) }).Children(func() { ui.Text(c, label).FontSize(10) })
-			}
 			ui.ButtonBase(c).Size(48, 44).Radius(10).Label("写帖子").Tooltip("写帖子 · " + shortcutHint("N")).Disabled(r.session == nil).OnClick(func() {
 				if r.openWriting != nil {
 					r.openWriting()

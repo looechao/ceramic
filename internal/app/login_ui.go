@@ -44,6 +44,9 @@ func (r *reader) login() {
 }
 
 func (r *reader) logout() {
+	if r.composer != nil && !r.saveDraft(r.composer) {
+		return
+	}
 	if err := r.service.Logout(); err != nil {
 		r.message = err.Error()
 		return
@@ -66,9 +69,11 @@ func (r *reader) logout() {
 	}
 	if r.composer != nil && r.composer.close != nil {
 		r.composer.busy = false
-		r.composer.close()
+		r.composer.open = false
 	}
 	r.composer = nil
+	r.drafts = nil
+	r.draftsOwner = ""
 	r.ownProfile = nil
 	r.workspaces = nil
 	r.authFeed = nil
