@@ -1,5 +1,7 @@
 # Ceramic
 
+采用 [MIT 许可证](LICENSE)。第三方依赖及资源遵循各自的许可证。
+
 基于 **MyGo v0.7.4 原生 UI** 的最小 Mastodon 桌面阅读器。主要在 macOS 上开发和使用，也构建 Windows 与 Linux 版本，这两个平台尚未在真机上验证。
 
 界面全部由 Go 编写，使用 `ui.View`、`ui.List`、`ui.RichText`、`ui.Image` 等原生渲染组件，没有 WebView、HTML 页面、JavaScript 或前端构建工具。MyGo 在 macOS 上使用 Metal 绘制界面，并非 AppKit/SwiftUI 控件。
