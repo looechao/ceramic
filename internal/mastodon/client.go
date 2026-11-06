@@ -44,13 +44,18 @@ func New(path string) *Client {
 }
 
 func (a *Client) request(method, endpoint, token string, form url.Values, out any) error {
+	_, err := a.requestHeaders(method, endpoint, token, form, out)
+	return err
+}
+
+func (a *Client) requestHeaders(method, endpoint, token string, form url.Values, out any) (http.Header, error) {
 	var body io.Reader
 	if form != nil {
 		body = strings.NewReader(form.Encode())
 	}
 	req, err := http.NewRequest(method, endpoint, body)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", "Ceramic/0.1")
@@ -62,24 +67,24 @@ func (a *Client) request(method, endpoint, token string, form url.Values, out an
 	}
 	res, err := a.client.Do(req)
 	if err != nil {
-		return errors.New("无法连接实例，请检查域名和网络后重试")
+		return nil, errors.New("无法连接实例，请检查域名和网络后重试")
 	}
 	defer res.Body.Close()
 	if res.StatusCode < 200 || res.StatusCode >= 300 {
 		switch res.StatusCode {
 		case 401:
-			return errors.New("登录已失效，请退出后重新登录")
+			return nil, errors.New("登录已失效，请退出后重新登录")
 		case 403:
-			return errors.New("实例拒绝访问，请检查账号权限")
+			return nil, errors.New("实例拒绝访问，请检查账号权限")
 		case 429:
-			return errors.New("请求过于频繁，请稍后重试")
+			return nil, errors.New("请求过于频繁，请稍后重试")
 		}
-		return fmt.Errorf("实例返回 HTTP %d，请稍后重试", res.StatusCode)
+		return nil, fmt.Errorf("实例返回 HTTP %d，请稍后重试", res.StatusCode)
 	}
 	if err := json.NewDecoder(io.LimitReader(res.Body, 8<<20)).Decode(out); err != nil {
-		return errors.New("实例返回了无法识别的数据，请确认它支持 Mastodon API")
+		return nil, errors.New("实例返回了无法识别的数据，请确认它支持 Mastodon API")
 	}
-	return nil
+	return res.Header, nil
 }
 
 func (a *Client) Timeline(cursor string) ([]Status, error) {

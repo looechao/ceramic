@@ -149,3 +149,10 @@ func (r *reader) submitSearch() {
 		r.load(false)
 	}
 }
+
+func (r *reader) openConnections(source *feedState, kind string) {
+	if source.profile.ID == "" || (kind != "following" && kind != "followers") {
+		return
+	}
+	r.appendColumn(source, &feedState{kind: kind, profile: source.profile})
+}

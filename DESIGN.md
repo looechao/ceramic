@@ -32,3 +32,5 @@ Each tab remembers a focused column. Pointer presses inside it select it without
 Post types use subtle fading tints: boosts #9263c7, replies #4f89b7, warnings/sensitive #c48a38, 6.5% opacity in light and 10% in dark; ordinary posts remain untinted. High contrast omits decorative gradients. Folded warnings and sensitive media render abstract shapes with Gaussian sigma 5, not actual text or images; reveal is explicit and reversible. Server hide filters exclude posts, including nested reblogs.
 
 Only the sidebar uses system vibrancy. Reading columns use the framework's continuous rounded corners with opaque light headers (#f7f7f9), white bodies and a gray workspace (#eeeef0). Dark mode uses #2b2b2e headers, #232325 bodies and #171719 workspace. No custom corner masks or transparent header cutouts.
+
+Account list rows have no divider lines; spacing separates accounts. They lift by 2 pt with a soft shadow on pointer hover, settling on press and returning over 140 ms. The hit area and list layout stay fixed. Reduced motion keeps only the surface tint; high contrast omits the shadow. This applies to account results, not post rows.
