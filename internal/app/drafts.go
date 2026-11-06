@@ -180,6 +180,7 @@ func diskDraftMetadata(saved savedDraft) savedDraft {
 
 // Called on close and application exit; failed writes leave the editor open.
 func (r *reader) closeComposer(d *composer) {
+	d.stopMentions()
 	if !d.busy && r.saveDraft(d) {
 		d.open = false
 		d.draftsOpen = false

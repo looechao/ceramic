@@ -44,3 +44,11 @@ platform in `.github/workflows/release.yml` and creates a draft release.
 Write commit messages as Conventional Commits, such as
 `feat(app): open conversations in a column` or `refactor: extract the
 mastodon package`.
+
+## Updates
+
+Use MyGo's native updater. Release builds require the `MYGO_UPDATER_PRIVATE_KEY`
+Actions secret, matching `updates.publicKey` in `mygo.json`. Upload each
+platform's signed archive and `update-<platform>.json` together before publishing
+the draft release. Never commit the private key or silently rotate it.
+See `docs/updates.md` for the first-install limitation and update testing.

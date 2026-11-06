@@ -241,5 +241,14 @@
   "ServiceCallbackInvalid": "Authorization expired or invalid. Return to Ceramic to retry.",
   "ServiceCallbackFailed": "Login incomplete. Return to Ceramic for details.",
   "ServiceCallbackSuccess": "Logged in. Close this page and return to Ceramic.",
-  "ServiceHTTPError": "Server returned HTTP {status}. Try again later."
+  "ServiceHTTPError": "Server returned HTTP {status}. Try again later.",
+  "Updates": "Software updates",
+  "AutomaticallyCheckUpdates": "Check for updates automatically",
+  "CheckForUpdates": "Check for updates…",
+  "UpdateVersion": "Version {version}",
+  "UpdateConfirmation": "Get updates for this device from GitHub.",
+  "ReplyingTo": "Replying to {account}",
+  "MentionSuggestions": "Mention suggestions",
+  "SearchingAccounts": "Searching accounts",
+  "MentionSearchFailed": "Account search failed. You can type the full handle."
 }

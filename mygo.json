@@ -1,7 +1,7 @@
 {
   "name": "Ceramic",
   "identifier": "dev.ceramic.reader",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "icon": "resources/icon.png",
   "out": "build",
   "linux": {
@@ -10,5 +10,9 @@
   "i18n": {
     "dir": "locales",
     "source": "zh-Hans"
+  },
+  "updates": {
+    "publicKey": "XleVCLbvYqv26ZaUYvZkoBGnZoXix7Vfme843yEuwpE=",
+    "github": "looechao/ceramic"
   }
 }

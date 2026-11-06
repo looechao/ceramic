@@ -17,6 +17,7 @@ type savedDraft struct {
 	Updated                            time.Time
 	Text, Spoiler, Audience, Duration  string
 	PollSeconds                        int
+	ReplyTo, ReplyAccount              string
 	PollEnabled, Multiple, ShowSpoiler bool
 	Options                            []string
 	Attachments                        []composeAttachment `json:"-"`
@@ -24,6 +25,9 @@ type savedDraft struct {
 }
 
 func (d *composer) hasContent() bool {
+	if d.replyTo != "" {
+		return true
+	}
 	if strings.TrimSpace(d.text+d.spoiler) != "" || len(d.attachments) > 0 {
 		return true
 	}
@@ -36,7 +40,7 @@ func (d *composer) hasContent() bool {
 }
 
 func snapshotDraft(d *composer) savedDraft {
-	return savedDraft{ID: d.draftID, Updated: time.Now(), Text: d.text, Spoiler: d.spoiler, Audience: d.audience, PollSeconds: d.pollDuration,
+	return savedDraft{ID: d.draftID, Updated: time.Now(), Text: d.text, Spoiler: d.spoiler, Audience: d.audience, PollSeconds: d.pollDuration, ReplyTo: d.replyTo, ReplyAccount: d.replyAccount,
 		PollEnabled: d.pollEnabled, Multiple: d.pollMultiple, ShowSpoiler: d.showSpoiler,
 		Options: append([]string(nil), d.pollOptions...), Attachments: append([]composeAttachment(nil), d.attachments...), Key: d.key, Payload: d.payload}
 }
@@ -82,6 +86,8 @@ func (r *reader) openDrafts(d *composer) {
 }
 
 func clearComposer(d *composer) {
+	d.stopMentions()
+	d.replyTo, d.replyAccount = "", ""
 	d.draftID, d.text, d.spoiler, d.key, d.payload, d.message = "", "", "", "", "", ""
 	d.attachments = nil
 	d.pollEnabled, d.pollMultiple, d.showSpoiler = false, false, false
@@ -102,6 +108,10 @@ func (r *reader) restoreDraft(d *composer, saved savedDraft) {
 	}
 	d.draftID, d.text, d.spoiler, d.audience = saved.ID, saved.Text, saved.Spoiler, migratedAudience(saved.Audience)
 	d.pollDuration, d.pollEnabled, d.pollMultiple, d.showSpoiler = migratedDuration(saved), saved.PollEnabled, saved.Multiple, saved.ShowSpoiler
+	d.stopMentions()
+	d.replyTo, d.replyAccount = saved.ReplyTo, saved.ReplyAccount
+	d.focusEditor = true
+	d.editorCaret = len([]rune(saved.Text))
 	d.pollOptions = append([]string(nil), saved.Options...)
 	d.attachments = append([]composeAttachment(nil), saved.Attachments...)
 	d.key, d.payload, d.message = saved.Key, saved.Payload, ""

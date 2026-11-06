@@ -51,6 +51,9 @@ type reader struct {
 	draftsOwner          string
 	applyAppearance      func(mygo.ThemeSource)
 	settingsOpen         bool
+	automaticUpdates     bool
+	checkUpdates         func()
+	setAutomaticUpdates  func(bool)
 	appearance           int
 	preferencesPath      string
 	relationships        map[string]*relationshipState

@@ -21,6 +21,7 @@ type PollDraft struct {
 
 type PostDraft struct {
 	Text, Spoiler, Visibility string
+	ReplyTo                   string
 	MediaIDs                  []string
 	Poll                      *PollDraft
 }
@@ -79,6 +80,9 @@ func (a *Client) PublishDraftContext(ctx context.Context, s *Session, d PostDraf
 		return result, MessageMissingSubmissionID
 	}
 	q := url.Values{"status": {d.Text}, "spoiler_text": {d.Spoiler}, "visibility": {d.Visibility}}
+	if d.ReplyTo != "" {
+		q.Set("in_reply_to_id", d.ReplyTo)
+	}
 	if len(d.MediaIDs) > 0 {
 		q["media_ids[]"] = d.MediaIDs
 	}

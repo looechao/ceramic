@@ -72,6 +72,9 @@ func (r *reader) logout() {
 		r.composer.busy = false
 		r.composer.open = false
 	}
+	if r.composer != nil {
+		r.composer.stopMentions()
+	}
 	r.composer = nil
 	r.drafts = nil
 	r.draftsOwner = ""

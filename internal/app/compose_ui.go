@@ -14,6 +14,10 @@ import (
 
 type composer struct {
 	draftID                   string
+	replyTo, replyAccount     string
+	focusEditor               bool
+	editorCaret               int
+	mentions                  mentionState
 	draftsOpen                bool
 	cancelPublish             context.CancelFunc
 	attachments               []composeAttachment
@@ -52,6 +56,8 @@ func (r *reader) showComposer() {
 		d.message = locales.SomeDraftsCouldNotBeRead() + localizedError(err)
 	}
 	d.open = true
+	d.focusEditor = true
+	d.editorCaret = len([]rune(d.text))
 	d.update = r.update
 	d.close = func() { r.closeComposer(d) }
 	r.readingScroll = nil
@@ -68,6 +74,7 @@ func (r *reader) composePopup(c *ui.Context) {
 		panel.Size(min(560, max(1, w-32)), min(640, max(1, h-32))).Radius(12).Clip().
 			Background(c.Theme().Background).Shadow(0, 8, 28, 0, ui.Hex("#000000").Alpha(.18)).Label(locales.PostComposer())
 		if panel.OverlayShortcut(ui.Cmd, ui.KeyW) {
+			d.stopMentions()
 			d.close()
 		}
 		if d.draftsOpen {
@@ -76,6 +83,10 @@ func (r *reader) composePopup(c *ui.Context) {
 			r.composeView(c, d)
 		}
 	})
+	if !d.open && d.mentions.active {
+		d.open = true
+		d.dismissMentions()
+	}
 	// Native overlays report attempted dismissal; keep uploads and publication visible.
 	if d.busy {
 		d.open = true
@@ -110,7 +121,11 @@ func (r *reader) composeView(c *ui.Context, d *composer) {
 			ui.Spacer(c)
 			ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
 				ui.Image(c, loginLogo).Size(28, 28).Fit(ui.Contain).Label("Ceramic")
-				ui.Text(c, locales.NewPost()).FontSize(17).Bold()
+				title := locales.NewPost()
+				if d.replyTo != "" {
+					title = locales.Reply()
+				}
+				ui.Text(c, title).FontSize(17).Bold()
 			})
 			ui.Spacer(c)
 			label := locales.Publish()
@@ -152,7 +167,10 @@ func (r *reader) composeView(c *ui.Context, d *composer) {
 				if _, height := c.Size(); height < 540 {
 					editorHeight = 80
 				}
-				ui.TextArea(c, &d.text).Label(locales.PostText()).Placeholder(locales.WhatWouldYouLikeToShare()).Height(editorHeight).FillWidth().BorderWidth(0).Background(ui.Transparent).Padding(0).FontSize(16).Disabled(d.busy)
+				if d.replyTo != "" {
+					ui.Text(c, locales.ReplyingTo(d.replyAccount)).FontSize(12).TextColor(t.TextMuted).FillWidth()
+				}
+				r.composeEditor(c, d, editorHeight)
 				if d.pollEnabled {
 					r.composePoll(c, d)
 				}
@@ -206,7 +224,7 @@ func (r *reader) composePoll(c *ui.Context, d *composer) {
 }
 
 func (d *composer) draft() mastodon.PostDraft {
-	result := mastodon.PostDraft{Text: d.text, Spoiler: d.spoiler, Visibility: d.audience}
+	result := mastodon.PostDraft{Text: d.text, Spoiler: d.spoiler, Visibility: d.audience, ReplyTo: d.replyTo}
 	for _, a := range d.attachments {
 		result.MediaIDs = append(result.MediaIDs, a.id)
 	}
@@ -286,11 +304,15 @@ func (r *reader) publish(d *composer) {
 			if d.draftID != "" && !r.deleteDraft(d, d.draftID) {
 				d.message = locales.PublishedButTheLocalDraftCouldNotBeDeletedDoNotPublishItAgain()
 				d.text, d.spoiler, d.key, d.payload = "", "", "", ""
+				d.replyTo, d.replyAccount = "", ""
+				d.stopMentions()
 				d.attachments = nil
 				d.pollEnabled = false
 				return
 			}
 			d.text, d.spoiler, d.key, d.payload = "", "", "", ""
+			d.replyTo, d.replyAccount = "", ""
+			d.stopMentions()
 			d.attachments = nil
 			d.pollEnabled = false
 			d.pollOptions = nil

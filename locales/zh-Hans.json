@@ -366,5 +366,14 @@
         "type": "int"
       }
     }
-  }
+  },
+  "Updates": "软件更新",
+  "AutomaticallyCheckUpdates": "自动检查更新",
+  "CheckForUpdates": "检查更新…",
+  "UpdateVersion": "当前版本 {version}",
+  "UpdateConfirmation": "从 GitHub 获取适用于此设备的更新。",
+  "ReplyingTo": "回复 {account}",
+  "MentionSuggestions": "提及账号建议",
+  "SearchingAccounts": "正在搜索账号",
+  "MentionSearchFailed": "无法搜索账号，可直接输入完整账号。"
 }

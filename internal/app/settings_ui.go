@@ -62,6 +62,7 @@ func (r *reader) settingsView(c *ui.Context) {
 					}
 				}
 			}
+			r.updateSettings(c)
 			ui.Button(c, locales.Done()).AlignSelf(ui.End).OnClick(func() { r.settingsOpen = false })
 		})
 	})

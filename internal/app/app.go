@@ -10,6 +10,8 @@ import (
 	"runtime"
 
 	"github.com/egoist/mygo"
+	"github.com/egoist/mygo/plugins/updater"
+	"github.com/egoist/mygo/plugins/updater/native"
 	"github.com/egoist/mygo/ui"
 
 	"ceramic/internal/mastodon"
@@ -17,6 +19,7 @@ import (
 
 // Run opens the window and blocks until the app quits.
 func Run() {
+	mygo.Use(native.Plugin)
 	dir, err := os.UserConfigDir()
 	if err != nil {
 		log.Fatal(err)
@@ -46,6 +49,13 @@ func Run() {
 		reader.update = window.Update
 		reader.closeWindow = window.Close
 		reader.openWriting = func() { reader.showComposer() }
+		reader.checkUpdates = updater.CheckForUpdates
+		reader.setAutomaticUpdates = updater.SetAutomaticChecks
+		reader.automaticUpdates = updater.AutomaticChecks()
+		offUpdates := updater.OnChange(func() {
+			window.Update(func() { reader.automaticUpdates = updater.AutomaticChecks() })
+		})
+		window.OnClosed(offUpdates)
 		baseMenu := mygo.App.Menu()
 		rebuildMenu := func() {
 			if menu := baseMenu; menu != nil {
@@ -64,7 +74,7 @@ func Run() {
 							}}
 							// Place Settings after About and its separator.
 							at := min(2, len(item.Submenu))
-							item.Submenu = append(item.Submenu[:at], append([]*mygo.MenuItem{settings, mygo.Separator()}, item.Submenu[at:]...)...)
+							item.Submenu = append(item.Submenu[:at], append([]*mygo.MenuItem{updater.MenuItem(), settings, mygo.Separator()}, item.Submenu[at:]...)...)
 							break
 						}
 					}

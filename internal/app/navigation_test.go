@@ -170,7 +170,7 @@ func TestNativeColumnsAndMedia(t *testing.T) {
 	}
 
 	// A conversation and its author extend Home, while Search keeps its own path.
-	if err := tt.Click("回复 2"); err != nil {
+	if err := tt.Click("今天走了另一条回家的路。"); err != nil {
 		t.Fatal(err)
 	}
 	conversation := r.feedState

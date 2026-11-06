@@ -2507,3 +2507,93 @@ func ServiceHTTPError(status int) string { return In(i18n.Locale()).ServiceHTTPE
 func (msgs Messages) ServiceHTTPError(status int) string {
 	return Catalog.Format(msgs.locale, "ServiceHTTPError", map[string]any{"status": status})
 }
+
+// Updates says "软件更新"
+// in the language the app shows.
+func Updates() string { return In(i18n.Locale()).Updates() }
+
+// Updates says "软件更新"
+// in the language of msgs.
+func (msgs Messages) Updates() string {
+	return Catalog.Format(msgs.locale, "Updates", nil)
+}
+
+// AutomaticallyCheckUpdates says "自动检查更新"
+// in the language the app shows.
+func AutomaticallyCheckUpdates() string { return In(i18n.Locale()).AutomaticallyCheckUpdates() }
+
+// AutomaticallyCheckUpdates says "自动检查更新"
+// in the language of msgs.
+func (msgs Messages) AutomaticallyCheckUpdates() string {
+	return Catalog.Format(msgs.locale, "AutomaticallyCheckUpdates", nil)
+}
+
+// CheckForUpdates says "检查更新…"
+// in the language the app shows.
+func CheckForUpdates() string { return In(i18n.Locale()).CheckForUpdates() }
+
+// CheckForUpdates says "检查更新…"
+// in the language of msgs.
+func (msgs Messages) CheckForUpdates() string {
+	return Catalog.Format(msgs.locale, "CheckForUpdates", nil)
+}
+
+// UpdateVersion says "当前版本 {version}"
+// in the language the app shows.
+func UpdateVersion(version string) string { return In(i18n.Locale()).UpdateVersion(version) }
+
+// UpdateVersion says "当前版本 {version}"
+// in the language of msgs.
+func (msgs Messages) UpdateVersion(version string) string {
+	return Catalog.Format(msgs.locale, "UpdateVersion", map[string]any{"version": version})
+}
+
+// UpdateConfirmation says "从 GitHub 获取适用于此设备的更新。"
+// in the language the app shows.
+func UpdateConfirmation() string { return In(i18n.Locale()).UpdateConfirmation() }
+
+// UpdateConfirmation says "从 GitHub 获取适用于此设备的更新。"
+// in the language of msgs.
+func (msgs Messages) UpdateConfirmation() string {
+	return Catalog.Format(msgs.locale, "UpdateConfirmation", nil)
+}
+
+// ReplyingTo says "回复 {account}"
+// in the language the app shows.
+func ReplyingTo(account string) string { return In(i18n.Locale()).ReplyingTo(account) }
+
+// ReplyingTo says "回复 {account}"
+// in the language of msgs.
+func (msgs Messages) ReplyingTo(account string) string {
+	return Catalog.Format(msgs.locale, "ReplyingTo", map[string]any{"account": account})
+}
+
+// MentionSuggestions says "提及账号建议"
+// in the language the app shows.
+func MentionSuggestions() string { return In(i18n.Locale()).MentionSuggestions() }
+
+// MentionSuggestions says "提及账号建议"
+// in the language of msgs.
+func (msgs Messages) MentionSuggestions() string {
+	return Catalog.Format(msgs.locale, "MentionSuggestions", nil)
+}
+
+// SearchingAccounts says "正在搜索账号"
+// in the language the app shows.
+func SearchingAccounts() string { return In(i18n.Locale()).SearchingAccounts() }
+
+// SearchingAccounts says "正在搜索账号"
+// in the language of msgs.
+func (msgs Messages) SearchingAccounts() string {
+	return Catalog.Format(msgs.locale, "SearchingAccounts", nil)
+}
+
+// MentionSearchFailed says "无法搜索账号，可直接输入完整账号。"
+// in the language the app shows.
+func MentionSearchFailed() string { return In(i18n.Locale()).MentionSearchFailed() }
+
+// MentionSearchFailed says "无法搜索账号，可直接输入完整账号。"
+// in the language of msgs.
+func (msgs Messages) MentionSearchFailed() string {
+	return Catalog.Format(msgs.locale, "MentionSearchFailed", nil)
+}
