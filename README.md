@@ -1,178 +1,69 @@
+<img src="resources/icon.png" alt="Ceramic logo" width="96">
+
 # Ceramic
 
-采用 [MIT 许可证](LICENSE)。第三方依赖及资源遵循各自的许可证。
+Another desktop app for Mastodon.
 
-基于 **MyGo v0.7.4 原生 UI** 的最小 Mastodon 桌面阅读器。主要在 macOS 上开发和使用，也构建 Windows 与 Linux 版本，这两个平台尚未在真机上验证。
+Connect your Mastodon account and explore the Fediverse in a lightweight native app.
 
-界面全部由 Go 编写，使用 `ui.View`、`ui.List`、`ui.RichText`、`ui.Image` 等原生渲染组件，没有 WebView、HTML 页面、JavaScript 或前端构建工具。MyGo 在 macOS 上使用 Metal 绘制界面，并非 AppKit/SwiftUI 控件。
+[Download the latest release](https://github.com/looechao/ceramic/releases/latest) · [中文说明](README.zh-CN.md) · [MIT License](LICENSE)
 
-## 使用
+![Ceramic with multiple reading columns open](site/ceramic-screenshot.png)
 
-打开应用，输入账号所在的实例域名（例如 `mastodon.social`），在系统浏览器中授权，回到应用阅读首页时间线。
+## Features
 
-- Home / Explore / Profile / Local / Federated 各自保留阅读路径，默认左侧一列；打开详情时向右追加，超出窗口可横向滚动
-- Explore 默认搜索帖子，其次是账号；Explore 下方的 Browse 可打开 Local 或 Federated 时间线
-- 点击头像、账号进入个人页；帖子正文与空白区域打开完整讨论串。重复打开会定位已有列并保留阅读位置
-- 左侧头像先进入个人页，再次点击打开设置和退出登录菜单
-- 原生发帖弹窗支持内容警告、可见性、最多四张图片及描述、单选或多选投票；草稿保存在本机，重启后可继续编辑
-- 喜欢、转发、书签、关注、通知及独立列表
-- 切页保留本次运行中的时间线、搜索结果及内容警告展开状态
-- 单账号登录与本地登录状态恢复
-- 原生虚拟滚动时间线、手动刷新、到底自动加载、分页去重
-- 可选择的正文、可点击链接、自定义表情、GIF 动态头像、投票选项和结果、双列图片、透明背景的悬浮看图（← / → 切换同帖图片，Esc 关闭）、转发标记和互动计数
-- 内容警告、过滤规则警告与敏感媒体使用模糊轮廓占位，可显示/收起；服务器 hide 过滤的帖子不展示
-- 转发、回复与警告使用淡渐变区分，普通帖子保持白底，深色模式自动适配
-- 外观可选跟随系统、浅色或深色，设置自动保存；支持键盘操作
-- 原帖与音视频在系统浏览器打开
-- 授权取消、超时、网络错误和空状态
+- Open posts and profiles in columns to the right, keeping your place as you read.
+- Browse timelines, search, follow conversations, and like, boost, bookmark, or reply.
+- Write posts with images, descriptions, polls, and content warnings. Drafts stay on your computer.
+- View images and notifications, choose light or dark appearance, and navigate with the keyboard.
 
-仅支持 Mastodon API，未实现 Misskey API。尚未实现多账号、帖子离线缓存或自动更新。正文支持基础文字、链接、粗体、斜体和自定义表情；可以查看投票结果，参与投票仍需打开原帖。
+Ceramic supports one Mastodon account using the Mastodon API. Other Fediverse server implementations may not be compatible; the Misskey API is not supported. Offline post caching and voting in the app are not yet supported.
 
-## 开发与构建
+## Install
 
-需要 Go 1.27.3+；已有 Go 可以自动下载对应工具链。无需 Node、npm 或 Bun。
+Download a build from [Releases](https://github.com/looechao/ceramic/releases/latest). Ceramic is developed and used primarily on macOS, and builds are also available for Windows and Linux; those two platforms have not yet been tested on physical machines. Linux requires GTK 3.
+
+Builds are not signed with an Apple Developer ID or notarized. On first launch, macOS may require you to allow Ceramic in **System Settings → Privacy & Security**. Windows may show a SmartScreen warning.
+
+Enter your instance domain, such as `mastodon.social`, and authorize Ceramic in your browser to start reading.
+
+## Shortcuts
+
+Command means <kbd>⌘</kbd> on macOS and <kbd>Ctrl</kbd> on Windows and Linux. Reading shortcuts act on the focused column and are disabled while typing in search.
+
+| Shortcut | Action |
+| --- | --- |
+| <kbd>Shift</kbd> + <kbd>H</kbd> / <kbd>Shift</kbd> + <kbd>L</kbd> | Focus the previous / next column; <kbd>J</kbd> and <kbd>K</kbd> also work |
+| <kbd>j</kbd> / <kbd>k</kbd> | Scroll down / up |
+| <kbd>d</kbd> / <kbd>u</kbd> | Scroll down / up half a page |
+| <kbd>g</kbd> <kbd>g</kbd> | Go to the top (press twice within one second) |
+| <kbd>Shift</kbd> + <kbd>G</kbd> | Go to the bottom of loaded content |
+| Command + <kbd>W</kbd> | Close the focused detail column, or the window when the main column is focused |
+| Command + <kbd>1</kbd> / <kbd>2</kbd> / <kbd>3</kbd> | Profile / Home / Notifications |
+| Command + <kbd>4</kbd> / <kbd>5</kbd> / <kbd>6</kbd> | Bookmarks / Favorites / Explore |
+| Command + <kbd>N</kbd> / <kbd>R</kbd> | Compose / refresh |
+| <kbd>←</kbd> / <kbd>→</kbd> | Move between images in the image viewer |
+| <kbd>Esc</kbd> | Clear search, leave search, cancel a key sequence, or close an image |
+
+## Development
+
+Requires Go 1.27.3 or later. No Node, npm, or Bun is needed.
 
 ```sh
-./scripts/dev.sh    # 修改 Go 代码后自动编译并重启
+./scripts/dev.sh
 ./scripts/build.sh
-```
-
-开发模式运行 `Ceramic Dev`，监听源码变化；编译失败时旧版本继续运行。重启保留已保存登录，内存中的阅读路径会重置。关闭开发窗口会结束监听。
-
-仓库使用 `.editorconfig` 统一缩进和文件格式，Go 源码以 `gofmt` 为准。`.gitattributes` 统一文本换行。构建产物、热重载目录、本地环境文件与测试产物不会提交；示例环境文件可以提交，但不得包含真实凭据。
-
-默认构建当前机器的版本，产物在 `build/<系统>-<架构>/`，macOS 为 `build/darwin-arm64/Ceramic.app`。用 `-platform` 可以构建其他平台，生成 Windows 安装包需要安装 NSIS：
-
-```sh
-./scripts/build.sh -platform darwin/arm64,darwin/amd64,windows/amd64,windows/arm64,linux/amd64,linux/arm64
-```
-
-Linux 版运行时需要 GTK 3。所有版本都没有代码签名：macOS 为 ad-hoc 签名且未公证，Gatekeeper 会拦截；Windows 会出现 SmartScreen 警告。
-
-## 发布
-
-修改 `mygo.json` 的 `version`，提交后推送同名标签。GitHub Actions 会测试并构建全部桌面平台，生成草稿 Release，确认后手动发布：
-
-```sh
-git tag v0.2.0
-git push origin v0.2.0
-```
-
-```sh
-go test -race ./...
 go vet ./...
-CERAMIC_SCREENSHOTS=1 go test -run TestNative ./...
+go test -race ./...
 ```
 
-最后一条命令会使用 MyGo 的原生 CPU 渲染器在 `build/qa/` 生成登录页、时间线、紧凑窗口及深色模式截图。截图使用明确的测试数据，不是实际账号内容。
-
-## 宣传页
-
-`site/` 是一个静态页面，没有构建步骤，中英双语，浅色和深色跟随系统。本地预览：
+The static website can be previewed with:
 
 ```sh
 python3 -m http.server 4173 --directory site
 ```
 
-部署到 Cloudflare Pages：连接本仓库，Framework preset 选 None，Build command 留空，Build output directory 填 `site`。`site/_headers` 设置安全头和图标缓存。
+Ceramic connects directly to your instance and stores its access token locally. The current macOS prototype does not yet use Keychain encryption. See the [Chinese documentation](README.zh-CN.md) for builds, data storage, and architecture.
 
-页面里的小人路径来自 `internal/app/mascot/body.svg`，改动小人形状时一并更新 `site/index.html` 中的 `blob-body`。页面上的数字（4 MB 安装包、空闲 CPU 低于 1%）测于 Ceramic 0.1.0，版本变化后需要重新测量。
+## License
 
-## 文件结构
-
-- `main.go`：只启动 `internal/app`
-- `internal/app/`：窗口和全部界面
-  - `app.go`：窗口、菜单和启动
-  - `reader.go`：阅读状态和异步加载
-  - `images.go`：图片加载、解码和内存上限
-  - `navigation.go`：每个 Tab 的列路径、打开、关闭和聚焦
-  - `keys.go`：阅读快捷键与连续滚动
-  - `login_ui.go` / `shell_ui.go` / `timeline_ui.go` / `post_ui.go`：登录页、侧边栏和列、时间线、帖子
-  - `style.go` / `icons.go`：样式与图标
-- `internal/mastodon/`：不依赖界面
-  - `client.go`：Mastodon 请求
-  - `oauth.go`：授权流程，本地监听器只暴露 `/oauth/callback`
-  - `session.go`：会话存储
-  - `types.go` / `richtext.go`：数据类型和 HTML 到富文本的转换
-- `internal/imagecache/`：XDG 图片磁盘缓存和缓存策略，不依赖界面
-- `resources/icon.png`：打包用图标，源文件是 `docs/icon.svg`
-
-测试文件与被测代码放在同一目录。
-
-## 数据与授权
-
-Go 直接连接所选实例。浏览器仅用于登录授权和打开外部链接，应用界面不经过浏览器。随机 `127.0.0.1` 端口只接收 OAuth 回调，不提供页面或客户端 API；回调校验一次性 state 和 Host。
-
-申请 `read write follow push` 权限。权限仅在登录时统一申请，不提供补充授权入口。旧会话如果缺少权限，需要退出后重新登录。帖子搜索范围取决于实例的搜索后端。**当前原型将访问令牌保存在 `~/Library/Application Support/Ceramic/session.json`，权限为 0600，尚未使用钥匙串加密。** 不要分享这个文件。退出登录会删除本地会话；如需撤销实例侧授权，在实例的“已授权应用”中撤销 Ceramic。
-
-帖子不落盘。图片从帖子媒体服务器加载，使用内存和 XDG 磁盘两级缓存；最多同时加载 4 张，单张下载上限 4 MiB、解码上限 1600 万像素。普通图片缩至最长边 1200 像素，带 EXIF 的相机图片保留 MyGo 的方向处理。图片缓存按最近使用淘汰，基础解码像素预算 64 MiB、最多 128 项（不包括 GPU 纹理及框架生成的缩小级别）；失败时可在浏览器打开原图。
-
-## 验证与限制
-
-服务测试使用本地 TLS 模拟实例，覆盖完整 OAuth、错误 state、回调重放、授权范围、会话恢复、分页、退出、超时、限流、空时间线及没有 Web 界面路由。
-
-原生 UI 测试实际渲染组件并点击按钮，覆盖输入校验、时间线、内容警告展开、外部链接、分页去重、退出和深浅色/紧凑布局。离屏截图不能替代真实桌面 GPU 验证；自动化覆盖每个 Tab 的独立列路径、讨论 API、详情追加和关闭、窗口缩放及滚动位置恢复；布局使用 CPU 渲染截图检查。完整手动验收：
-
-1. 双击应用，输入实例域名并完成授权，确认显示关注动态。
-2. 刷新并滚动到底部自动加载，确认没有重复帖子，图片正常出现。
-3. 展开内容警告，点击链接和原帖，确认系统浏览器打开正确地址。
-4. 关闭再打开应用，确认保持登录；退出后重新打开应回到连接页。
-5. 断网刷新，确认保留已有动态并显示错误，恢复网络后可以重试。
-
-## 导航与框架边界
-
-保持官方 MyGo v0.7.4，没有替换依赖、修改框架或使用 Peek 的定制分支。
-界面使用 MyGo 自带的 `ButtonBase`、`Toolbar`、`SearchField`、`Segmented`、`List`、`Avatar`、`Icon` 和 `RichText`。
-这些 UI 组件由 MyGo 原生渲染，不能等同于 Peek 分支的 `NSToolbar` / `NSOutlineView` 桥接。侧栏现使用官方 `VibrancySidebar`，在 macOS 上由系统 `NSVisualEffectView` 绘制毛玻璃材质；只有侧栏透明，阅读列保持不透明。
-系统菜单中的 Navigate 提供 我的（⌘1）、首页（⌘2）、通知（⌘3）、书签（⌘4）、喜欢（⌘5）、Explore（⌘6）、写帖子（⌘N）和刷新（⌘R）；Escape 取消组合键或关闭图片，不关闭阅读列。点击作者名在当前 Tab 右侧追加个人页；点击帖子正文或回复图标打开讨论串和回复列表。支持触控板横向滑动和 Shift＋滚轮横向滚动。新增列左上角 × 只关闭当前列，主列不可关闭；切换 Tab 保留各自路径。内容区不足 720 pt 时只显示焦点列，拉宽后恢复并列显示。左上角账号头像切换到 Profile。
-写帖子使用与看图相同的应用内原生 Popup，支持文字、图片、投票、可见性和内容警告。关闭弹窗、退出应用或退出账号前将草稿保存到本机，同一账号重新登录后可继续编辑。缺少写入权限的旧会话需退出后重新登录，只有点击“发布”才会发帖。帖子底部支持点赞、转发和书签及其撤销；回复按钮仍打开讨论串。完整账号授权不包含管理员权限，授权本身不会自动执行互动或发帖。
-
-macOS 隐藏顶部标题栏，系统红黄绿按钮位于侧栏顶部；该区域可拖动窗口。侧栏上方包含首页与 Explore，首页上方的“我的”在未登录时显示默认图标，登录后显示头像并打开个人页。
-
-点击侧栏头像进入个人页；已经选中时再次点击，打开包含“设置”和“退出登录”的原生菜单。
-
-点击阅读列会聚焦它，焦点列以细边框与稍强阴影标识。⌘W 关闭聚焦的详情列，保留其他列；聚焦主列时关闭窗口。各 Tab 独立保存焦点。
-
-折叠内容只保留可点击的模糊区域，展开后可收起。列表底部出现时自动请求下一页；加载中去重，失败暂停并提供重试，重试保留分页位置。
-
-## 图片磁盘缓存
-
-按 [XDG Base Directory 规范](https://specifications.freedesktop.org/basedir/latest/) 存放：
-有效的绝对路径 `$XDG_CACHE_HOME/ceramic/images-v1`，未设置、为空或为相对路径时使用 `~/.cache/ceramic/images-v1`，macOS 同样遵循这一规则。Finder 启动的应用只读取其进程实际继承的环境变量。
-
-缓存覆盖头像、帖子图片和链接预览图，不保存帖子正文或登录令牌。文件名为 URL 的 SHA-256，新目录权限 0700、文件 0600，采用临时文件加原子替换。磁盘预算 256 MiB、最多 2000 张，写入时按最近使用淘汰；原有内存预算仍然生效。
-
-默认有效期 24 小时，会尊重服务器更短的 max-age、no-cache 和 no-store。新鲜缓存不发请求；过期先显示旧图，再通过 ETag / Last-Modified 条件请求更新，网络失败保留旧图。损坏的缓存重新下载，缓存目录不可写时仍能在线加载。每个应用进程中已加载的图片继续使用内存缓存，重新加载图片时才检查磁盘有效期。
-
-退出登录保留可重建的图片缓存；删除上述 images-v1 目录可清空磁盘缓存，不影响登录信息。开发热重载与正式版共享该缓存。
-
-## 阅读键位
-
-借鉴 Vimium，作用于当前焦点阅读列：
-
-| 按键 | 操作 |
-| --- | --- |
-| Shift+H / Shift+L（大写 H/L），兼容 J/K | 左一列 / 右一列，到边缘停止 |
-| j / k | 下 / 上滚动 60 pt |
-| d / u | 下 / 上滚动半页 |
-| gg | 一秒内连续按两次 g，回到顶部 |
-| Shift+G | 到已加载内容底部；时间线仍可自动请求下一页 |
-| ⌘W | 关闭焦点详情列；主列上关闭窗口 |
-| ⌘1 / ⌘2 / ⌘3 | 我的 / 首页 / 通知 |
-| ⌘4 / ⌘5 / ⌘6 | 书签 / 喜欢 / Explore |
-| ⌘N | 打开发帖窗口 |
-| Esc | 搜索有文字时先清空，再按退出输入；阅读中取消组合键或关闭图片，不关闭阅读列 |
-
-搜索输入获得焦点时，字母键位全部让出，包括中文输入。新详情自动聚焦，关闭时回到其来源列；来源已关闭时回到左侧相邻列。悬浮看图保留底层时间线的阅读位置。未加入链接字母提示和恢复关闭列。
-
-键盘 j/k、u/d 借鉴 Vimium：首次按下即启动逐帧滚动，按住持续前进，不等待系统按键重复，也不反复重启动画。短按完成一个步长，长按松开即停；切换焦点或窗口失焦时取消滚动。单步时间参考 max(100, 20 × ln(步长)) 毫秒；减少动态效果开启时使用即时步进。
-
-发帖图片支持 PNG、JPEG、GIF，单张最多 16 MiB、2400 万像素；图片与投票不能同时添加。投票支持 2 至 4 个不同选项及 5 分钟至 7 天的预设时长。实例可能施加更严格的限制。上传和发布失败会保留草稿，重试复用已经上传的图片。草稿按实例和账号隔离，保存在配置目录的 drafts/ 下；包含文字、图片及描述和投票，不上传到实例。可在发布按钮旁的草稿入口新建、继续编辑或删除；成功发布会删除对应草稿。
-
-### 界面语言
-
-设置中可选择简体中文、English、日本語、한국어和 Español，选择后即时生效，由 MyGo 保存供下次启动使用。首次启动按系统语言匹配，不支持的语言回退到简体中文。
-
-文案维护在 `locales/<BCP-47>.json`，使用 MyGo 的 ARB / ICU MessageFormat。修改后运行 `go tool mygo generate`，同时提交目录中的 `catalog_gen.go`；`go tool mygo i18n check` 检查翻译和占位符。使用 `MYGO_LOCALE=es go tool mygo dev` 可检查指定语言。MyGo 暂无韩语和西班牙语的完整内置控件译文，这些控件会回退英文。
-
-发帖可见性使用 Mastodon 协议值，投票时长使用秒数，不依赖界面语言；旧版中文标签草稿在恢复时自动迁移。
+Ceramic is released under the [MIT License](LICENSE). Third-party dependencies and assets retain their respective licenses.

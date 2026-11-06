@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ceramic</title>
-<meta name="description" content="Ceramic: a quiet, fully native Mastodon client for the desktop. Post, reply, like, boost and bookmark in a 4 MB app with no WebView, with columns that open to the right.">
+<meta name="description" content="Ceramic is a lightweight Mastodon client for your desktop. Read your timeline, follow conversations in columns, and share your thoughts.">
 <meta name="theme-color" content="#eeeef0" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#171719" media="(prefers-color-scheme: dark)">
 <meta property="og:title" content="Ceramic">
-<meta property="og:description" content="A quiet, fully native Mastodon client for the desktop.">
+<meta property="og:description" content="A lightweight Mastodon client for your desktop.">
 <meta property="og:image" content="/icon-512.png">
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -97,12 +97,12 @@ html:not([data-lang]) [lang="en"] { display: none !important; }
 .lang { font-family: var(--mono); font-size: 12px; letter-spacing: 0.04em; }
 
 /* ---------- hero ---------- */
-.hero { position: relative; overflow: hidden; padding-bottom: clamp(150px, 22vw, 230px); }
+.hero { position: relative; overflow: hidden; }
 .hero h1 {
   font: 400 clamp(44px, 8.4vw, 104px)/1.02 var(--serif);
   letter-spacing: -0.035em;
   margin: clamp(40px, 9vw, 110px) 0 0;
-  max-width: 11ch;
+  max-width: 15ch;
 }
 html[data-lang="zh"] .hero h1 { letter-spacing: -0.02em; max-width: 9em; line-height: 1.12; }
 .hero h1 em { font-style: italic; color: var(--muted); }
@@ -123,6 +123,7 @@ html[data-lang="zh"] .hero h1 em { font-style: normal; }
 .quiet-link { font-size: 15px; color: var(--muted); text-decoration: none; border-bottom: 1px solid var(--line); padding-bottom: 1px; }
 .quiet-link:hover { color: var(--text); border-color: currentColor; }
 .platforms { margin-top: 14px; font-size: 13px; color: var(--faint); }
+.hero .platforms { margin-bottom: 0; }
 .assure {
   display: flex; gap: 10px; align-items: flex-start; max-width: 30em;
   margin: 28px 0 0; padding-top: 16px; border-top: 1px solid var(--line);
@@ -153,6 +154,9 @@ html[data-lang="zh"] .hero h1 em { font-style: normal; }
 
 /* ---------- sections ---------- */
 section { padding: clamp(72px, 11vw, 140px) 0; }
+#columns { padding-bottom: clamp(28px, 4vw, 48px); }
+#native { padding-top: clamp(28px, 4vw, 48px); padding-bottom: clamp(28px, 4vw, 48px); }
+#download { padding-top: clamp(28px, 4vw, 48px); }
 .kicker { font: 500 12px/1 var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--faint); margin: 0 0 18px; }
 h2 {
   font: 400 clamp(32px, 4.8vw, 56px)/1.08 var(--serif);
@@ -160,6 +164,11 @@ h2 {
 }
 html[data-lang="zh"] h2 { letter-spacing: 0; line-height: 1.2; max-width: 14em; }
 .section-lede { max-width: 36em; color: var(--muted); margin: 20px 0 0; font-size: 17px; }
+
+/* ---------- product screenshot ---------- */
+.product-shot { margin: 0 0 48px; }
+.product-shot img { width: 100%; height: auto; border-radius: 14px; border: 1px solid var(--line); box-shadow: var(--shadow); }
+.product-shot figcaption { margin-top: 12px; color: var(--muted); font-size: 13px; }
 
 /* ---------- demo window ---------- */
 .stage { margin-top: 48px; }
@@ -205,7 +214,7 @@ html[data-lang="zh"] h2 { letter-spacing: 0; line-height: 1.2; max-width: 14em; 
 @keyframes enter { from { opacity: 0; transform: translateX(48px); } }
 .col.focus { border-color: color-mix(in srgb, var(--ink) 20%, transparent); }
 .col header {
-  height: 40px; flex: none; display: flex; align-items: center; justify-content: space-between;
+  height: 40px; flex: none; display: flex; align-items: center; gap: 6px;
   padding: 0 14px; font-size: 12.5px; font-weight: 600; border-bottom: 1px solid var(--line);
   background: color-mix(in srgb, var(--workspace) 35%, var(--paper));
 }
@@ -233,7 +242,9 @@ html[data-lang="zh"] h2 { letter-spacing: 0; line-height: 1.2; max-width: 14em; 
 .post .acts button:hover { color: var(--text); background: var(--line); }
 .post .acts button.end { margin-left: auto; }
 .post .acts button.on { color: var(--ink); }
-.post .acts button.on.fill svg { fill: currentColor; }
+.post .acts button[data-act="like"].on { color: #ce3150; }
+.post .acts button[data-act="like"].on svg { fill: currentColor; }
+@media (prefers-color-scheme: dark) { .post .acts button[data-act="like"].on { color: #ff718b; } }
 .post .acts button.pop svg { animation: pop 320ms var(--ease); }
 @keyframes pop { 40% { transform: scale(1.35); } }
 .post .acts svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
@@ -259,8 +270,6 @@ html[data-lang="zh"] h2 { letter-spacing: 0; line-height: 1.2; max-width: 14em; 
 .window .peek.away { transform: translateY(105%); }
 
 .stage-foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 20px; margin-top: 18px; font-size: 13.5px; color: var(--faint); }
-.stage-foot button { font: inherit; color: var(--muted); background: none; border: 1px solid var(--line); border-radius: 999px; padding: 5px 14px; cursor: pointer; }
-.stage-foot button:hover { color: var(--text); border-color: currentColor; }
 
 /* ---------- numbers ---------- */
 .numbers { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 56px; border-top: 1px solid var(--line); }
@@ -281,14 +290,10 @@ html[data-lang="zh"] .details div { grid-template-columns: 6.5em 1fr; }
 .details dd { margin: 0; color: var(--muted); font-size: 15px; }
 
 /* ---------- end ---------- */
-.end { position: relative; overflow: hidden; text-align: center; padding-bottom: 0; }
+.end { position: relative; overflow: hidden; text-align: center; }
 .end h2 { margin: 0 auto; }
 .end .section-lede { margin-left: auto; margin-right: auto; }
 .end .actions { justify-content: center; }
-.end .big {
-  width: clamp(240px, 42vw, 460px); margin: clamp(56px, 8vw, 96px) auto 0;
-  transform: translateY(18%);
-}
 .end .platforms a { color: var(--muted); }
 footer { border-top: 1px solid var(--line); background: var(--workspace); position: relative; z-index: 1; }
 footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 24px; padding-top: 22px; padding-bottom: 28px; font-size: 13px; color: var(--faint); }
@@ -311,8 +316,20 @@ html:not(.js) .reveal { opacity: 1; transform: none; }
   .details { grid-template-columns: 1fr; }
   .window { --col: min(280px, calc(100vw - 2 * var(--gutter) - 84px)); height: 460px; }
 }
+@media (max-width: 700px) {
+  .hero .peek { position: absolute; bottom: 0; right: var(--gutter); width: clamp(110px, 26vw, 170px); transform: translateY(22%); }
+  .hero .lede, .hero .platforms { padding-right: clamp(120px, 29vw, 185px); }
+}
 @media (max-width: 640px) {
   .bar nav a.hide-sm { display: none; }
+  .bar { padding-top: 16px; padding-bottom: 16px; }
+  .hero h1 { margin-top: 36px; }
+  .hero .lede { margin-top: 20px; }
+  .hero .actions { margin-top: 26px; }
+  #columns { padding-top: 48px; }
+  .product-shot-scroll { overflow-x: auto; border-radius: 10px; }
+  .product-shot img { width: 680px; max-width: none; border-radius: 10px; }
+  .product-shot figcaption::after { content: " · ← →"; }
   .numbers { grid-template-columns: 1fr; }
   .numbers > div, .numbers > div + div { padding: 24px 0; border-left: 0; }
   .numbers > div + div { border-top: 1px solid var(--line); }
@@ -321,7 +338,6 @@ html:not(.js) .reveal { opacity: 1; transform: none; }
   .rail .ico { width: 30px; height: 30px; }
   .lights { flex-direction: column; gap: 4px; margin-bottom: 8px; }
   .lights i { width: 8px; height: 8px; }
-  .hero .peek { right: var(--gutter); }
 }
 </style>
 </head>
@@ -346,7 +362,7 @@ html:not(.js) .reveal { opacity: 1; transform: none; }
   <nav>
     <a class="hide-sm" href="#columns"><span lang="zh">横向展开</span><span lang="en">Columns</span></a>
     <a class="hide-sm" href="#native"><span lang="zh">原生</span><span lang="en">Native</span></a>
-    <a class="hide-sm" href="#details"><span lang="zh">功能</span><span lang="en">Features</span></a>
+    <a href="https://mygo.egoist.dev/">MyGo</a>
     <a href="https://github.com/looechao/ceramic">GitHub</a>
     <button class="lang" type="button" data-switch-lang aria-label="Switch language / 切换语言"><span lang="zh">EN</span><span lang="en">中文</span></button>
   </nav>
@@ -356,41 +372,42 @@ html:not(.js) .reveal { opacity: 1; transform: none; }
   <div class="hero">
     <div class="wrap">
       <h1>
-        <span lang="zh">Mastodon<br><em>安静一点。</em></span>
-        <span lang="en">Mastodon, <em>quietly.</em></span>
+        <span lang="zh">给 Mastodon，<br><em>留一点空间。</em></span>
+        <span lang="en">A little room<br><em>for Mastodon.</em></span>
       </h1>
-      <p class="lede">
-        <span lang="zh"><strong>原生、轻巧</strong>的 Mastodon 桌面客户端。发帖、回复、喜欢、转发、书签都在这里，安装包只有 <strong>4 MB</strong>，里面没有网页。</span>
-        <span lang="en">A <strong>native, lightweight</strong> Mastodon client for the desktop. Post, reply, like, boost and bookmark in a <strong>4 MB</strong> app with no web page inside.</span>
-      </p>
-      <div class="actions">
-        <a class="btn" href="https://github.com/looechao/ceramic/releases/latest">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-download"/></svg>
-          <span lang="zh">下载 Ceramic</span><span lang="en">Download Ceramic</span>
-        </a>
-        <a class="quiet-link" href="https://github.com/looechao/ceramic"><span lang="zh">查看源码</span><span lang="en">View the source</span></a>
-      </div>
-      <p class="platforms"><span lang="zh">macOS · Windows · Linux · 免费开源</span><span lang="en">macOS · Windows · Linux · Free and open source</span></p>
-      <p class="assure">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-lock"/></svg>
-        <span lang="zh">在你自己的浏览器里授权，Ceramic 碰不到你的密码。登录状态只存在你的电脑上。</span>
-        <span lang="en">You sign in through your own browser, so Ceramic never sees your password. Your session stays on your computer.</span>
-      </p>
-    </div>
     <svg class="blob peek" viewBox="0 0 864 650" role="img" aria-label="Ceramic mascot">
       <use href="#blob-body" class="body"/>
       <g class="eye" data-cx="382" data-cy="340"><circle class="ball" cx="382" cy="340" r="46"/></g>
       <g class="eye" data-cx="212" data-cy="310"><circle class="ball" cx="212" cy="310" r="46"/></g>
     </svg>
+      <p class="lede">
+        <span lang="zh">一款轻巧的 Mastodon 桌面客户端。连接你的账号，探索 Fediverse。</span>
+        <span lang="en">A lightweight Mastodon client for your desktop. Connect your account and explore the Fediverse.</span>
+      </p>
+      <div class="actions">
+        <a class="btn" data-download href="https://github.com/looechao/ceramic/releases/latest">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-download"/></svg>
+          <span lang="zh" data-download-zh>下载 Ceramic</span><span lang="en" data-download-en>Download Ceramic</span>
+        </a>
+        <a class="quiet-link" href="https://github.com/looechao/ceramic"><span lang="zh">查看源码 ☆</span><span lang="en">View source ☆</span></a>
+      </div>
+      <p class="platforms"><span lang="zh">macOS · Windows · Linux · 免费开源</span><span lang="en">macOS · Windows · Linux · Free and open source</span></p>
+    </div>
   </div>
 
   <section id="columns">
     <div class="wrap">
+      <figure class="product-shot reveal">
+        <div class="product-shot-scroll" tabindex="0" role="region" aria-label="Ceramic screenshot / Ceramic 截图">
+          <img src="/ceramic-screenshot.png" alt="Ceramic 的真实桌面截图，显示并排打开的多个阅读列" width="5120" height="2830" loading="lazy">
+        </div>
+        <figcaption><span lang="zh">Ceramic 实际运行画面</span><span lang="en">Ceramic running on a desktop</span></figcaption>
+      </figure>
       <p class="kicker reveal"><span lang="zh">横向展开</span><span lang="en">Sideways columns</span></p>
-      <h2 class="reveal"><span lang="zh">点开一条，它在右边摊开。</span><span lang="en">Open a post. It unfolds to the right.</span></h2>
+      <h2 class="reveal"><span lang="zh">打开一列，接着往下读。</span><span lang="en">Open a column. Keep reading.</span></h2>
       <p class="section-lede reveal">
-        <span lang="zh">讨论串、个人页依次向右追加，原来的时间线和阅读位置都还在。宽屏不再是两边的空白，而是更多可以同时看的列。</span>
-        <span lang="en">Threads and profiles append to the right while your timeline keeps its place. A wide screen stops being empty margins and becomes more columns you can read side by side.</span>
+        <span lang="zh">点开帖子或个人页，新的一列会出现在右边。之前的内容和阅读位置都留在原处，想回去时随时可见。</span>
+        <span lang="en">Open a post or profile and a new column appears to the right. Your earlier columns stay in place, ready whenever you want to return.</span>
       </p>
       <div class="stage reveal">
         <div class="window" id="demo">
@@ -412,7 +429,6 @@ html:not(.js) .reveal { opacity: 1; transform: none; }
         </div>
         <div class="stage-foot">
           <span><span lang="zh">点帖子或头像打开新列，也可以点喜欢或书签。空间被列占满时，小人会缩回去。</span><span lang="en">Click a post or an avatar to open a column, or like and bookmark something. When columns fill the space, the little one ducks away.</span></span>
-          <button type="button" id="demo-reset"><span lang="zh">收起所有列</span><span lang="en">Close all columns</span></button>
         </div>
       </div>
     </div>
@@ -421,10 +437,10 @@ html:not(.js) .reveal { opacity: 1; transform: none; }
   <section id="native">
     <div class="wrap">
       <p class="kicker reveal"><span lang="zh">纯原生</span><span lang="en">Fully native</span></p>
-      <h2 class="reveal"><span lang="zh">里面没有藏着一个浏览器。</span><span lang="en">There is no browser hiding inside.</span></h2>
+      <h2 class="reveal"><span lang="zh">为桌面而做。</span><span lang="en">Made for the desktop.</span></h2>
       <p class="section-lede reveal">
-        <span lang="zh">界面全部用 Go 写成，由 MyGo 直接通过 Metal 绘制。没有 WebView、没有 HTML、没有 JavaScript，所以它启动快、滚动稳，放在后台时几乎不占 CPU。</span>
-        <span lang="en">Every view is written in Go and drawn directly with Metal by MyGo. No WebView, no HTML, no JavaScript, so it starts fast, scrolls steadily, and sits in the background using next to no CPU.</span>
+        <span lang="zh">Ceramic 使用原生绘制的界面，没有内嵌网页。它轻巧，也能跟随系统切换浅色和深色外观。</span>
+        <span lang="en">Ceramic draws its interface natively, without an embedded web page. It is lightweight and can follow your system’s light or dark appearance.</span>
       </p>
       <div class="numbers reveal">
         <div>
@@ -444,59 +460,31 @@ html:not(.js) .reveal { opacity: 1; transform: none; }
     </div>
   </section>
 
-  <section id="details">
-    <div class="wrap">
-      <p class="kicker reveal"><span lang="zh">功能</span><span lang="en">Features</span></p>
-      <h2 class="reveal"><span lang="zh">该有的都有。</span><span lang="en">Everything you need.</span></h2>
-      <div class="details reveal">
-        <dl>
-          <div><dt><span lang="zh">发帖</span><span lang="en">Posting</span></dt><dd><span lang="zh">设置可见性和内容警告，最多附四张图片和描述，也可以发起单选或多选投票。草稿存在本机，重启后接着写。</span><span lang="en">Set visibility and a content warning, attach up to four images with descriptions, or start a single- or multiple-choice poll. Drafts stay on your machine through a restart.</span></dd></div>
-          <div><dt><span lang="zh">互动</span><span lang="en">Interactions</span></dt><dd><span lang="zh">喜欢、转发、书签、回复和关注，在帖子和个人页上点一下就好。</span><span lang="en">Like, boost, bookmark, reply and follow with one click on posts and profiles.</span></dd></div>
-          <div><dt><span lang="zh">通知</span><span lang="en">Notifications</span></dt><dd><span lang="zh">提及、喜欢、转发和关注集中在一列，有新消息时铃铛会亮。</span><span lang="en">Mentions, likes, boosts and follows in one column. The bell lights up when something is new.</span></dd></div>
-          <div><dt><span lang="zh">多栏</span><span lang="en">Columns</span></dt><dd><span lang="zh">首页、探索和个人页各自保留阅读路径。再次打开同一个讨论串，会回到已有的那一列。</span><span lang="en">Home, Explore and Profile each keep their own trail of columns. Opening a thread again takes you back to its column.</span></dd></div>
-          <div><dt><span lang="zh">搜索</span><span lang="en">Search</span></dt><dd><span lang="zh">先搜帖子，再搜账号。从探索页还能打开本站和跨站时间线。</span><span lang="en">Posts first, then accounts. Explore also opens the Local and Federated timelines.</span></dd></div>
-        </dl>
-        <dl>
-          <div><dt><span lang="zh">内容警告</span><span lang="en">Content warnings</span></dt><dd><span lang="zh">内容警告、过滤规则和敏感媒体都用模糊轮廓占位，想看再展开。</span><span lang="en">Content warnings, filtered posts and sensitive media wait behind a blurred outline until you open them.</span></dd></div>
-          <div><dt><span lang="zh">淡色区分</span><span lang="en">Quiet tints</span></dt><dd><span lang="zh">转发、回复和警告带很淡的渐变，普通帖子保持白纸。</span><span lang="en">Boosts, replies and warnings carry a faint gradient. Ordinary posts stay plain paper.</span></dd></div>
-          <div><dt><span lang="zh">看图</span><span lang="en">Image viewer</span></dt><dd><span lang="zh">图片浮在时间线上方打开，用 ← → 切换同一条帖子的图片，Esc 关闭。</span><span lang="en">Images open above the timeline. Use ← and → to move through a post's images, and Esc to close.</span></dd></div>
-          <div><dt><span lang="zh">键盘与触控板</span><span lang="en">Keyboard and trackpad</span></dt><dd><span lang="zh">切页、刷新、关闭列都有快捷键。触控板每次滑动只走一个方向，横着翻列，竖着读帖。</span><span lang="en">Shortcuts switch pages, refresh and close columns. Each trackpad swipe moves one way only: sideways across columns or down through posts.</span></dd></div>
-          <div><dt><span lang="zh">外观</span><span lang="en">Appearance</span></dt><dd><span lang="zh">跟随系统，或固定浅色、深色。GIF 头像会动，开启“减弱动态效果”后保持静止。</span><span lang="en">Follow the system, or stay light or dark. GIF avatars play, and hold still under Reduce Motion.</span></dd></div>
-        </dl>
-      </div>
-    </div>
-  </section>
-
   <section class="end" id="download">
     <div class="wrap">
-      <h2 class="reveal"><span lang="zh">它在等你。</span><span lang="en">It is waiting for you.</span></h2>
+      <h2 class="reveal"><span lang="zh">带上你的 Mastodon 账号。</span><span lang="en">Bring your Mastodon account.</span></h2>
       <p class="section-lede reveal">
-        <span lang="zh">输入你的实例域名，在浏览器里授权，就可以开始了。</span>
-        <span lang="en">Type your instance's domain, authorize in your browser, and you are in.</span>
+        <span lang="zh">连接你的 Mastodon 账号，探索 Fediverse。在浏览器中授权后即可开始。Ceramic 直接连接你的实例，访问令牌保存在你的电脑上。</span>
+        <span lang="en">Connect your Mastodon account and explore the Fediverse. Authorize in your browser to get started. Ceramic connects directly to your instance and stores your access token on your computer.</span>
       </p>
       <div class="actions reveal">
-        <a class="btn" href="https://github.com/looechao/ceramic/releases/latest">
+        <a class="btn" data-download href="https://github.com/looechao/ceramic/releases/latest">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-download"/></svg>
-          <span lang="zh">下载最新版本</span><span lang="en">Download the latest release</span>
+          <span lang="zh" data-download-zh>下载最新版本</span><span lang="en" data-download-en>Download the latest release</span>
         </a>
       </div>
-      <p class="platforms reveal">
+      <p class="platforms reveal"><a href="https://github.com/looechao/ceramic/releases/latest"><span lang="zh">查看所有下载</span><span lang="en">View all downloads</span></a><br>
         <span lang="zh">macOS（Apple Silicon 与 Intel）· Windows · Linux（需要 GTK 3）<br>尚未签名：macOS 首次打开需在“系统设置 › 隐私与安全性”中允许。</span>
         <span lang="en">macOS (Apple Silicon and Intel) · Windows · Linux (needs GTK 3)<br>Not yet signed: on first launch, allow it in System Settings › Privacy &amp; Security.</span>
       </p>
-      <svg class="blob big" viewBox="0 0 864 650" role="img" aria-label="Ceramic mascot">
-        <use href="#blob-body" class="body"/>
-        <g class="eye" data-cx="382" data-cy="340"><circle class="ball" cx="382" cy="340" r="46"/></g>
-        <g class="eye" data-cx="212" data-cy="310"><circle class="ball" cx="212" cy="310" r="46"/></g>
-      </svg>
     </div>
   </section>
 </main>
 
 <footer>
   <div class="wrap">
-    <span>Ceramic · MIT</span>
-    <span><a href="https://github.com/looechao/ceramic">GitHub</a>　<a href="https://github.com/looechao/ceramic/releases">Releases</a></span>
+    <span>Ceramic · MIT · Powered by <a href="https://mygo.egoist.dev/">MyGo</a></span>
+    <span><a href="https://github.com/looechao/ceramic">GitHub</a> <a href="https://github.com/looechao/ceramic/releases">Releases</a></span>
   </div>
 </footer>
 
@@ -515,6 +503,49 @@ html:not(.js) .reveal { opacity: 1; transform: none; }
       try { localStorage.setItem("ceramic-lang", next); } catch (e) {}
     });
   });
+
+  /* ---------- latest release for this device ---------- */
+  (async function () {
+    var ua = navigator.userAgent;
+    if (/Android|iPhone|iPad|iPod/i.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)) return;
+    var os = /Windows/i.test(ua) ? "windows" : /Macintosh/i.test(ua) ? "darwin" : /Linux/i.test(ua) ? "linux" : "";
+    if (!os) return;
+    var arch = "";
+    if (navigator.userAgentData && navigator.userAgentData.getHighEntropyValues) {
+      try {
+        var info = await navigator.userAgentData.getHighEntropyValues(["architecture", "bitness", "wow64"]);
+        if (/arm/i.test(info.architecture) && info.bitness === "64") arch = "arm64";
+        if (/^(x86|x86_64|amd64)$/i.test(info.architecture) && info.bitness === "64" && !info.wow64) arch = "amd64";
+      } catch (e) {}
+    }
+    // Linux user agents can explicitly report their architecture. macOS user
+    // agents may claim Intel on Apple Silicon, so they are not used for this.
+    if (!arch && os === "linux") {
+      if (/aarch64|arm64/i.test(ua)) arch = "arm64";
+      else if (/x86_64|amd64/i.test(ua)) arch = "amd64";
+    }
+    if (!arch) return;
+    try {
+      var response = await fetch("https://api.github.com/repos/looechao/ceramic/releases/latest");
+      if (!response.ok) return;
+      var release = await response.json();
+      if (!Array.isArray(release.assets)) return;
+      var names = arch === "amd64" ? /(?:amd64|x86_64|x64)/i : /(?:arm64|aarch64)/i;
+      var suffix = os === "darwin" ? /\.dmg$/i : os === "windows" ? /-setup-.*\.exe$/i : /\.deb$/i;
+      var assets = release.assets.filter(function (a) {
+        return typeof a.name === "string" && names.test(a.name) && suffix.test(a.name) &&
+          typeof a.browser_download_url === "string" && a.browser_download_url.indexOf("https://github.com/looechao/ceramic/releases/download/") === 0;
+      });
+      if (assets.length !== 1) return;
+      var platform = os === "darwin" ? "macOS" : os === "windows" ? "Windows" : "Linux";
+      var chip = os === "darwin" ? (arch === "arm64" ? "Apple Silicon" : "Intel") : (arch === "arm64" ? "ARM64" : "x64");
+      document.querySelectorAll("[data-download]").forEach(function (link) {
+        link.href = assets[0].browser_download_url;
+        link.querySelector("[data-download-zh]").textContent = "下载 " + platform + "（" + chip + "）";
+        link.querySelector("[data-download-en]").textContent = "Download for " + platform + " (" + chip + ")";
+      });
+    } catch (e) {}
+  })();
 
   /* ---------- eyes follow the pointer ---------- */
   var eyes = Array.prototype.slice.call(document.querySelectorAll(".blob .eye"));
@@ -588,7 +619,7 @@ html:not(.js) .reveal { opacity: 1; transform: none; }
       '<button type="button" data-act="reply" aria-label="Reply"><svg><use href="#i-reply"/></svg></button>' +
       b("boost", "i-repeat", "Boost", st.boosts + (st.boost ? 1 : 0), "") +
       b("like", "i-heart", "Like", st.likes + (st.like ? 1 : 0), "fill") +
-      b("mark", "i-bookmark", "Bookmark", 0, "fill end") + "</div>";
+      b("mark", "i-bookmark", "Bookmark", 0, "end") + "</div>";
   }
   function toggle(btn) {
     var row = btn.closest(".acts"), kind = btn.dataset.act, st = state[row.dataset.id];
@@ -612,7 +643,7 @@ html:not(.js) .reveal { opacity: 1; transform: none; }
     var el = document.createElement("div");
     el.className = "col";
     el.dataset.key = key;
-    el.innerHTML = "<header><span>" + title + "</span>" + (closable ? '<button type="button" aria-label="Close">×</button>' : "") + "</header>" + body;
+    el.innerHTML = "<header>" + (closable ? '<button type="button" aria-label="Close">×</button>' : "") + "<span>" + title + "</span></header>" + body;
     return el;
   }
   function home() {
@@ -668,7 +699,6 @@ html:not(.js) .reveal { opacity: 1; transform: none; }
   });
   cols.addEventListener("scroll", layout, { passive: true });
   addEventListener("resize", layout);
-  document.getElementById("demo-reset").addEventListener("click", home);
   home();
 
   // Play the idea once when the window first comes into view.
