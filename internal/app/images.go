@@ -35,10 +35,12 @@ func (r *reader) photo(raw string) *imageEntry {
 		return entry
 	}
 	entry := &imageEntry{used: r.imageTick, frame: r.imageFrame}
-	r.images[raw] = entry
 	if r.update == nil {
+		// NewWindow can draw before its update callback is installed. Do not
+		// retain a pending entry until we can actually start its load.
 		return entry
 	}
+	r.images[raw] = entry
 	go func() {
 		r.imageSlots <- struct{}{}
 		defer func() { <-r.imageSlots }()
