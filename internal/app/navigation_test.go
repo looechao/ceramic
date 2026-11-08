@@ -283,6 +283,40 @@ func TestSidebarMaterialKeepsReadingColumnsOpaque(t *testing.T) {
 	}
 }
 
+func TestNativeAMOLED(t *testing.T) {
+	r := testReader(t)
+	r.session = &mastodon.Session{Account: json.RawMessage(`{"id":"me"}`)}
+	r.home.loaded = true
+	tt := ui.NewTester(r.view, 1240, 820)
+	tt.SetVibrancy(true)
+	tt.SetDark(true)
+	for _, sample := range []struct {
+		point [2]int
+		gray  uint32
+	}{{[2]int{200, 400}, 10}, {[2]int{300, 35}, 17}, {[2]int{900, 35}, 0}, {[2]int{300, 5}, 0}} {
+		point := sample.point
+		expected := sample.gray * 257
+		red, green, blue, alpha := tt.Image().At(point[0], point[1]).RGBA()
+		if red != expected || green != expected || blue != expected || alpha != 65535 {
+			t.Fatalf("AMOLED background at %v: %d %d %d %d", point, red, green, blue, alpha)
+		}
+	}
+	_, _, _, railAlpha := tt.Image().At(68, 400).RGBA()
+	if railAlpha != 0 {
+		t.Fatal("dark mode covered sidebar vibrancy")
+	}
+	savePreview(t, tt, "native-amoled")
+	r.settingsOpen = true
+	tt.SetSize(420, 560)
+	savePreview(t, tt, "native-amoled-settings-compact")
+	r.settingsOpen = false
+	tt.SetDark(false)
+	_, _, _, alpha := tt.Image().At(68, 400).RGBA()
+	if alpha != 0 {
+		t.Fatal("light mode did not restore sidebar vibrancy")
+	}
+}
+
 func TestPostClickAndColumnScrolling(t *testing.T) {
 	r := testReader(t)
 	r.session = &mastodon.Session{Account: json.RawMessage(`{"id":"me"}`)}

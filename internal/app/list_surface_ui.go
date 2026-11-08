@@ -52,7 +52,7 @@ func (r *reader) listSurface(c *ui.Context, f *feedState, tint ui.Color, content
 	}
 	paper, shadowAlpha := ui.Hex("#ffffff"), float32(0.07)
 	if t.Dark {
-		paper, shadowAlpha = ui.Hex("#232325"), 0.20
+		paper, shadowAlpha = ui.Hex("#0a0a0a"), 0.20
 	}
 	hit.Children(func() {
 		row := ui.Column(c).FillWidth().Padding(14, 8).Gap(6).Radius(8).

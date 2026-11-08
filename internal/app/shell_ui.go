@@ -40,6 +40,8 @@ func (r *reader) view(c *ui.Context) {
 	t.Accent, t.AccentHover, t.AccentPressed = ui.Hex("#1d1d1f"), ui.Hex("#3a3a3c"), ui.Hex("#000000")
 	t.AccentText = ui.Hex("#ffffff")
 	if t.Dark {
+		// AMOLED: the workspace stays black; reading columns retain subtle depth.
+		t.Background = ui.Hex("#000000")
 		t.Accent, t.AccentHover, t.AccentPressed = ui.Hex("#ededed"), ui.Hex("#ffffff"), ui.Hex("#d4d4d6")
 		t.AccentText = ui.Hex("#1d1d1f")
 	}
@@ -132,14 +134,14 @@ func (r *reader) shell(c *ui.Context) {
 		}
 		backdrop := ui.Hex("#eeeef0")
 		if t.Dark {
-			backdrop = ui.Hex("#171719")
+			backdrop = ui.Hex("#000000")
 		}
 		if !c.Vibrancy() {
 			c.Root().Background(backdrop)
 		}
 		paper := ui.Hex("#ffffff")
 		if t.Dark {
-			paper = ui.Hex("#232325")
+			paper = ui.Hex("#0a0a0a")
 		}
 		shown := len(ws.columns)
 		if compact {
@@ -180,6 +182,9 @@ func (r *reader) columns(c *ui.Context, ws *workspace, compact bool, width, avai
 			f.width = width
 			column := ui.Column(c.Key(f)).Width(width).Shrink(0).FillHeight().Background(paper).Radius(12).Clip().BorderWidth(1).BorderColor(t.Text.Alpha(0.08)).Shadow(0, 2, 8, 0, ui.Hex("#000000").Alpha(0.04))
 			column.Focusable()
+			if t.Dark {
+				column.BorderColor(ui.Hex("#333333"))
+			}
 			if c.Preferences().HighContrast {
 				column.BorderColor(t.Border)
 			}
@@ -205,10 +210,12 @@ func (r *reader) columns(c *ui.Context, ws *workspace, compact bool, width, avai
 			}).OnClick(func() { r.focusColumn(ws, f) })
 			if ws.focused == f && len(ws.columns) > 1 && !c.Preferences().HighContrast {
 				shadowAlpha := float32(0.16)
+				border := t.Accent.Alpha(0.32)
 				if t.Dark {
 					shadowAlpha = 0.40
+					border = ui.Hex("#666666")
 				}
-				column.BorderColor(t.Accent.Alpha(0.32)).Shadow(0, 6, 16, 0, ui.Hex("#000000").Alpha(shadowAlpha))
+				column.BorderColor(border).Shadow(0, 6, 16, 0, ui.Hex("#000000").Alpha(shadowAlpha))
 			}
 			if ws.revealFocus && ws.focused == f {
 				column.ScrollIntoView()
@@ -257,8 +264,8 @@ func (r *reader) pane(c *ui.Context, f *feedState, ws *workspace, index int, war
 	header := ui.Hex("#f7f7f9")
 	paper := ui.Hex("#ffffff")
 	if t.Dark {
-		paper = ui.Hex("#232325")
-		header = ui.Hex("#2b2b2e")
+		paper = ui.Hex("#0a0a0a")
+		header = ui.Hex("#111111")
 	}
 	ui.Toolbar(c, func() {
 
@@ -313,6 +320,9 @@ func unreadLabel(n int) string {
 func (r *reader) sidebar(c *ui.Context) {
 	t := c.Theme()
 	fill := t.Surface
+	if t.Dark {
+		fill = ui.Hex("#000000")
+	}
 	if c.Vibrancy() {
 		fill = ui.Transparent
 	}
