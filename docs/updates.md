@@ -25,10 +25,13 @@ The GitHub Actions secret `MYGO_UPDATER_PRIVATE_KEY` holds the matching private
 key. Never replace the public key casually: installed versions trust this key.
 
 The release workflow requires the secret and builds six signed update archives
-and six platform manifests alongside the installers. Commit subjects since the
-previous tag become update-window notes. The workflow checks the expected
-artifacts and creates a draft release. Publish it only after all platforms'
-archives and manifests are present; publishing makes the release discoverable.
+and six platform manifests alongside the installers. Before building, it creates
+a draft release with changelogithub, grouping Conventional Commits since the
+previous tag into sections such as Features and Bug Fixes, without emoji.
+The update window uses the same notes, with HTML spacing removed. The workflow
+checks the expected artifacts and uploads them to the draft. Publish it only
+after all platforms' archives and manifests are present; publishing makes the
+release discoverable.
 
 To build signed update artifacts locally, provide the private key through the
 `MYGO_UPDATER_PRIVATE_KEY` environment variable and run `./scripts/build.sh`.

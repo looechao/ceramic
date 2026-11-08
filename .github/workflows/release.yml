@@ -22,8 +22,25 @@ jobs:
           go-version-file: go.mod
       - run: go test -race ./...
 
-  build:
+  release-notes:
     needs: check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+      - name: Create draft release notes
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: npx --yes changelogithub@15 --draft
+
+  build:
+    needs: release-notes
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
     strategy:
@@ -39,12 +56,14 @@ jobs:
           fetch-depth: 0
       - name: Prepare update notes
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          version="${GITHUB_REF_NAME#v}"
-          previous=$(git describe --tags --abbrev=0 "$GITHUB_SHA^" 2>/dev/null || true)
-          range="$GITHUB_SHA"
-          if [ -n "$previous" ]; then range="$previous..$GITHUB_SHA"; fi
-          { printf '## %s\n\n' "$version"; git log --no-merges --format='- %s' "$range"; } > CHANGELOG.md
+          {
+            printf '## %s\n\n' "${GITHUB_REF_NAME#v}"
+            gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --json body -q .body |
+              sed 's/&nbsp;//g'
+          } > CHANGELOG.md
       - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
@@ -81,7 +100,7 @@ jobs:
       - uses: actions/download-artifact@v8
         with:
           path: artifacts
-      - name: Create the draft release
+      - name: Upload assets to the draft release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -91,6 +110,5 @@ jobs:
           test "$(find artifacts -type f -name '*.deb' | wc -l)" -eq 2
           test "$(find artifacts -type f -name '*.tar.gz' | wc -l)" -eq 6
           test "$(find artifacts -type f -name 'update-*.json' | wc -l)" -eq 6
-          gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
-            --draft --verify-tag --title "$GITHUB_REF_NAME" --generate-notes \
+          gh release upload "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --clobber \
             $(find artifacts -type f)
