@@ -29,7 +29,7 @@ Below 720 pt of content width, show only the focused column of the active tab. D
 ## Future changes
 Keep reading columns independently scrollable and all controls keyboard accessible. Use the existing semantic theme roles and compact type scale. Extend content types through the shared post renderer. Do not add framework patches, a local MyGo replacement, simulated AppKit controls, or write actions under a read-only authorization.
 
-Each tab remembers a focused column. Pointer presses inside it select it without consuming child actions. In multi-column paths, focus uses a 1 pt accent border at 20% opacity and 2 pt offset / 8 pt blur / 7% black shadow, with no layout movement. Single-column paths keep the quiet base outline; native keyboard focus stays enabled. Cmd-W closes only a focused detail; on the root it closes the window.
+Each tab remembers a focused column. Pointer presses inside it select it without consuming child actions. In multi-column paths, focus uses a 1 pt accent border at 32% opacity and 6 pt offset / 16 pt blur black shadow, at 16% opacity in light mode and 40% in dark mode, with no layout movement. Single-column paths keep the quiet base outline; native keyboard focus stays enabled. Cmd-W closes only a focused detail; on the root it closes the window.
 
 Post types use subtle fading tints: boosts #9263c7, replies #4f89b7, warnings/sensitive #c48a38, 6.5% opacity in light and 10% in dark; ordinary posts remain untinted. High contrast omits decorative gradients. Folded warnings and sensitive media render abstract shapes with Gaussian sigma 5, not actual text or images; reveal is explicit and reversible. Server hide filters exclude posts, including nested reblogs.
 
@@ -67,7 +67,7 @@ Writing uses the same MyGo DialogBase overlay as the image viewer and retains it
 
 Other profiles show a native follow control opposite the avatar at the trailing edge of the profile header, with relationship hints below the button and full-width identity beneath the avatar row, backed by the authenticated instance’s relationship endpoint. Distinguish following, pending approval, followed-by and blocked states; never show a self-follow action. Fetch and write operations share per-account state across columns, disable duplicate requests, and update only after server confirmation. Authorization changes discard cached relationships; failed writes preserve the last confirmed state.
 
-Reading polish: column outlines use text ink at 8% opacity and a 4% black shadow. Only a focused column in a multi-column path adds a 20% ink outline and 7% shadow; native keyboard focus remains enabled. High contrast retains the system border. Header separators use the shared quiet divider color.
+Reading polish: column outlines use text ink at 8% opacity and a 4% black shadow. Only a focused column in a multi-column path adds a 32% accent outline and a 6 pt offset / 16 pt blur black shadow, at 16% opacity in light mode and 40% in dark mode; native keyboard focus remains enabled. High contrast retains the system border. Header separators use the shared quiet divider color.
 
 Navigation, column titles, native menus and the composer use consistent Chinese labels. Post footer actions form a compact left group (reply, boost, favourite), with bookmark and external link aligned right. Hit areas remain at least 30 pt high and wide.
 
