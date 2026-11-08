@@ -30,7 +30,8 @@ func (r *reader) settingsView(c *ui.Context) {
 		return
 	}
 	ui.DialogBase(c, &r.settingsOpen, func(backdrop, panel ui.Element) {
-		panel.Width(320).Padding(24).Radius(12).Background(c.Theme().Background).Label(locales.Settings())
+		panel.Width(320).Padding(24).Radius(12).Background(c.Theme().Background).
+			Shadow(0, 8, 28, 0, ui.Hex("#000000").Alpha(.18)).Label(locales.Settings())
 		ui.Column(c).Gap(18).Children(func() {
 			ui.Text(c, locales.Settings()).FontSize(20).Bold()
 			ui.Text(c, locales.Language()).FontSize(13)
