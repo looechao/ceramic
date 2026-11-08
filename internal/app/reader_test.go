@@ -61,6 +61,10 @@ func TestNativeLogin(t *testing.T) {
 	r.message = "请在浏览器中授权，完成后返回 Ceramic。"
 	tt.Frame()
 	savePreview(t, tt, "native-login-authorizing")
+	tt.SetDark(false)
+	savePreview(t, tt, "native-login-authorizing-compact-light")
+	tt.SetSize(760, 820)
+	savePreview(t, tt, "native-login-authorizing-light")
 	if err := tt.Click("取消连接"); err != nil {
 		t.Fatal(err)
 	}

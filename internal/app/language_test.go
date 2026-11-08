@@ -36,6 +36,13 @@ func TestNativeLanguages(t *testing.T) {
 		t.Run(tag, func(t *testing.T) {
 			t.Setenv("MYGO_LOCALE", tag)
 			r := testReader(t)
+			login := ui.NewTester(r.view, 420, 560)
+			login.SetLocale(tag)
+			savePreview(t, login, "native-login-language-"+tag)
+			r.authorizing = true
+			login.Frame()
+			savePreview(t, login, "native-login-wait-language-"+tag)
+			r.authorizing = false
 			r.settingsOpen = true
 			tt := ui.NewTester(r.settingsView, 420, 560)
 			tt.SetLocale(tag)
