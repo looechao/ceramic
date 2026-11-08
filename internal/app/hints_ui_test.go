@@ -21,6 +21,89 @@ func TestHintCodes(t *testing.T) {
 		}
 	}
 }
+
+func TestNativeHintsSearchSegments(t *testing.T) {
+	r := testReader(t)
+	r.session = &mastodon.Session{Scopes: mastodon.Scopes, Account: json.RawMessage(`{"id":"me"}`)}
+	r.navigate("search")
+	var state *hintState
+	tt := ui.NewTester(func(c *ui.Context) { r.view(c); state = hints(c) }, 1000, 720)
+	tt.Key(0, ui.KeyF)
+	hintFrames(tt)
+	posts, ok := tt.Find(locales.Posts())
+	if !ok {
+		t.Fatal("missing posts segment")
+	}
+	accounts, ok := tt.Find(locales.Accounts())
+	if !ok {
+		t.Fatal("missing accounts segment")
+	}
+	for _, box := range []ui.Rect{posts, accounts} {
+		found := false
+		for _, entry := range state.entries {
+			if entry.rect.Contains(box.X+box.W/2, box.Y+box.H/2) && entry.rect.W < posts.W+accounts.W {
+				found = true
+			}
+		}
+		if !found {
+			t.Fatalf("missing independent segment hint: %+v", box)
+		}
+	}
+	savePreview(t, tt, "native-hints-search-segments")
+	activateHint(t, tt, state, locales.Accounts())
+	if r.searchTab != 1 || r.searchKind != "accounts" {
+		t.Fatal("account hint did not switch the search kind")
+	}
+	tt.Key(0, ui.KeyF)
+	hintFrames(tt)
+	activateHint(t, tt, state, locales.Posts())
+	if r.searchTab != 0 || r.searchKind != "statuses" {
+		t.Fatal("posts hint did not switch the search kind")
+	}
+	if err := tt.Click(locales.Accounts()); err != nil || r.searchKind != "accounts" {
+		t.Fatal("native mouse selection lost")
+	}
+}
+
+func TestNativeHintsSegmentNavigation(t *testing.T) {
+	var state *hintState
+	selected, changes := 0, 0
+	tt := ui.NewTester(func(c *ui.Context) {
+		beginHints(c)
+		defer drawHints(c)
+		state = hints(c)
+		ui.Column(c).Padding(20).Children(func() {
+			if hintSegmented(c, &selected, "System", "Light", "Dark") {
+				changes++
+			}
+		})
+	}, 420, 560)
+	tt.SetDark(true)
+	tt.Key(0, ui.KeyF)
+	hintFrames(tt)
+	if len(state.entries) != 3 {
+		t.Fatalf("expected one hint per option, got %d", len(state.entries))
+	}
+	savePreview(t, tt, "native-hints-segments-dark")
+	activateHint(t, tt, state, "Dark")
+	if selected != 2 || changes != 1 {
+		t.Fatalf("hint selection: selected=%d changes=%d", selected, changes)
+	}
+	tt.Key(0, ui.KeyLeft)
+	hintFrames(tt)
+	if selected != 1 || changes != 2 {
+		t.Fatalf("native arrow selection: selected=%d changes=%d", selected, changes)
+	}
+	tt.Key(0, ui.KeyF)
+	hintFrames(tt)
+	activateHint(t, tt, state, "Light")
+	if changes != 2 {
+		t.Fatal("selecting the current option emitted a change")
+	}
+	if err := tt.Click("System"); err != nil || selected != 0 || changes != 3 {
+		t.Fatal("native mouse selection lost")
+	}
+}
 func TestNativeHintsActivation(t *testing.T) {
 	var state *hintState
 	clicks := 0

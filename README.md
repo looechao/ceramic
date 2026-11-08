@@ -44,11 +44,12 @@ Command means <kbd>⌘</kbd> on macOS and <kbd>Ctrl</kbd> on Windows and Linux. 
 | Command + <kbd>W</kbd> | Close the focused detail column, or the window when the main column is focused |
 | Command + <kbd>1</kbd> / <kbd>2</kbd> / <kbd>3</kbd> | Profile / Home / Notifications |
 | Command + <kbd>4</kbd> / <kbd>5</kbd> / <kbd>6</kbd> | Bookmarks / Favorites / Explore |
-| Command + <kbd>N</kbd> / <kbd>R</kbd> | Compose / refresh |
+| Command + <kbd>P</kbd> or Command + <kbd>N</kbd> | Open the composer |
+| Command + <kbd>R</kbd> | Refresh |
 | <kbd>←</kbd> / <kbd>→</kbd> | Move between images in the image viewer |
 | <kbd>Esc</kbd> | Clear search, leave search, cancel a key sequence, or close an image |
 
-Hints are limited to the top dialog when one is open. Selecting an input or native choice control focuses it; use its normal typing, arrow or Space keys. Scrolling, resizing, or changing the visible targets dismisses hints; press `f` again to refresh them. Native menus retain their normal keyboard controls.
+Press `f`, then type the letters shown beside an action to activate it. Each Posts / Accounts tab and appearance option has its own hint and can be selected directly. Hints are limited to the top dialog when one is open. Selecting an input, checkbox or drop-down focuses it; use its normal typing, arrow or Space keys. Scrolling, resizing, or changing the visible targets dismisses hints; press `f` again to refresh them. Native menus retain their normal keyboard controls.
 
 ## Development
 
