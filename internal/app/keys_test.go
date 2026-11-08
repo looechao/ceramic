@@ -51,15 +51,15 @@ func TestReadingKeysAndInputIsolation(t *testing.T) {
 	r.openProfileFrom(r.home, mastodon.Account{ID: "one", DisplayName: "One"})
 	detail := r.feedState
 	tt.Frame()
-	tt.Key(ui.Shift, ui.KeyJ)
+	tt.Key(ui.Shift, ui.KeyH)
 	tt.Frame()
 	if r.feedState != r.home {
-		t.Fatal("J did not focus left")
+		t.Fatal("H did not focus left")
 	}
-	tt.Key(ui.Shift, ui.KeyK)
+	tt.Key(ui.Shift, ui.KeyL)
 	tt.Frame()
 	if r.feedState != detail {
-		t.Fatal("K did not focus right")
+		t.Fatal("L did not focus right")
 	}
 	for _, step := range []struct {
 		key  ui.Key

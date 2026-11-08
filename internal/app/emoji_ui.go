@@ -71,7 +71,7 @@ func appendRichRuns(c *ui.Context, paragraph ui.Element, runs []mastodon.TextRun
 				end++
 			}
 			services := c.Services()
-			link := ui.RichText(c).Role(ui.RoleLink).Cursor(ui.CursorPointer).Focusable().OnClick(func() { services.OpenURL(target) })
+			link := hintAction(c, ui.RichText(c).Role(ui.RoleLink).Cursor(ui.CursorPointer).Focusable(), func() { services.OpenURL(target) })
 			ink := c.Theme().Text
 			if link.Hovered() || link.Focused() {
 				ink = ui.Hex("#1769c2")
@@ -115,7 +115,7 @@ func appendRichRuns(c *ui.Context, paragraph ui.Element, runs []mastodon.TextRun
 }
 
 func (r *reader) accountName(c *ui.Context, f *feedState, account mastodon.Account, size float32) ui.Element {
-	button := ui.ButtonBase(c).Label(account.Name()).Padding(0).Justify(ui.Start).OnClick(func() { r.openProfileFrom(f, account) })
+	button := hintAction(c, ui.ButtonBase(c).Label(account.Name()).Padding(0).Justify(ui.Start), func() { r.openProfileFrom(f, account) })
 	button.Children(func() { r.emojiText(c, account.Name(), account.Emojis, size).MaxLines(1).Shrink(1) })
 	return button
 }

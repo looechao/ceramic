@@ -24,7 +24,7 @@ func (r *reader) profileRelationship(c *ui.Context, f *feedState, p mastodon.Acc
 				if state.busy || state.message == "" {
 					loadingIndicator(c).Size(18, 18).Margin(7).Label(locales.LoadingFollowStatus())
 				} else {
-					ui.Button(c, locales.RetryFollowStatus()).OnClick(func() { r.loadRelationship(p.ID) })
+					hintAction(c, ui.Button(c, locales.RetryFollowStatus()), func() { r.loadRelationship(p.ID) })
 				}
 				return
 			}
@@ -41,7 +41,7 @@ func (r *reader) profileRelationship(c *ui.Context, f *feedState, p mastodon.Acc
 			}
 			disabled := state.busy || ((state.value.Blocking || state.value.BlockedBy) && !state.value.Following && !state.value.Requested)
 			button := ui.Button(c, label).Height(32).Padding(0, 14).Radius(16).FontSize(13)
-			button.Disabled(disabled).OnClick(func() { r.toggleFollow(f, p.ID) })
+			hintAction(c, button.Disabled(disabled), func() { r.toggleFollow(f, p.ID) })
 			if state.busy {
 				loadingIndicator(c).Size(16, 16).Label(locales.UpdatingFollowStatus())
 			}

@@ -70,6 +70,8 @@ func (r *reader) composePopup(c *ui.Context) {
 	}
 	w, h := c.Size()
 	ui.DialogBase(c.Key(d), &d.open, func(backdrop, panel ui.Element) {
+		defer dialogHints(c, panel)()
+
 		backdrop.Background(ui.Transparent)
 		panel.Size(min(560, max(1, w-32)), min(640, max(1, h-32))).Radius(12).Clip().
 			Background(c.Theme().Background).Shadow(0, 8, 28, 0, ui.Hex("#000000").Alpha(.18)).Label(locales.PostComposer())
@@ -132,14 +134,14 @@ func (r *reader) composeView(c *ui.Context, d *composer) {
 			if d.busy {
 				label = locales.Processing()
 			}
-			draftButton := ui.ButtonBase(c).Label(locales.Drafts()).Tooltip(locales.ViewDrafts()).Height(32).Padding(6, 10).Gap(5).Radius(8).Margin(0, 6, 0, 0).Disabled(d.busy).OnClick(func() { r.openDrafts(d) })
+			draftButton := hintAction(c, ui.ButtonBase(c).Label(locales.Drafts()).Tooltip(locales.ViewDrafts()).Height(32).Padding(6, 10).Gap(5).Radius(8).Margin(0, 6, 0, 0).Disabled(d.busy), func() { r.openDrafts(d) })
 			draftInk := postActionStyle(c, draftButton, t.Text, false, d.busy)
 			draftButton.Children(func() {
 				ui.Icon(c, draftIcon).Size(16, 16).TextColor(draftInk)
 				ui.Text(c, locales.Drafts()).FontSize(13).TextColor(draftInk)
 			})
-			ui.PrimaryButton(c, label).Height(32).Padding(6, 12).Radius(16).FontSize(13).
-				Disabled(d.busy || !d.ready() || !r.hasScope("write:statuses")).OnClick(func() { r.publish(d) })
+			hintAction(c, ui.PrimaryButton(c, label).Height(32).Padding(6, 12).Radius(16).FontSize(13).
+				Disabled(d.busy || !d.ready() || !r.hasScope("write:statuses")), func() { r.publish(d) })
 
 		})
 		if r.session == nil {
@@ -147,7 +149,7 @@ func (r *reader) composeView(c *ui.Context, d *composer) {
 			return
 		}
 		if d.showSpoiler || d.spoiler != "" {
-			ui.TextInput(c, &d.spoiler).Label(locales.ContentWarning()).Placeholder(locales.ContentWarningOptional()).FillWidth().Padding(14, 20).BorderWidth(0).Radius(0).Background(t.Accent.Alpha(.06)).Disabled(d.busy)
+			hintInput(c, ui.TextInput(c, &d.spoiler).Label(locales.ContentWarning()).Placeholder(locales.ContentWarningOptional()).FillWidth().Padding(14, 20).BorderWidth(0).Radius(0).Background(t.Accent.Alpha(.06)).Disabled(d.busy))
 		}
 		ui.Scroll(c).Grow(1).Shrink(1).FillWidth().Children(func() {
 			ui.Column(c).FillWidth().Padding(20).Gap(16).Children(func() {
@@ -157,7 +159,7 @@ func (r *reader) composeView(c *ui.Context, d *composer) {
 					r.accountAvatar(c, me.Name(), me.Avatar, 38, me.AvatarStatic)
 					ui.Column(c).Gap(4).Children(func() {
 						ui.Text(c, "@"+me.Acct).FontSize(12).TextColor(t.TextMuted)
-						localizedChoice(c, &d.audience, []string{"public", "unlisted", "private", "direct"}, []string{locales.Public(), locales.QuietPublic(), locales.FollowersOnly(), locales.PrivateMentions()}).Label(locales.Visibility()).Disabled(d.busy)
+						hintInput(c, localizedChoice(c, &d.audience, []string{"public", "unlisted", "private", "direct"}, []string{locales.Public(), locales.QuietPublic(), locales.FollowersOnly(), locales.PrivateMentions()}).Label(locales.Visibility()).Disabled(d.busy))
 					})
 				})
 				editorHeight := float32(180)
@@ -212,15 +214,15 @@ func (r *reader) composePoll(c *ui.Context, d *composer) {
 	ui.Column(c).FillWidth().Padding(12).Gap(10).Radius(8).BorderWidth(1).BorderColor(c.Theme().Border).Children(func() {
 		for i := range d.pollOptions {
 			ui.Row(c.Key(i)).FillWidth().Gap(8).AlignItems(ui.Center).Children(func() {
-				ui.TextInput(c, &d.pollOptions[i]).Label(locales.PollOption(i + 1)).Placeholder(locales.OptionNumber(i + 1)).Grow(1).Disabled(d.busy)
+				hintInput(c, ui.TextInput(c, &d.pollOptions[i]).Label(locales.PollOption(i+1)).Placeholder(locales.OptionNumber(i+1)).Grow(1).Disabled(d.busy))
 				imageControl(c, composeMinusIcon, locales.RemoveOption(i+1), d.busy || len(d.pollOptions) <= 2, func() { d.pollOptions = append(d.pollOptions[:i], d.pollOptions[i+1:]...) })
 			})
 		}
 		ui.Row(c).FillWidth().Gap(8).AlignItems(ui.Center).Children(func() {
 			imageControl(c, composePlusIcon, locales.AddOption(), d.busy || len(d.pollOptions) >= 4, func() { d.pollOptions = append(d.pollOptions, "") })
-			ui.Checkbox(c, &d.pollMultiple, locales.MultipleChoice()).Disabled(d.busy)
+			hintInput(c, ui.Checkbox(c, &d.pollMultiple, locales.MultipleChoice()).Disabled(d.busy))
 			ui.Spacer(c)
-			localizedChoice(c, &d.pollDuration, []int{300, 1800, 3600, 21600, 86400, 259200, 604800}, []string{locales.Duration5Minutes(), locales.Duration30Minutes(), locales.Duration1Hour(), locales.Duration6Hours(), locales.Duration1Day(), locales.Duration3Days(), locales.Duration7Days()}).Label(locales.PollDuration()).Disabled(d.busy)
+			hintInput(c, localizedChoice(c, &d.pollDuration, []int{300, 1800, 3600, 21600, 86400, 259200, 604800}, []string{locales.Duration5Minutes(), locales.Duration30Minutes(), locales.Duration1Hour(), locales.Duration6Hours(), locales.Duration1Day(), locales.Duration3Days(), locales.Duration7Days()}).Label(locales.PollDuration()).Disabled(d.busy))
 		})
 	})
 }

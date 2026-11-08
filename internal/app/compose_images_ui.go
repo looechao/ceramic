@@ -94,7 +94,7 @@ func (r *reader) composeImages(c *ui.Context, d *composer) {
 			if a.bitmap != nil {
 				ui.Image(c, a.bitmap).Size(64, 64).Fit(ui.Cover).Radius(6).Label(a.name)
 			}
-			ui.TextInput(c, &a.description).Label(locales.ImageDescription(i + 1)).Placeholder(locales.ImageDescriptionOptional()).Grow(1).Disabled(d.busy)
+			hintInput(c, ui.TextInput(c, &a.description).Label(locales.ImageDescription(i+1)).Placeholder(locales.ImageDescriptionOptional()).Grow(1).Disabled(d.busy))
 			imageControl(c, closeIcon, locales.RemoveImage(i+1), d.busy, func() { d.attachments = append(d.attachments[:i], d.attachments[i+1:]...) })
 		})
 	}

@@ -45,6 +45,8 @@ func (r *reader) previewView(c *ui.Context, f *feedState) {
 		return
 	}
 	ui.DialogBase(c.Key(f), &open, func(backdrop, panel ui.Element) {
+		defer dialogHints(c, panel)()
+
 		backdrop.Background(ui.Transparent)
 		panel.Background(ui.Transparent).Label(locales.ImageViewer())
 		if panel.OverlayShortcut(0, ui.KeyLeft) {
@@ -109,7 +111,7 @@ func (r *reader) previewView(c *ui.Context, f *feedState) {
 }
 
 func imageControl(c *ui.Context, icon *ui.SVG, label string, disabled bool, action func()) {
-	b := ui.ButtonBase(c).Size(30, 30).Radius(15).Label(label).Tooltip(label).Disabled(disabled).OnClick(action)
+	b := hintAction(c, ui.ButtonBase(c).Size(30, 30).Radius(15).Label(label).Tooltip(label).Disabled(disabled), action)
 	ink := postActionStyle(c, b, c.Theme().Text, false, disabled)
 	b.Children(func() { ui.Icon(c, icon).Size(18, 18).TextColor(ink) })
 }

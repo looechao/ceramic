@@ -164,7 +164,7 @@ func (r *reader) loginView(c *ui.Context) {
 				ui.Text(c, locales.LogInToCeramic()).TextAlign(ui.Center).FontSize(24).FontWeight(600).Margin(12, 0, 24, 0)
 				ui.Column(c).FillWidth().AlignItems(ui.Center).Children(func() {
 					ui.Text(c, locales.Instance()).FontSize(13).FontWeight(500).Margin(0, 0, 8, 0)
-					ui.Autocomplete(c.Key("instance"), &r.instance, instanceSuggestions(r.instance)).Label(locales.InstanceAddress()).Placeholder(locales.InstanceDomain()).TextAlign(ui.Center).FillWidth().Height(42).Disabled(r.busy || r.authorizing).OnSubmit(r.login)
+					hintInput(c, ui.Autocomplete(c.Key("instance"), &r.instance, instanceSuggestions(r.instance)).Label(locales.InstanceAddress()).Placeholder(locales.InstanceDomain()).TextAlign(ui.Center).FillWidth().Height(42).Disabled(r.busy || r.authorizing).OnSubmit(r.login))
 					ui.Text(c, locales.ForExampleMastodonSocial()).TextAlign(ui.Center).FontSize(12).TextColor(t.TextMuted).Margin(8, 0, 0, 0)
 					ui.Column(c).FillWidth().MinHeight(40).AlignItems(ui.Center).Justify(ui.Center).Margin(20, 0, 0, 0).Children(func() {
 						if r.busy || r.authorizing {
@@ -177,14 +177,14 @@ func (r *reader) loginView(c *ui.Context) {
 								ui.Text(c, label).FontSize(13).TextAlign(ui.Center).MinWidth(0)
 							})
 						} else {
-							ui.PrimaryButton(c, locales.Continue()).FontSize(13).FillWidth().Height(40).Radius(8).OnClick(r.login)
+							hintAction(c, ui.PrimaryButton(c, locales.Continue()).FontSize(13).FillWidth().Height(40).Radius(8), r.login)
 						}
 					})
 					if r.message != "" {
 						ui.Text(c, r.message).TextAlign(ui.Center).FontSize(12).LineHeight(1.5).TextColor(t.TextMuted).FillWidth().Margin(8, 0, 0, 0)
 					}
 					if r.authorizing {
-						ui.Button(c, locales.CancelConnection()).FontSize(13).Margin(12, 0, 0, 0).OnClick(r.cancelAuthorization)
+						hintAction(c, ui.Button(c, locales.CancelConnection()).FontSize(13).Margin(12, 0, 0, 0), r.cancelAuthorization)
 					} else if !r.busy {
 						ui.Text(c, locales.AuthorizeReadWriteFollowAndPushAccessInYourBrowser()).TextAlign(ui.Center).FontSize(11).LineHeight(1.5).TextColor(t.TextMuted).FillWidth().Margin(16, 0, 0, 0)
 					}

@@ -16,7 +16,7 @@ func (r *reader) post(c *ui.Context, f *feedState, p *postView) {
 	if s.Reblog != nil {
 		s = *s.Reblog
 	}
-	row := r.listSurface(c, f, postTint(p), func(hover *listHoverState) {
+	row := hintAction(c, r.listSurface(c, f, postTint(p), func(hover *listHoverState) {
 		if p.status.Reblog != nil {
 			ui.Row(c).Gap(6).Margin(0, 0, 2, 54).Children(func() {
 				ui.Icon(c, boostIcon).Size(13, 13).TextColor(t.TextMuted)
@@ -91,7 +91,7 @@ func (r *reader) post(c *ui.Context, f *feedState, p *postView) {
 				r.postFooter(c, f, s)
 			})
 		})
-	}).Label(locales.OpenConversation() + s.ID).OnClick(func() {
+	}).Label(locales.OpenConversation()+s.ID), func() {
 		if f.preview == nil {
 			r.openConversation(f, s)
 		}
@@ -127,7 +127,7 @@ func (r *reader) media(c *ui.Context, f *feedState, m mastodon.Media, single boo
 			height := mediaSlotHeight(m, max(1, f.width-86), single)
 			ui.Box(c).FillWidth().Height(height).Radius(10).Clip().Background(c.Theme().Surface).AlignItems(ui.Center).Justify(ui.Center).Children(func() {
 				if entry != nil && entry.bitmap != nil {
-					ui.Image(c, entry.bitmap).FillWidth().Height(height).Fit(ui.Cover).Radius(10).Label(m.Description).OnClick(func() {
+					hintAction(c, ui.Image(c, entry.bitmap).FillWidth().Height(height).Fit(ui.Cover).Radius(10).Label(m.Description), func() {
 						r.openImage(f, m, gallery)
 					})
 				} else if entry == nil || entry.failed {
@@ -170,7 +170,7 @@ func (r *reader) linkPreview(c *ui.Context, card mastodon.LinkCard) {
 			if card.Provider != "" {
 				ui.Text(c, card.Provider).FontSize(11).TextColor(t.TextMuted).MaxLines(1)
 			}
-			ui.Link(c, card.Title, target).FontSize(13).Bold().MaxLines(2)
+			hintLink(c, card.Title, target).FontSize(13).Bold().MaxLines(2)
 			description := []rune(card.Description)
 			if len(description) > 140 {
 				description = description[:140]
@@ -225,7 +225,7 @@ func (r *reader) postFooter(c *ui.Context, f *feedState, s mastodon.Status) {
 					icon = heartFilledIcon
 				}
 			}
-			button := ui.ButtonBase(c.Key(i)).Padding(0, 6).MinWidth(30).Shrink(0).Justify(ui.Center).Gap(4).Height(30).Radius(15).Label(hint).Tooltip(hint).Disabled(disabled).OnClick(func() {
+			button := hintAction(c, ui.ButtonBase(c.Key(i)).Padding(0, 6).MinWidth(30).Shrink(0).Justify(ui.Center).Gap(4).Height(30).Radius(15).Label(hint).Tooltip(hint).Disabled(disabled), func() {
 				if i == 0 {
 					r.showReply(s)
 				} else {
@@ -241,7 +241,7 @@ func (r *reader) postFooter(c *ui.Context, f *feedState, s mastodon.Status) {
 			})
 		}
 		if target := mastodon.SafeURL(s.URL); target != "" {
-			button := ui.ButtonBase(c).Size(30, 30).Radius(15).Label(locales.OpenOriginalPost()).Tooltip(locales.OpenPostInBrowser()).OnClick(func() { services.OpenURL(target) })
+			button := hintAction(c, ui.ButtonBase(c).Size(30, 30).Radius(15).Label(locales.OpenOriginalPost()).Tooltip(locales.OpenPostInBrowser()), func() { services.OpenURL(target) })
 			fg := postActionStyle(c, button, t.Text, false, false)
 			button.Children(func() { ui.Icon(c, externalIcon).Size(15, 15).TextColor(fg) })
 		}
@@ -276,7 +276,7 @@ func concealedContent(c *ui.Context, warning string, expanded *bool, media bool,
 	ui.Text(c, warning).FontSize(13).FontWeight(500).LineHeight(1.45)
 	if *expanded {
 		ui.Row(c).Children(func() {
-			ui.Button(c, locales.HideContent()).FontSize(12).Padding(5, 10).Radius(8).OnClick(func() { *expanded = false })
+			hintAction(c, ui.Button(c, locales.HideContent()).FontSize(12).Padding(5, 10).Radius(8), func() { *expanded = false })
 		})
 		content()
 		return
@@ -286,7 +286,7 @@ func concealedContent(c *ui.Context, warning string, expanded *bool, media bool,
 	if media {
 		height = 100
 	}
-	ui.ButtonBase(c).Label(locales.RevealContent() + warning).Tooltip(locales.ClickToRevealContent()).OnClick(func() { *expanded = true }).Padding(0).FillWidth().Height(height).Clip().Radius(7).Background(t.Text.Alpha(0.025)).Children(func() {
+	hintAction(c, ui.ButtonBase(c).Label(locales.RevealContent()+warning).Tooltip(locales.ClickToRevealContent()), func() { *expanded = true }).Padding(0).FillWidth().Height(height).Clip().Radius(7).Background(t.Text.Alpha(0.025)).Children(func() {
 		ui.Column(c).FillWidth().Padding(12).Gap(9).Blur(5).IgnoreInput(true).Children(func() {
 			ui.Box(c).FillWidth().Height(9).Radius(4).Background(t.Text.Alpha(0.18))
 			ui.Box(c).WidthPercent(83).Height(9).Radius(4).Background(t.Text.Alpha(0.14))

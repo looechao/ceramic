@@ -143,7 +143,7 @@ func (r *reader) draftsView(c *ui.Context, d *composer) {
 			ui.Text(c, locales.Drafts()).FontSize(17).Bold()
 			ui.Text(c, fmt.Sprint(len(r.drafts))).FontSize(12).TextColor(t.TextMuted)
 			ui.Spacer(c)
-			ui.Button(c, locales.New()).OnClick(func() {
+			hintAction(c, ui.Button(c, locales.New()), func() {
 				if r.saveDraft(d) {
 					clearComposer(d)
 					d.draftsOpen = false
@@ -167,7 +167,7 @@ func (r *reader) draftsView(c *ui.Context, d *composer) {
 					if title == "" {
 						title = locales.UnfinishedPost()
 					}
-					r.listSurface(c.Key(saved.ID), r.feedState, ui.Transparent, func(_ *listHoverState) {
+					hintAction(c, r.listSurface(c.Key(saved.ID), r.feedState, ui.Transparent, func(_ *listHoverState) {
 						ui.Row(c).FillWidth().Gap(8).AlignItems(ui.Center).Children(func() {
 							ui.Column(c).Grow(1).Shrink(1).Children(func() {
 								ui.Column(c).FillWidth().Gap(7).Children(func() {
@@ -182,9 +182,9 @@ func (r *reader) draftsView(c *ui.Context, d *composer) {
 									ui.Text(c, details).FontSize(11).TextColor(t.TextMuted)
 								})
 							})
-							ui.Button(c, locales.Delete()).Label(locales.DeleteDraft() + saved.ID).OnClick(func() { r.deleteDraft(d, saved.ID) })
+							hintAction(c, ui.Button(c, locales.Delete()).Label(locales.DeleteDraft()+saved.ID), func() { r.deleteDraft(d, saved.ID) })
 						})
-					}).Label(locales.ResumeDraft() + saved.ID).OnClick(func() { r.restoreDraft(d, saved) })
+					}).Label(locales.ResumeDraft()+saved.ID), func() { r.restoreDraft(d, saved) })
 				}
 			})
 		})
