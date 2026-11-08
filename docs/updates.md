@@ -33,6 +33,14 @@ checks the expected artifacts and uploads them to the draft. Publish it only
 after all platforms' archives and manifests are present; publishing makes the
 release discoverable.
 
+The release-notes job reads the draft with its write permission and passes
+`CHANGELOG.md` to the read-only build jobs as an artifact. To recover a failed
+build after fixing the workflow on `main`, run
+`gh workflow run release.yml --ref main -f tag=v0.3.0`, substituting the affected
+tag. This builds the existing tag using the current workflow and requires its
+release to remain a draft; it does not move the tag or overwrite a published
+release.
+
 To build signed update artifacts locally, provide the private key through the
 `MYGO_UPDATER_PRIVATE_KEY` environment variable and run `./scripts/build.sh`.
 Without it, ordinary local builds still work but do not emit signed updates.
