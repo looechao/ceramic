@@ -22,6 +22,7 @@ type postView struct {
 }
 
 type feedState struct {
+	contentRevision      uint64
 	authRequired         bool
 	readingJump          int
 	scroll               ui.ScrollState
@@ -47,6 +48,8 @@ type feedState struct {
 }
 
 type reader struct {
+	postManager          *postManager
+	deletedPosts         map[string]bool
 	drafts               []savedDraft
 	draftsOwner          string
 	applyAppearance      func(mygo.ThemeSource)
@@ -149,7 +152,7 @@ func (r *reader) startStream() {
 					return
 				}
 				r.update(func() {
-					if !current() {
+					if !current() || r.deletedPost(n.Status) {
 						return
 					}
 					if feed.prependNotification(n) && r.selected != "notifications" {
@@ -203,6 +206,7 @@ func (r *reader) loadFeed(f *feedState, more bool) {
 	f.failedMore = more
 	f.message = ""
 	gen := r.generation
+	revision := f.contentRevision
 	initial := !f.loaded
 	cursor := ""
 	offset := 0
@@ -247,6 +251,12 @@ func (r *reader) loadFeed(f *feedState, more bool) {
 				return
 			}
 			f.busy = false
+			if revision != f.contentRevision {
+				// A confirmed edit/delete supersedes this snapshot. Keep the confirmed
+				// view while fetching a new page, including its pagination metadata.
+				r.loadFeed(f, more)
+				return
+			}
 			if err != nil {
 				f.message = localizedError(err)
 				return

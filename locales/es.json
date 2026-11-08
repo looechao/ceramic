@@ -250,5 +250,10 @@
   "ReplyingTo": "Respondiendo a {account}",
   "MentionSuggestions": "Sugerencias de menciones",
   "SearchingAccounts": "Buscando cuentas",
-  "MentionSearchFailed": "No se pudo buscar. Puedes escribir la cuenta completa."
+  "MentionSearchFailed": "No se pudo buscar. Puedes escribir la cuenta completa.",
+  "EditPost": "Editar publicación",
+  "DeletePost": "Eliminar publicación",
+  "DeletePostConfirmation": "¿Eliminar esta publicación? No se puede deshacer.",
+  "Cancel": "Cancelar",
+  "SaveChanges": "Guardar cambios"
 }

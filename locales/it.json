@@ -250,5 +250,10 @@
   "ReplyingTo": "In risposta a {account}",
   "MentionSuggestions": "Suggerimenti di account da menzionare",
   "SearchingAccounts": "Ricerca di account",
-  "MentionSearchFailed": "Impossibile cercare account. Puoi inserire l’indirizzo completo dell’account."
+  "MentionSearchFailed": "Impossibile cercare account. Puoi inserire l’indirizzo completo dell’account.",
+  "EditPost": "Modifica post",
+  "DeletePost": "Elimina post",
+  "DeletePostConfirmation": "Eliminare questo post? Questa azione è irreversibile.",
+  "Cancel": "Annulla",
+  "SaveChanges": "Salva modifiche"
 }

@@ -2598,3 +2598,53 @@ func MentionSearchFailed() string { return In(i18n.Locale()).MentionSearchFailed
 func (msgs Messages) MentionSearchFailed() string {
 	return Catalog.Format(msgs.locale, "MentionSearchFailed", nil)
 }
+
+// EditPost says "编辑帖子"
+// in the language the app shows.
+func EditPost() string { return In(i18n.Locale()).EditPost() }
+
+// EditPost says "编辑帖子"
+// in the language of msgs.
+func (msgs Messages) EditPost() string {
+	return Catalog.Format(msgs.locale, "EditPost", nil)
+}
+
+// DeletePost says "删除帖子"
+// in the language the app shows.
+func DeletePost() string { return In(i18n.Locale()).DeletePost() }
+
+// DeletePost says "删除帖子"
+// in the language of msgs.
+func (msgs Messages) DeletePost() string {
+	return Catalog.Format(msgs.locale, "DeletePost", nil)
+}
+
+// DeletePostConfirmation says "确定删除这条帖子？此操作无法撤销。"
+// in the language the app shows.
+func DeletePostConfirmation() string { return In(i18n.Locale()).DeletePostConfirmation() }
+
+// DeletePostConfirmation says "确定删除这条帖子？此操作无法撤销。"
+// in the language of msgs.
+func (msgs Messages) DeletePostConfirmation() string {
+	return Catalog.Format(msgs.locale, "DeletePostConfirmation", nil)
+}
+
+// Cancel says "取消"
+// in the language the app shows.
+func Cancel() string { return In(i18n.Locale()).Cancel() }
+
+// Cancel says "取消"
+// in the language of msgs.
+func (msgs Messages) Cancel() string {
+	return Catalog.Format(msgs.locale, "Cancel", nil)
+}
+
+// SaveChanges says "保存修改"
+// in the language the app shows.
+func SaveChanges() string { return In(i18n.Locale()).SaveChanges() }
+
+// SaveChanges says "保存修改"
+// in the language of msgs.
+func (msgs Messages) SaveChanges() string {
+	return Catalog.Format(msgs.locale, "SaveChanges", nil)
+}

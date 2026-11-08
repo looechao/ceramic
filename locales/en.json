@@ -250,5 +250,10 @@
   "ReplyingTo": "Replying to {account}",
   "MentionSuggestions": "Mention suggestions",
   "SearchingAccounts": "Searching accounts",
-  "MentionSearchFailed": "Account search failed. You can type the full handle."
+  "MentionSearchFailed": "Account search failed. You can type the full handle.",
+  "EditPost": "Edit post",
+  "DeletePost": "Delete post",
+  "DeletePostConfirmation": "Delete this post? This cannot be undone.",
+  "Cancel": "Cancel",
+  "SaveChanges": "Save changes"
 }

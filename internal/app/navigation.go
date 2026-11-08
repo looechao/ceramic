@@ -140,6 +140,12 @@ func (r *reader) closeColumn(ws *workspace, f *feedState) {
 }
 
 func (r *reader) closeFocused() {
+	if d := r.postManager; d != nil && d.open {
+		if !d.busy {
+			d.open = false
+		}
+		return
+	}
 	if r.composer != nil && r.composer.open {
 		if r.composer.close != nil {
 			r.composer.close()

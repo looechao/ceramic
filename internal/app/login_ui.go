@@ -76,6 +76,8 @@ func (r *reader) logout() {
 		r.composer.stopMentions()
 	}
 	r.composer = nil
+	r.postManager = nil
+	r.deletedPosts = nil
 	r.drafts = nil
 	r.draftsOwner = ""
 	r.ownProfile = nil

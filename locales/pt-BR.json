@@ -250,5 +250,10 @@
   "ReplyingTo": "Respondendo a {account}",
   "MentionSuggestions": "Sugestões de contas para mencionar",
   "SearchingAccounts": "Buscando contas",
-  "MentionSearchFailed": "Não foi possível buscar contas. Você pode digitar o endereço completo da conta."
+  "MentionSearchFailed": "Não foi possível buscar contas. Você pode digitar o endereço completo da conta.",
+  "EditPost": "Editar publicação",
+  "DeletePost": "Excluir publicação",
+  "DeletePostConfirmation": "Excluir esta publicação? Esta ação não pode ser desfeita.",
+  "Cancel": "Cancelar",
+  "SaveChanges": "Salvar alterações"
 }

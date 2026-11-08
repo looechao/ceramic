@@ -375,5 +375,10 @@
   "ReplyingTo": "回复 {account}",
   "MentionSuggestions": "提及账号建议",
   "SearchingAccounts": "正在搜索账号",
-  "MentionSearchFailed": "无法搜索账号，可直接输入完整账号。"
+  "MentionSearchFailed": "无法搜索账号，可直接输入完整账号。",
+  "EditPost": "编辑帖子",
+  "DeletePost": "删除帖子",
+  "DeletePostConfirmation": "确定删除这条帖子？此操作无法撤销。",
+  "Cancel": "取消",
+  "SaveChanges": "保存修改"
 }
