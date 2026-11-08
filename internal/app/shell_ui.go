@@ -149,7 +149,9 @@ func (r *reader) shell(c *ui.Context) {
 			r.mascot(c, area, columnGap+used, free)
 		})
 	})
-	if r.composer != nil && r.composer.open {
+	if r.postManager != nil && r.postManager.open {
+		r.postManagementPopup(c)
+	} else if r.composer != nil && r.composer.open {
 		r.composePopup(c)
 	} else if ws := r.workspaces[r.selected]; ws != nil && ws.focused != nil && ws.focused.preview != nil {
 		r.previewView(c, ws.focused)

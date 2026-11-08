@@ -250,5 +250,10 @@
   "ReplyingTo": "Antwort an {account}",
   "MentionSuggestions": "Vorschläge für Erwähnungen",
   "SearchingAccounts": "Konten werden gesucht",
-  "MentionSearchFailed": "Konten konnten nicht gesucht werden. Du kannst die vollständige Kontoadresse eingeben."
+  "MentionSearchFailed": "Konten konnten nicht gesucht werden. Du kannst die vollständige Kontoadresse eingeben.",
+  "EditPost": "Beitrag bearbeiten",
+  "DeletePost": "Beitrag löschen",
+  "DeletePostConfirmation": "Diesen Beitrag löschen? Dies kann nicht rückgängig gemacht werden.",
+  "Cancel": "Abbrechen",
+  "SaveChanges": "Änderungen speichern"
 }

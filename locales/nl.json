@@ -250,5 +250,10 @@
   "ReplyingTo": "Antwoord aan {account}",
   "MentionSuggestions": "Suggesties voor vermeldingen",
   "SearchingAccounts": "Accounts zoeken",
-  "MentionSearchFailed": "Accounts zoeken is mislukt. Je kunt het volledige accountadres invoeren."
+  "MentionSearchFailed": "Accounts zoeken is mislukt. Je kunt het volledige accountadres invoeren.",
+  "EditPost": "Bericht bewerken",
+  "DeletePost": "Bericht verwijderen",
+  "DeletePostConfirmation": "Dit bericht verwijderen? Dit kan niet ongedaan worden gemaakt.",
+  "Cancel": "Annuleren",
+  "SaveChanges": "Wijzigingen opslaan"
 }

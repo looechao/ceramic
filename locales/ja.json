@@ -250,5 +250,10 @@
   "ReplyingTo": "{account} に返信",
   "MentionSuggestions": "メンション候補",
   "SearchingAccounts": "アカウントを検索中",
-  "MentionSearchFailed": "検索できません。完全なアカウント名を入力できます。"
+  "MentionSearchFailed": "検索できません。完全なアカウント名を入力できます。",
+  "EditPost": "投稿を編集",
+  "DeletePost": "投稿を削除",
+  "DeletePostConfirmation": "この投稿を削除しますか？元に戻せません。",
+  "Cancel": "キャンセル",
+  "SaveChanges": "変更を保存"
 }

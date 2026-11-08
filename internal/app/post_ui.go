@@ -16,7 +16,7 @@ func (r *reader) post(c *ui.Context, f *feedState, p *postView) {
 	if s.Reblog != nil {
 		s = *s.Reblog
 	}
-	r.listSurface(c, f, postTint(p), func(hover *listHoverState) {
+	row := r.listSurface(c, f, postTint(p), func(hover *listHoverState) {
 		if p.status.Reblog != nil {
 			ui.Row(c).Gap(6).Margin(0, 0, 2, 54).Children(func() {
 				ui.Icon(c, boostIcon).Size(13, 13).TextColor(t.TextMuted)
@@ -47,7 +47,7 @@ func (r *reader) post(c *ui.Context, f *feedState, p *postView) {
 							ui.Text(c, locales.Reply()).FontSize(11).TextColor(t.TextMuted)
 						})
 					}
-					r.renderRichText(c, p.runs, 14, func() {
+					body := r.renderRichText(c, p.runs, 14, func() {
 						if f.preview == nil {
 							r.openConversation(f, s)
 						}
@@ -55,6 +55,7 @@ func (r *reader) post(c *ui.Context, f *feedState, p *postView) {
 						hover.input(ev, true)
 						r.postTextInput(f, ev)
 					})
+					r.postManagementMenu(body, f, s, true)
 					r.pollView(c, s.Poll, s.URL)
 					if s.Card != nil && len(s.Media) == 0 {
 						r.linkPreview(c, *s.Card)
@@ -95,6 +96,7 @@ func (r *reader) post(c *ui.Context, f *feedState, p *postView) {
 			r.openConversation(f, s)
 		}
 	})
+	r.postManagementMenu(row, f, s, false)
 }
 
 // Reserve the same geometry before and after decoding, including servers

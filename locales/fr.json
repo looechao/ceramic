@@ -250,5 +250,10 @@
   "ReplyingTo": "En réponse à {account}",
   "MentionSuggestions": "Suggestions de comptes à mentionner",
   "SearchingAccounts": "Recherche de comptes",
-  "MentionSearchFailed": "Impossible de rechercher des comptes. Vous pouvez saisir l’identifiant complet."
+  "MentionSearchFailed": "Impossible de rechercher des comptes. Vous pouvez saisir l’identifiant complet.",
+  "EditPost": "Modifier le message",
+  "DeletePost": "Supprimer le message",
+  "DeletePostConfirmation": "Supprimer ce message ? Cette action est irréversible.",
+  "Cancel": "Annuler",
+  "SaveChanges": "Enregistrer"
 }
