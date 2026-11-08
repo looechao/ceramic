@@ -103,17 +103,36 @@ func TestReadingKeysAndInputIsolation(t *testing.T) {
 	}
 }
 
-func TestCloseReturnsToSourceColumn(t *testing.T) {
+func TestCloseReturnsToLeftColumn(t *testing.T) {
 	r := testReader(t)
 	r.session = &mastodon.Session{Account: json.RawMessage(`{"id":"me"}`)}
-	r.ensureProfile()
+	tt := ui.NewTester(r.view, 1240, 820)
+	ws := r.workspaces["home"]
+	for _, id := range []string{"one", "two", "three"} {
+		r.openProfileFrom(r.home, mastodon.Account{ID: id})
+	}
+	tt.Frame()
+	for remaining := 3; remaining >= 1; remaining-- {
+		want := ws.columns[remaining-1]
+		tt.Key(ui.Cmd, ui.KeyW)
+		tt.Frame()
+		if len(ws.columns) != remaining || ws.focused != want || r.feedState != want {
+			t.Fatalf("closing must focus the left neighbor: remaining=%d", remaining)
+		}
+	}
+}
+
+func TestCloseBackgroundColumnPreservesFocus(t *testing.T) {
+	r := testReader(t)
+	r.session = &mastodon.Session{Account: json.RawMessage(`{"id":"me"}`)}
 	r.openProfileFrom(r.home, mastodon.Account{ID: "one"})
 	first := r.feedState
 	r.openProfileFrom(r.home, mastodon.Account{ID: "two"})
 	second := r.feedState
-	r.closeColumn(r.workspaces["home"], second)
-	if r.feedState != r.home || len(r.workspaces["home"].columns) != 2 || r.workspaces["home"].columns[1] != first {
-		t.Fatal("closing should return to source, not adjacent unrelated detail")
+	ws := r.workspaces["home"]
+	r.closeColumn(ws, first)
+	if len(ws.columns) != 2 || ws.focused != second || r.feedState != second {
+		t.Fatal("closing a background column must preserve focus")
 	}
 }
 
