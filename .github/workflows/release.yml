@@ -5,6 +5,19 @@ name: Release
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing tag with a draft release to rebuild
+        required: true
+        type: string
+
+env:
+  RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+
+concurrency:
+  group: release-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -14,9 +27,11 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: refs/tags/${{ env.RELEASE_TAG }}
       # A tag that disagrees with mygo.json would publish misnamed installers.
       - name: Check the version
-        run: test "$GITHUB_REF_NAME" = "v$(jq -r .version mygo.json)"
+        run: test "$RELEASE_TAG" = "v$(jq -r .version mygo.json)"
       - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
@@ -30,14 +45,32 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
+          ref: refs/tags/${{ env.RELEASE_TAG }}
           fetch-depth: 0
       - uses: actions/setup-node@v6
         with:
           node-version: 24
       - name: Create draft release notes
+        if: github.event_name == 'push'
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: npx --yes changelogithub@15 --draft
+      # Draft releases require write access; build jobs receive only the file.
+      - name: Prepare update notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          test "$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json isDraft -q .isDraft)" = true
+          {
+            printf '## %s\n\n' "${RELEASE_TAG#v}"
+            gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json body -q .body |
+              sed 's/&nbsp;//g'
+          } > CHANGELOG.md
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-notes
+          path: CHANGELOG.md
+          if-no-files-found: error
 
   build:
     needs: release-notes
@@ -53,17 +86,11 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
+          ref: refs/tags/${{ env.RELEASE_TAG }}
           fetch-depth: 0
-      - name: Prepare update notes
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          {
-            printf '## %s\n\n' "${GITHUB_REF_NAME#v}"
-            gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --json body -q .body |
-              sed 's/&nbsp;//g'
-          } > CHANGELOG.md
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-notes
       - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
@@ -81,7 +108,7 @@ jobs:
           done
       - uses: actions/upload-artifact@v7
         with:
-          name: ${{ matrix.name }}
+          name: build-${{ matrix.name }}
           if-no-files-found: error
           path: |
             build/*/*.dmg
@@ -99,6 +126,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v8
         with:
+          pattern: build-*
           path: artifacts
       - name: Upload assets to the draft release
         env:
@@ -110,5 +138,6 @@ jobs:
           test "$(find artifacts -type f -name '*.deb' | wc -l)" -eq 2
           test "$(find artifacts -type f -name '*.tar.gz' | wc -l)" -eq 6
           test "$(find artifacts -type f -name 'update-*.json' | wc -l)" -eq 6
-          gh release upload "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --clobber \
+          test "$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json isDraft -q .isDraft)" = true
+          gh release upload "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --clobber \
             $(find artifacts -type f)
