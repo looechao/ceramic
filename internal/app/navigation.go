@@ -124,14 +124,7 @@ func (r *reader) closeColumn(ws *workspace, f *feedState) {
 		if i > 0 && column == f {
 			ws.columns = append(ws.columns[:i], ws.columns[i+1:]...)
 			if ws.focused == f {
-				target := ws.columns[i-1]
-				for _, candidate := range ws.columns {
-					if candidate == f.source {
-						target = candidate
-						break
-					}
-				}
-				r.focusColumn(ws, target)
+				r.focusColumn(ws, ws.columns[i-1])
 				ws.revealFocus = true
 			}
 			return
