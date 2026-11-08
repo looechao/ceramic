@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/egoist/mygo"
+	"github.com/egoist/mygo/i18n"
 	"github.com/egoist/mygo/ui"
 )
 
@@ -33,8 +34,11 @@ func (r *reader) settingsView(c *ui.Context) {
 		ui.Column(c).Gap(18).Children(func() {
 			ui.Text(c, locales.Settings()).FontSize(20).Bold()
 			ui.Text(c, locales.Language()).FontSize(13)
-			languageNames := []string{"简体中文", "English", "日本語", "한국어", "Español"}
-			languageTags := []string{"zh-Hans", "en", "ja", "ko", "es"}
+			languageTags := locales.Catalog.Languages()
+			languageNames := make([]string, len(languageTags))
+			for i, tag := range languageTags {
+				languageNames[i] = i18n.Autonym(tag)
+			}
 			selected := languageNames[0]
 			for i, tag := range languageTags {
 				if tag == c.Locale() {

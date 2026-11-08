@@ -96,7 +96,7 @@ Publish uses the existing compact primary text button, without a paper-plane gly
 
 Browse uses Lucide’s simple globe for Local and the classic CC0 five-node Fediverse community logo rendered in theme-matched monochrome for Federated. Both remain compact inline buttons without persistent backgrounds.
 
-Application labels use the MyGo catalogs in locales, with Simplified Chinese, English, Japanese, Korean and Spanish. Settings uses a full-width native language select with autonyms; App.SetLocale applies and persists the choice. Menus rebuild on locale changes. Protocol values and draft poll durations are independent of translated labels. This supersedes the earlier Chinese-only label rule.
+Application labels use the MyGo catalogs in locales, with Simplified Chinese, Traditional Chinese, English, Japanese, Korean, French, German, Italian, Spanish, Brazilian Portuguese and Dutch. Settings uses a full-width native language select populated from the catalog languages and MyGo autonyms; App.SetLocale applies and persists the choice. Menus rebuild on locale changes. Protocol values and draft poll durations are independent of translated labels. This supersedes the earlier Chinese-only label rule.
 
 
 Settings offers the native MyGo updater, with version, automatic checks and a manual check button. Update windows use the native plugin, and relaunch follows the normal draft-saving close path. Release manifests and archives are signed together.

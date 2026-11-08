@@ -167,8 +167,8 @@ macOS 隐藏顶部标题栏，系统红黄绿按钮位于侧栏顶部；该区�
 
 ### 界面语言
 
-设置中可选择简体中文、English、日本語、한국어和 Español，选择后即时生效，由 MyGo 保存供下次启动使用。首次启动按系统语言匹配，不支持的语言回退到简体中文。
+设置中可选择简体中文、繁体中文、英语、日语、韩语、法语、德语、意大利语、西班牙语、葡萄牙语（巴西）和荷兰语，共 11 种语言，选择后即时生效，由 MyGo 保存供下次启动使用。首次启动按系统语言匹配，不支持的语言回退到简体中文。
 
-文案维护在 `locales/<BCP-47>.json`，使用 MyGo 的 ARB / ICU MessageFormat。修改后运行 `go tool mygo generate`，同时提交目录中的 `catalog_gen.go`；`go tool mygo i18n check` 检查翻译和占位符。使用 `MYGO_LOCALE=es go tool mygo dev` 可检查指定语言。MyGo 暂无韩语和西班牙语的完整内置控件译文，这些控件会回退英文。
+文案维护在 `locales/<BCP-47>.json`，使用 MyGo 的 ARB / ICU MessageFormat。修改后运行 `go tool mygo generate`，同时提交目录中的 `catalog_gen.go`；`go tool mygo i18n check` 检查翻译和占位符。使用 `MYGO_LOCALE=es go tool mygo dev` 可检查指定语言。语言选择和测试从翻译目录读取语言列表。MyGo 自带简体中文、繁体中文和日语的内置控件译文，其余语言缺少的内置控件译文会回退英语；Ceramic 自身的文案均有对应翻译。
 
 发帖可见性使用 Mastodon 协议值，投票时长使用秒数，不依赖界面语言；旧版中文标签草稿在恢复时自动迁移。

@@ -4,6 +4,7 @@ import (
 	"ceramic/internal/mastodon"
 	"ceramic/locales"
 	"encoding/json"
+	"github.com/egoist/mygo/i18n"
 	"github.com/egoist/mygo/ui"
 	"testing"
 )
@@ -21,7 +22,7 @@ func TestDraftLanguageMigration(t *testing.T) {
 	if saved.Audience != "private" || saved.PollSeconds != 259200 || saved.Duration != "" {
 		t.Fatal(saved)
 	}
-	for _, tag := range []string{"zh-Hans", "en", "ja", "ko", "es"} {
+	for _, tag := range locales.Catalog.Languages() {
 		t.Setenv("MYGO_LOCALE", tag)
 		draft := d.draft()
 		if draft.Visibility != "private" || draft.Poll.ExpiresIn != 259200 {
@@ -31,7 +32,7 @@ func TestDraftLanguageMigration(t *testing.T) {
 }
 
 func TestNativeLanguages(t *testing.T) {
-	for _, tag := range []string{"zh-Hans", "en", "ja", "ko", "es"} {
+	for _, tag := range locales.Catalog.Languages() {
 		t.Run(tag, func(t *testing.T) {
 			t.Setenv("MYGO_LOCALE", tag)
 			r := testReader(t)
@@ -40,6 +41,9 @@ func TestNativeLanguages(t *testing.T) {
 			tt.SetLocale(tag)
 			if !tt.HasText(locales.In(tag).Settings()) {
 				t.Fatal(tt.Texts())
+			}
+			if name := i18n.Autonym(tag); name == "" || !tt.HasText(name) {
+				t.Fatalf("language %s is not selected: %v", tag, tt.Texts())
 			}
 			savePreview(t, tt, "native-settings-"+tag)
 			r.session = &mastodon.Session{Scopes: mastodon.Scopes}
@@ -54,7 +58,7 @@ func TestNativeLanguages(t *testing.T) {
 }
 
 func TestServiceMessagesFollowLanguage(t *testing.T) {
-	for _, tag := range []string{"zh-Hans", "en", "ja", "ko", "es"} {
+	for _, tag := range locales.Catalog.Languages() {
 		t.Setenv("MYGO_LOCALE", tag)
 		if got := localizedError(mastodon.MessageInvalidInstance); got != locales.In(tag).ServiceInvalidInstance() {
 			t.Fatal(tag, got)
