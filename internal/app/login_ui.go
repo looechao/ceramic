@@ -160,31 +160,35 @@ func (r *reader) loginView(c *ui.Context) {
 	ui.Scroll(c).Grow(1).Children(func() {
 		ui.Column(c).FillWidth().MinHeight(max(0, height-52)).Padding(24).AlignItems(ui.Center).Justify(ui.Center).Children(func() {
 			ui.Column(c).FillWidth().MaxWidth(360).AlignItems(ui.Center).Children(func() {
-				ui.Image(c, loginLogo).Size(88, 88).Fit(ui.Contain).Label("Ceramic")
-				ui.Text(c, locales.LogInToCeramic()).FontSize(28).FontWeight(600).Margin(16, 0, 32, 0)
-				ui.Text(c, locales.Instance()).FontSize(13).TextColor(t.TextMuted).Margin(0, 0, 8, 0)
-				ui.Autocomplete(c.Key("instance"), &r.instance, instanceSuggestions(r.instance)).Label(locales.InstanceAddress()).Placeholder(locales.InstanceDomain()).FillWidth().Height(46).Disabled(r.busy || r.authorizing).OnSubmit(r.login)
-				ui.Text(c, locales.ForExampleMastodonSocial()).FontSize(12).TextColor(t.TextMuted).Margin(10, 0, 0, 0)
-				label := locales.Continue()
-				if r.busy {
-					label = locales.Connecting()
-				}
-				if r.authorizing {
-					label = locales.WaitingForBrowserAuthorization()
-				}
-				ui.Row(c).Gap(8).AlignItems(ui.Center).Margin(24, 0, 0, 0).Children(func() {
-					if r.busy || r.authorizing {
-						ui.Spinner(c).Size(16, 16).Label(label)
+				ui.Image(c, loginLogo).Size(72, 72).Fit(ui.Contain).Label("Ceramic")
+				ui.Text(c, locales.LogInToCeramic()).TextAlign(ui.Center).FontSize(24).FontWeight(600).Margin(12, 0, 24, 0)
+				ui.Column(c).FillWidth().AlignItems(ui.Center).Children(func() {
+					ui.Text(c, locales.Instance()).FontSize(13).FontWeight(500).Margin(0, 0, 8, 0)
+					ui.Autocomplete(c.Key("instance"), &r.instance, instanceSuggestions(r.instance)).Label(locales.InstanceAddress()).Placeholder(locales.InstanceDomain()).TextAlign(ui.Center).FillWidth().Height(42).Disabled(r.busy || r.authorizing).OnSubmit(r.login)
+					ui.Text(c, locales.ForExampleMastodonSocial()).TextAlign(ui.Center).FontSize(12).TextColor(t.TextMuted).Margin(8, 0, 0, 0)
+					ui.Column(c).FillWidth().MinHeight(40).AlignItems(ui.Center).Justify(ui.Center).Margin(20, 0, 0, 0).Children(func() {
+						if r.busy || r.authorizing {
+							label := locales.Connecting()
+							if !r.busy {
+								label = locales.WaitingForBrowserAuthorization()
+							}
+							ui.Row(c).FillWidth().Gap(10).Justify(ui.Center).AlignItems(ui.Center).Children(func() {
+								loadingIndicator(c).Size(18, 18).Label(label)
+								ui.Text(c, label).FontSize(13).TextAlign(ui.Center).MinWidth(0)
+							})
+						} else {
+							ui.PrimaryButton(c, locales.Continue()).FontSize(13).FillWidth().Height(40).Radius(8).OnClick(r.login)
+						}
+					})
+					if r.message != "" {
+						ui.Text(c, r.message).TextAlign(ui.Center).FontSize(12).LineHeight(1.5).TextColor(t.TextMuted).FillWidth().Margin(8, 0, 0, 0)
 					}
-					ui.PrimaryButton(c, label).Height(40).Padding(8, 24).Radius(20).Disabled(r.busy || r.authorizing).OnClick(r.login)
+					if r.authorizing {
+						ui.Button(c, locales.CancelConnection()).FontSize(13).Margin(12, 0, 0, 0).OnClick(r.cancelAuthorization)
+					} else if !r.busy {
+						ui.Text(c, locales.AuthorizeReadWriteFollowAndPushAccessInYourBrowser()).TextAlign(ui.Center).FontSize(11).LineHeight(1.5).TextColor(t.TextMuted).FillWidth().Margin(16, 0, 0, 0)
+					}
 				})
-				if r.message != "" {
-					ui.Text(c, r.message).FontSize(12).LineHeight(1.5).TextColor(t.TextMuted).FillWidth().Margin(16, 0, 0, 0)
-				}
-				if r.authorizing {
-					ui.Button(c, locales.CancelConnection()).Margin(12, 0, 0, 0).OnClick(r.cancelAuthorization)
-				}
-				ui.Text(c, locales.AuthorizeReadWriteFollowAndPushAccessInYourBrowser()).FontSize(11).TextColor(t.TextMuted).Margin(32, 0, 0, 0)
 			})
 		})
 	})

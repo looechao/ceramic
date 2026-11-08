@@ -138,7 +138,7 @@ func (r *reader) media(c *ui.Context, f *feedState, m mastodon.Media, single boo
 						}
 					})
 				} else {
-					ui.Spinner(c).Size(18, 18).Label(locales.LoadingImage())
+					loadingIndicator(c).Size(18, 18).Label(locales.LoadingImage())
 				}
 			})
 		}
@@ -160,7 +160,7 @@ func (r *reader) linkPreview(c *ui.Context, card mastodon.LinkCard) {
 				if e.bitmap != nil {
 					ui.Image(c, e.bitmap).Size(64, 64).Fit(ui.Cover).Radius(5).Label(locales.LinkPreviewThumbnail())
 				} else if !e.failed && !e.ready {
-					ui.Spinner(c).Size(18, 18).Label(locales.LoadingLinkThumbnail())
+					loadingIndicator(c).Size(18, 18).Label(locales.LoadingLinkThumbnail())
 				} else {
 					ui.Icon(c, externalIcon).Size(18, 18).TextColor(t.TextMuted)
 				}

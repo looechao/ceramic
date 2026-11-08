@@ -4,6 +4,7 @@ import (
 	"ceramic/locales"
 	"runtime"
 
+	"github.com/egoist/mygo/plugins/loading"
 	"github.com/egoist/mygo/ui"
 )
 
@@ -89,7 +90,7 @@ func (r *reader) accountAvatar(c *ui.Context, name, source string, size float32,
 		if playback.player != nil && slot.InView() {
 			ui.Video(c, playback.player).Size(size, size).Fit(ui.Cover).Radius(size / 2).Label(name)
 		} else if entry != nil && bitmap == nil && !entry.failed && !entry.ready {
-			ui.Spinner(c).Size(min(18, size/2), min(18, size/2)).Label(locales.LoadingAvatar(name))
+			loadingIndicator(c).Size(min(18, size/2), min(18, size/2)).Label(locales.LoadingAvatar(name))
 		} else {
 			avatarImage(c, name, bitmap, size)
 		}
@@ -97,9 +98,13 @@ func (r *reader) accountAvatar(c *ui.Context, name, source string, size float32,
 	return slot
 }
 
+func loadingIndicator(c *ui.Context) ui.Element {
+	return loading.Slide(c, loading.Options{Color: c.Theme().TextMuted}).Shrink(0)
+}
+
 func loadingStatus(c *ui.Context, label string) {
 	ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
-		ui.Spinner(c).Size(16, 16).Label(label)
+		loadingIndicator(c).Size(16, 16).Label(label)
 		ui.Text(c, label).FontSize(12).TextColor(c.Theme().TextMuted)
 	})
 }

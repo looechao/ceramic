@@ -253,7 +253,7 @@ func (r *reader) composeEditor(c *ui.Context, d *composer, height float32) {
 			})
 		}
 		if m.loading {
-			ui.Spinner(c).Size(16, 16).Label(locales.SearchingAccounts())
+			loadingIndicator(c).Size(16, 16).Label(locales.SearchingAccounts())
 		}
 		if m.failed && len(m.items) == 0 {
 			ui.Text(c, locales.MentionSearchFailed()).FontSize(12).FillWidth()

@@ -22,7 +22,7 @@ func (r *reader) profileRelationship(c *ui.Context, f *feedState, p mastodon.Acc
 		ui.Column(c).Gap(6).AlignItems(ui.End).Children(func() {
 			if !state.loaded {
 				if state.busy || state.message == "" {
-					ui.Spinner(c).Size(18, 18).Margin(7).Label(locales.LoadingFollowStatus())
+					loadingIndicator(c).Size(18, 18).Margin(7).Label(locales.LoadingFollowStatus())
 				} else {
 					ui.Button(c, locales.RetryFollowStatus()).OnClick(func() { r.loadRelationship(p.ID) })
 				}
@@ -43,7 +43,7 @@ func (r *reader) profileRelationship(c *ui.Context, f *feedState, p mastodon.Acc
 			button := ui.Button(c, label).Height(32).Padding(0, 14).Radius(16).FontSize(13)
 			button.Disabled(disabled).OnClick(func() { r.toggleFollow(f, p.ID) })
 			if state.busy {
-				ui.Spinner(c).Size(16, 16).Label(locales.UpdatingFollowStatus())
+				loadingIndicator(c).Size(16, 16).Label(locales.UpdatingFollowStatus())
 			}
 			if state.value.Requested {
 				ui.Text(c, locales.AwaitingApproval()).FontSize(12).TextColor(c.Theme().TextMuted)

@@ -93,7 +93,7 @@ func (r *reader) previewView(c *ui.Context, f *feedState) {
 				if bitmap != nil {
 					ui.Image(c, bitmap).Size(imageW, imageH).Fit(ui.Contain).Radius(10).Label(m.Description)
 				} else if entry != nil && !entry.failed {
-					ui.Spinner(c).Size(24, 24).Label(locales.LoadingImage())
+					loadingIndicator(c).Size(24, 24).Label(locales.LoadingImage())
 				} else {
 					ui.Text(c, locales.CouldNotLoadImageOpenTheOriginalToViewIt()).FontSize(13).Padding(12).Radius(8).Background(c.Theme().Background)
 				}

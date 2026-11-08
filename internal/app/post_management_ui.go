@@ -136,7 +136,7 @@ func (r *reader) postManagementPopup(c *ui.Context) {
 				ui.TextArea(c, &d.text).Label(locales.PostText()).FillWidth().MinHeight(min(220, max(60, h-280))).Lines(3, 6).Disabled(d.busy)
 			}
 			if d.busy {
-				ui.Spinner(c).Size(18, 18).Label(locales.Loading())
+				loadingIndicator(c).Size(18, 18).Label(locales.Loading())
 			}
 			if d.message != "" {
 				ui.Text(c, d.message).FontSize(12)
