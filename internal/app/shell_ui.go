@@ -98,7 +98,7 @@ func (r *reader) shell(c *ui.Context) {
 			r.navigate(page)
 		}
 	}
-	if c.Shortcut(ui.Cmd, ui.KeyN) && r.openWriting != nil {
+	if (c.Shortcut(ui.Cmd, ui.KeyP) || c.Shortcut(ui.Cmd, ui.KeyN)) && r.openWriting != nil {
 		r.openWriting()
 	}
 

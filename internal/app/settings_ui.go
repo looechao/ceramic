@@ -56,7 +56,7 @@ func (r *reader) settingsView(c *ui.Context) {
 				}
 			}
 			ui.Text(c, locales.Appearance()).FontSize(13)
-			if hintInput(c, ui.Segmented(c, &r.appearance, locales.System(), locales.Light(), locales.Dark())).Changed() {
+			if hintSegmented(c, &r.appearance, locales.System(), locales.Light(), locales.Dark()) {
 				if r.applyAppearance != nil {
 					r.applyAppearance(appearanceSources[r.appearance])
 				}

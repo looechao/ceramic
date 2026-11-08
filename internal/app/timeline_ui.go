@@ -19,7 +19,7 @@ func (r *reader) searchHeader(c *ui.Context) {
 			}
 			hintAction(c, ui.Button(c, locales.Search()), r.submitSearch)
 		})
-		if hintInput(c, ui.Segmented(c, &r.searchTab, locales.Posts(), locales.Accounts())).Changed() {
+		if hintSegmented(c, &r.searchTab, locales.Posts(), locales.Accounts()) {
 			r.submitSearch()
 		}
 	})

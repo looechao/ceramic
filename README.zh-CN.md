@@ -36,6 +36,30 @@
 
 使用 Mastodon API，仅支持单账号。其他 Fediverse 服务端可能不兼容，尚未实现 Misskey API。尚未实现多账号或帖子离线缓存。正文支持基础文字、链接、粗体、斜体和自定义表情；可以查看投票结果，参与投票仍需打开原帖。
 
+## 快捷键
+
+下表中的 Command 在 macOS 上是 <kbd>⌘</kbd>，在 Windows 和 Linux 上是 <kbd>Ctrl</kbd>。阅读快捷键作用于当前聚焦的列，输入或写帖时停用。
+
+| 快捷键 | 操作 |
+| --- | --- |
+| Command + <kbd>P</kbd> 或 Command + <kbd>N</kbd> | 打开发帖窗口 |
+| <kbd>f</kbd> | 显示当前列内可见操作的字母提示，输入对应字母即可执行 |
+| 提示模式中的 <kbd>Backspace</kbd> / <kbd>Esc</kbd> | 删除已输入的字母 / 退出提示 |
+| <kbd>Shift</kbd> + <kbd>H</kbd> / <kbd>Shift</kbd> + <kbd>L</kbd> | 聚焦前一列 / 后一列 |
+| <kbd>Shift</kbd> + <kbd>J</kbd> / <kbd>Shift</kbd> + <kbd>K</kbd> | 打开下一项 / 上一项导航，到两端后停止 |
+| <kbd>j</kbd> / <kbd>k</kbd> | 向下 / 向上滚动 |
+| <kbd>d</kbd> / <kbd>u</kbd> | 向下 / 向上滚动半页 |
+| <kbd>g</kbd> <kbd>g</kbd> | 回到顶部，一秒内连按两次 |
+| <kbd>Shift</kbd> + <kbd>G</kbd> | 滚动到已加载内容的底部 |
+| Command + <kbd>W</kbd> | 关闭聚焦的详情列；主列聚焦时关闭窗口 |
+| Command + <kbd>1</kbd> / <kbd>2</kbd> / <kbd>3</kbd> | 我的 / 首页 / 通知 |
+| Command + <kbd>4</kbd> / <kbd>5</kbd> / <kbd>6</kbd> | 书签 / 喜欢 / 探索 |
+| Command + <kbd>R</kbd> | 刷新 |
+| <kbd>←</kbd> / <kbd>→</kbd> | 在看图窗口中切换图片 |
+| <kbd>Esc</kbd> | 清空搜索、退出搜索、取消按键序列或关闭图片 |
+
+按 <kbd>f</kbd> 后，输入操作旁显示的字母即可执行。“帖子 / 账号”和各个外观选项都有独立字母，可直接选择。打开弹窗时，提示只作用于最上层弹窗。选中输入框、复选框或下拉框的提示后会聚焦该控件，再按其原有方式输入或使用方向键、空格键。滚动、调整窗口大小或可见目标变化会退出提示，再按 <kbd>f</kbd> 即可重新显示。原生菜单保留原有键盘操作。
+
 ## 开发与构建
 
 需要 Go 1.27.3+；已有 Go 可以自动下载对应工具链。无需 Node、npm 或 Bun。

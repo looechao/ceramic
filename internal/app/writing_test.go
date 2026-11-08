@@ -53,6 +53,27 @@ func TestNativeSavedTabsAndWriting(t *testing.T) {
 	savePreview(t, ct, "native-writing-authorize")
 }
 
+func TestComposeShortcuts(t *testing.T) {
+	for _, key := range []ui.Key{ui.KeyP, ui.KeyN} {
+		r := testReader(t)
+		r.session = &mastodon.Session{Scopes: mastodon.Scopes, Account: json.RawMessage(`{"id":"me"}`)}
+		r.home.loaded, r.home.end = true, true
+		r.openWriting = r.showComposer
+		tt := ui.NewTester(r.view, 900, 820)
+		tt.Key(ui.Cmd, key)
+		if r.composer == nil || !r.composer.open {
+			t.Fatalf("shortcut %v did not open composer", key)
+		}
+		draft := r.composer
+		draft.text = "保留草稿"
+		tt.Key(0, ui.KeyEscape)
+		tt.Key(ui.Cmd, key)
+		if r.composer != draft || !draft.open || draft.text != "保留草稿" {
+			t.Fatalf("shortcut %v did not restore draft", key)
+		}
+	}
+}
+
 func TestPublishRetryRetainsDraftAndKey(t *testing.T) {
 	requests := make(chan string, 4)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {

@@ -74,6 +74,51 @@ func hintInput(c *ui.Context, e ui.Element) ui.Element {
 	return e
 }
 
+// Use native segments so each choice can have its own hint while retaining
+// radio-group focus, arrow navigation, and mouse selection.
+func hintSegmented(c *ui.Context, selected *int, labels ...string) bool {
+	t := c.Theme()
+	parts := ui.SegmentedBase(c, selected, len(labels))
+	track := parts.Track.AlignItems(ui.Stretch).Padding(t.Space(0.5)).Gap(t.Space(0.5)).
+		Radius(t.Radius).Background(t.Surface).Border(1, t.Border)
+	changed := ui.Local(track, "hint-changed", func() bool { return false })
+	track.Children(func() {
+		for i, label := range labels {
+			segment := parts.Segment(i).
+				Padding(t.Space(1), t.Space(3)).Gap(t.Space(1.5)).
+				Radius(max(t.Radius-t.Space(0.5), 0)).TextColor(t.Text)
+			if i == *selected {
+				face := t.Background
+				if t.Dark {
+					face = t.SurfacePressed
+				}
+				segment.Background(face).Shadow(0, 1, 2, 0, ui.RGBA(0, 0, 0, 0.12))
+			} else if !segment.IsDisabled() {
+				if segment.Pressed() {
+					segment.Background(t.SurfacePressed)
+				} else if segment.Hovered() {
+					segment.Background(t.SurfaceHover)
+				}
+			}
+			segment.Children(func() { ui.Text(c, label).SingleLine() })
+			if h := hints(c); h.active || h.pending != nil {
+				ref := ui.Local(segment, "hint-segment", func() ui.Handle { return ui.Handle{} })
+				segment.Bind(ref)
+				registerHint(c, segment, func() {
+					if *selected != i {
+						*selected = i
+						*changed = true
+					}
+					ref.Focus()
+				})
+			}
+		}
+	})
+	result := track.Changed() || *changed
+	*changed = false
+	return result
+}
+
 // Inputs retain their native click behavior.
 func registerHint(c *ui.Context, e ui.Element, action func()) {
 	h := hints(c)
