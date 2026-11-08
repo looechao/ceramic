@@ -10,14 +10,15 @@ import (
 	// MyGo's own strings in the app's languages.
 	_ "github.com/egoist/mygo/locales/ja"
 	_ "github.com/egoist/mygo/locales/zh-Hans"
+	_ "github.com/egoist/mygo/locales/zh-Hant"
 )
 
 //go:embed *.json
 var files embed.FS
 
-// Catalog holds the messages in zh-Hans, the source language, and en, es,
-// ja and ko. It is registered with package i18n, which makes its languages
-// the app's.
+// Catalog holds the messages in zh-Hans, the source language, and de, en,
+// es, fr, it, ja, ko, nl, pt-BR and zh-Hant. It is registered with package
+// i18n, which makes its languages the app's.
 var Catalog *i18n.Catalog
 
 func init() {

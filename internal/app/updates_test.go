@@ -7,7 +7,7 @@ import (
 )
 
 func TestNativeUpdateSettings(t *testing.T) {
-	for _, tag := range []string{"zh-Hans", "en", "ja", "ko", "es"} {
+	for _, tag := range locales.Catalog.Languages() {
 		t.Run(tag, func(t *testing.T) {
 			t.Setenv("MYGO_LOCALE", tag)
 			r := testReader(t)
