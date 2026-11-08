@@ -170,7 +170,9 @@ func (r *reader) composeView(c *ui.Context, d *composer) {
 				if d.replyTo != "" {
 					ui.Text(c, locales.ReplyingTo(d.replyAccount)).FontSize(12).TextColor(t.TextMuted).FillWidth()
 				}
-				r.composeEditor(c, d, editorHeight)
+				ui.Column(c).FillWidth().Gap(6).Children(func() {
+					r.composeEditor(c, d, editorHeight)
+				})
 				if d.pollEnabled {
 					r.composePoll(c, d)
 				}
