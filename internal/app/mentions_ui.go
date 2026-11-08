@@ -157,7 +157,7 @@ func (d *composer) insertMention(a mastodon.Account) bool {
 }
 
 func (r *reader) composeEditor(c *ui.Context, d *composer, height float32) {
-	editor := ui.TextArea(c.Key("post-editor"), &d.text).Label(locales.PostText()).Placeholder(locales.WhatWouldYouLikeToShare()).Height(height).FillWidth().BorderWidth(0).Background(ui.Transparent).Padding(0).FontSize(16).Disabled(d.busy)
+	editor := ui.TextArea(c.Key("post-editor"), &d.text).Label(locales.PostText()).Placeholder(locales.WhatWouldYouLikeToShare()).Lines(1, 4).MinHeight(height).MaxHeight(height).FillWidth().BorderWidth(0).Background(ui.Transparent).Padding(0).FontSize(16).Disabled(d.busy)
 	if d.focusEditor && !d.busy {
 		editor.Focus().SetTextSelection(d.editorCaret, d.editorCaret)
 		d.focusEditor = false
@@ -232,7 +232,9 @@ func (r *reader) composeEditor(c *ui.Context, d *composer, height float32) {
 	if len(m.items) == 0 && !m.loading && !m.failed {
 		return
 	}
-	editor.Height(min(height, 80))
+	// Native line measurement removes blank space beneath short mentions,
+	// while longer drafts retain up to four visible lines and scroll normally.
+	editor.MinHeight(0).MaxHeight(min(height, 80))
 	ui.Column(c.Key("mention-suggestions")).FillWidth().Gap(2).Padding(4).Radius(8).Background(c.Theme().Surface).Label(locales.MentionSuggestions()).Children(func() {
 		for i, a := range m.items {
 			button := ui.ButtonBase(c.Key(a.Acct)).KeepFocus().FillWidth().Padding(6, 8).Radius(5).Label("@" + a.Acct).OnClick(func() { d.insertMention(a) })

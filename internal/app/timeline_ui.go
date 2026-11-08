@@ -239,7 +239,20 @@ func (r *reader) accountRow(c *ui.Context, f *feedState, p mastodon.Account) {
 }
 
 func (r *reader) avatar(c *ui.Context, f *feedState, p mastodon.Account, size float32) {
-	r.accountAvatar(c, p.Name(), p.Avatar, size, p.AvatarStatic).Label(locales.View() + p.Name()).OnClick(func() { r.openProfileFrom(f, p) })
+	// Keep the hit area fixed while the portrait grows slightly inside it.
+	hit := ui.Box(c).Size(size, size).Shrink(0).Cursor(ui.CursorPointer).
+		Label(locales.View() + p.Name()).OnClick(func() { r.openProfileFrom(f, p) })
+	target := float32(1)
+	if hit.Hovered() && !hit.Pressed() && !c.Preferences().ReduceMotion {
+		target = 1.05
+	}
+	scale := hit.Animate("avatar-hover", target, listHoverDuration)
+	if c.Preferences().ReduceMotion {
+		scale = 1
+	}
+	hit.Children(func() {
+		r.accountAvatar(c, p.Name(), p.Avatar, size, p.AvatarStatic).Scale(scale, scale)
+	})
 }
 
 func (r *reader) profileHeader(c *ui.Context, f *feedState, p mastodon.Account) {

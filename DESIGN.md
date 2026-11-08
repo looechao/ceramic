@@ -104,3 +104,7 @@ Settings offers the native MyGo updater, with version, automatic checks and a ma
 Reply composition preserves the original visibility restriction and content warning, pre-fills participants except the current account, and saves any existing draft before opening a different reply. Reply identity persists with drafts and is submitted as in_reply_to_id. The reply target is visible above the editor.
 
 Mention completion uses the token at the caret, with rune offsets and IME composition protection. Suggestions first use accounts already loaded, then a debounced, cancelable instance account search. Up/Down selects, Enter/Tab accepts, and Escape dismisses suggestions before the composer. Clicking a suggestion retains editor focus. Completion never submits the post.
+
+Clickable account avatars grow to 105% over 140 ms on hover, with a fixed layout slot; pressing settles them and reduced motion disables scaling. Ordinary post text retains its existing appearance and conversation-opening behavior. Inline links share one interaction target across HTML spans, custom emoji and wrapped lines. Hover and keyboard focus use blue ink (light #1769c2, dark #79b8ff) without an underline; other text keeps its normal ink. Footer actions retain their local rounded hover and pressed tints.
+
+Mention suggestions sit 6 pt below the editor. While suggestions are visible, the native text area fits its text from one to four lines, then scrolls; it does not reserve blank space beneath a short mention. Dismissing suggestions restores the normal composer editor height.

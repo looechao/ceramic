@@ -80,3 +80,36 @@ func TestNativePostHover(t *testing.T) {
 	}
 	savePreview(t, tt, "native-post-hover-accessible")
 }
+
+func TestNativeAvatarHover(t *testing.T) {
+	r := testReader(t)
+	person := mastodon.Account{ID: "author", DisplayName: "林间"}
+	tt := ui.NewTester(func(c *ui.Context) {
+		ui.Row(c).Padding(24).Gap(12).Children(func() {
+			r.avatar(c, r.home, person, 42)
+			ui.Text(c, "正文位置保持不变")
+		})
+	}, 420, 120)
+	before, ok := tt.Find(person.Name())
+	if !ok {
+		t.Fatal("avatar missing")
+	}
+	textBefore, _ := tt.Find("正文位置保持不变")
+	savePreview(t, tt, "native-avatar-hover-rest")
+	tt.Move(before.X+before.W/2, before.Y+before.H/2)
+	tt.Advance(time.Second)
+	after, _ := tt.Find(person.Name())
+	textAfter, _ := tt.Find("正文位置保持不变")
+	if math.Abs(float64(after.W/before.W-1.05)) > .01 || textBefore != textAfter {
+		t.Fatalf("avatar should grow 5%% without moving text: %v -> %v", before, after)
+	}
+	savePreview(t, tt, "native-avatar-hover")
+	tt.SetDark(true)
+	savePreview(t, tt, "native-avatar-hover-dark")
+	tt.SetPreferences(ui.Preferences{ReduceMotion: true})
+	tt.Advance(time.Second)
+	still, _ := tt.Find(person.Name())
+	if still != before {
+		t.Fatalf("reduced motion scaled avatar: %v -> %v", before, still)
+	}
+}

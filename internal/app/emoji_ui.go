@@ -34,7 +34,7 @@ func appendRichRuns(c *ui.Context, paragraph ui.Element, runs []mastodon.TextRun
 	pictures := map[int]*ui.Bitmap{}
 	var units []string
 	paragraph.Children(func() {
-		for _, run := range runs {
+		appendRun := func(run mastodon.TextRun) {
 			var bitmap *ui.Bitmap
 			if run.Emoji != nil && load != nil {
 				bitmap = load(*run.Emoji)
@@ -44,20 +44,11 @@ func appendRichRuns(c *ui.Context, paragraph ui.Element, runs []mastodon.TextRun
 				pictures[len(units)] = bitmap
 				units = append(units, run.Text)
 				e = ui.RichText(c, ui.Span{Text: "\ufffc", ObjectWidth: size * 1.2, ObjectHeight: size, ObjectDescent: size * .2}).Label(run.Text).Tooltip(run.Text)
-				if run.URL != "" {
-					target := run.URL
-					services := c.Services()
-					e.Role(ui.RoleLink).Focusable().OnClick(func() { services.OpenURL(target) })
-				}
 			} else {
 				for _, ch := range run.Text {
 					units = append(units, string(ch))
 				}
-				if run.URL != "" {
-					e = ui.Link(c, run.Text, run.URL)
-				} else {
-					e = ui.Text(c, run.Text)
-				}
+				e = ui.Text(c, run.Text)
 			}
 			if run.Bold {
 				e.Bold()
@@ -65,6 +56,35 @@ func appendRichRuns(c *ui.Context, paragraph ui.Element, runs []mastodon.TextRun
 			if run.Italic {
 				e.Italic()
 			}
+		}
+		for i := 0; i < len(runs); {
+			if runs[i].URL == "" {
+				appendRun(runs[i])
+				i++
+				continue
+			}
+			// HTML spans and custom emoji belong to one link, including when
+			// the native paragraph wraps them onto different lines.
+			target := runs[i].URL
+			end := i + 1
+			for end < len(runs) && runs[end].URL == target {
+				end++
+			}
+			services := c.Services()
+			link := ui.RichText(c).Role(ui.RoleLink).Cursor(ui.CursorPointer).Focusable().OnClick(func() { services.OpenURL(target) })
+			ink := c.Theme().Text
+			if link.Hovered() || link.Focused() {
+				ink = ui.Hex("#1769c2")
+				if c.Theme().Dark {
+					ink = ui.Hex("#79b8ff")
+				}
+			}
+			link.TextColor(ink).Children(func() {
+				for _, run := range runs[i:end] {
+					appendRun(run)
+				}
+			})
+			i = end
 		}
 	})
 	if len(pictures) == 0 {
