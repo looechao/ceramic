@@ -195,7 +195,11 @@ func (r *reader) columns(c *ui.Context, ws *workspace, compact bool, width, avai
 				return false
 			}).OnClick(func() { r.focusColumn(ws, f) })
 			if ws.focused == f && len(ws.columns) > 1 && !c.Preferences().HighContrast {
-				column.BorderColor(t.Accent.Alpha(0.2)).Shadow(0, 2, 8, 0, ui.Hex("#000000").Alpha(0.07))
+				shadowAlpha := float32(0.16)
+				if t.Dark {
+					shadowAlpha = 0.40
+				}
+				column.BorderColor(t.Accent.Alpha(0.32)).Shadow(0, 6, 16, 0, ui.Hex("#000000").Alpha(shadowAlpha))
 			}
 			if ws.revealFocus && ws.focused == f {
 				column.ScrollIntoView()
