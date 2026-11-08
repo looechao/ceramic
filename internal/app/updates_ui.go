@@ -12,11 +12,11 @@ func (r *reader) updateSettings(c *ui.Context) {
 		if version := mygo.App.Version(); version != "" {
 			ui.Text(c, locales.UpdateVersion(version)).FontSize(12).TextColor(c.Theme().TextMuted)
 		}
-		if ui.Checkbox(c, &r.automaticUpdates, locales.AutomaticallyCheckUpdates()).Disabled(r.setAutomaticUpdates == nil).Changed() {
+		if hintInput(c, ui.Checkbox(c, &r.automaticUpdates, locales.AutomaticallyCheckUpdates()).Disabled(r.setAutomaticUpdates == nil)).Changed() {
 			r.setAutomaticUpdates(r.automaticUpdates)
 		}
 		ui.Text(c, locales.UpdateConfirmation()).FontSize(12).TextColor(c.Theme().TextMuted).FillWidth()
-		ui.Button(c, locales.CheckForUpdates()).Disabled(r.checkUpdates == nil).OnClick(func() {
+		hintAction(c, ui.Button(c, locales.CheckForUpdates()).Disabled(r.checkUpdates == nil), func() {
 			if r.checkUpdates != nil {
 				r.checkUpdates()
 			}

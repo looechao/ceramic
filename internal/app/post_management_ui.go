@@ -122,6 +122,8 @@ func (r *reader) postManagementPopup(c *ui.Context) {
 		title = locales.DeletePost()
 	}
 	ui.DialogBase(c.Key(d), &d.open, func(backdrop, panel ui.Element) {
+		defer dialogHints(c, panel)()
+
 		backdrop.Background(ui.Transparent)
 		panel.Width(min(560, max(1, w-32))).MaxHeight(max(1, h-32)).Padding(20).Radius(12).Background(c.Theme().Background).Shadow(0, 8, 28, 0, ui.Hex("#000000").Alpha(.18)).Label(title)
 		if panel.OverlayShortcut(ui.Cmd, ui.KeyW) && !d.busy {
@@ -132,8 +134,8 @@ func (r *reader) postManagementPopup(c *ui.Context) {
 			if d.deleting {
 				ui.Text(c, locales.DeletePostConfirmation()).FontSize(14)
 			} else if d.loaded {
-				ui.TextInput(c, &d.spoiler).Label(locales.ContentWarning()).Placeholder(locales.ContentWarningOptional()).FillWidth().Disabled(d.busy)
-				ui.TextArea(c, &d.text).Label(locales.PostText()).FillWidth().MinHeight(min(220, max(60, h-280))).Lines(3, 6).Disabled(d.busy)
+				hintInput(c, ui.TextInput(c, &d.spoiler).Label(locales.ContentWarning()).Placeholder(locales.ContentWarningOptional()).FillWidth().Disabled(d.busy))
+				hintInput(c, ui.TextArea(c, &d.text).Label(locales.PostText()).FillWidth().MinHeight(min(220, max(60, h-280))).Lines(3, 6).Disabled(d.busy))
 			}
 			if d.busy {
 				loadingIndicator(c).Size(18, 18).Label(locales.Loading())
@@ -142,12 +144,12 @@ func (r *reader) postManagementPopup(c *ui.Context) {
 				ui.Text(c, d.message).FontSize(12)
 			}
 			ui.Row(c).FillWidth().Gap(8).Justify(ui.End).Children(func() {
-				ui.Button(c, locales.Cancel()).Disabled(d.busy).OnClick(func() { d.open = false })
+				hintAction(c, ui.Button(c, locales.Cancel()).Disabled(d.busy), func() { d.open = false })
 				label := locales.SaveChanges()
 				if d.deleting {
 					label = locales.Delete()
 				}
-				ui.Button(c, label).Disabled(d.busy || !d.loaded || (!d.deleting && strings.TrimSpace(d.text) == "" && len(d.status.Media) == 0)).OnClick(func() { r.submitPostManagement(d) })
+				hintAction(c, ui.Button(c, label).Disabled(d.busy || !d.loaded || (!d.deleting && strings.TrimSpace(d.text) == "" && len(d.status.Media) == 0)), func() { r.submitPostManagement(d) })
 			})
 		})
 	})

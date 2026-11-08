@@ -13,19 +13,19 @@ func (r *reader) searchHeader(c *ui.Context) {
 	ui.Column(c).Padding(12, 14).Gap(10).Children(func() {
 
 		ui.Row(c).Gap(8).Children(func() {
-			input := ui.SearchField(c, &r.query).Label(locales.SearchQuery()).Placeholder(locales.KeywordsPostLinkOrAccount()).Grow(1).OnSubmit(r.submitSearch)
+			input := hintInput(c, ui.SearchField(c, &r.query).Label(locales.SearchQuery()).Placeholder(locales.KeywordsPostLinkOrAccount()).Grow(1).OnSubmit(r.submitSearch))
 			if input.Focused() {
 				r.typing = true
 			}
-			ui.Button(c, locales.Search()).OnClick(r.submitSearch)
+			hintAction(c, ui.Button(c, locales.Search()), r.submitSearch)
 		})
-		if ui.Segmented(c, &r.searchTab, locales.Posts(), locales.Accounts()).Changed() {
+		if hintInput(c, ui.Segmented(c, &r.searchTab, locales.Posts(), locales.Accounts())).Changed() {
 			r.submitSearch()
 		}
 	})
 }
 
-func (r *reader) timelineView(c *ui.Context, f *feedState) {
+func (r *reader) timelineView(c *ui.Context, f *feedState, body ui.Element) {
 	// Header and account rows belong to the virtual list, so long biographies
 	// and many search results cannot push the post list out of the window.
 	header := 0
@@ -54,7 +54,14 @@ func (r *reader) timelineView(c *ui.Context, f *feedState) {
 		}
 		return "footer"
 	}
-	ui.List(c.Key(f), &f.list, header+people+count+1, func(i int) {
+	// Virtual rows build during layout, after the pane scope has returned.
+	blockedHints := hints(c).contentOnlyBlocked
+	var hintViewport ui.Element
+	hintViewport = ui.List(c.Key(f), &f.list, header+people+count+1, func(i int) {
+		h := hints(c)
+		previousClip, previousBlocked := h.clip, h.contentOnlyBlocked
+		h.clip, h.contentOnlyBlocked = intersectHintRect(hintViewport.Bounds(), body.Bounds()), blockedHints
+		defer func() { h.clip, h.contentOnlyBlocked = previousClip, previousBlocked }()
 		if i < header {
 			if f.kind == "profile" {
 				r.profileHeader(c, f, f.profile)
@@ -218,7 +225,7 @@ func (r *reader) notificationRow(c *ui.Context, f *feedState, n mastodon.Notific
 				}
 				concealedContent(c, warning, expanded, false, content)
 			}
-			ui.Button(c, locales.ViewPost()).AlignSelf(ui.Start).Background(ui.Transparent).BorderWidth(0).Padding(4, 0).FontSize(12).TextColor(t.TextMuted).OnClick(func() { r.openConversation(f, *relation) })
+			hintAction(c, ui.Button(c, locales.ViewPost()).AlignSelf(ui.Start).Background(ui.Transparent).BorderWidth(0).Padding(4, 0).FontSize(12).TextColor(t.TextMuted), func() { r.openConversation(f, *relation) })
 		}
 	})
 }
@@ -299,8 +306,8 @@ func (r *reader) profileHeader(c *ui.Context, f *feedState, p mastodon.Account) 
 		}
 		ui.Row(c).Gap(10).AlignItems(ui.Center).Children(func() {
 			ui.Text(c, locales.PostCount(p.Statuses)).FontSize(12).TextColor(t.TextMuted).Shrink(1)
-			ui.Button(c, locales.FollowingCount(p.Following)).FontSize(12).Background(ui.Transparent).BorderWidth(0).Padding(4, 0).Shrink(1).OnClick(func() { r.openConnections(f, "following") })
-			ui.Button(c, locales.FollowerCount(p.Followers)).FontSize(12).Background(ui.Transparent).BorderWidth(0).Padding(4, 0).Shrink(1).OnClick(func() { r.openConnections(f, "followers") })
+			hintAction(c, ui.Button(c, locales.FollowingCount(p.Following)).FontSize(12).Background(ui.Transparent).BorderWidth(0).Padding(4, 0).Shrink(1), func() { r.openConnections(f, "following") })
+			hintAction(c, ui.Button(c, locales.FollowerCount(p.Followers)).FontSize(12).Background(ui.Transparent).BorderWidth(0).Padding(4, 0).Shrink(1), func() { r.openConnections(f, "followers") })
 		})
 		if target := mastodon.SafeURL(p.URL); target != "" {
 			externalTextLink(c, locales.ViewProfileInBrowser(), target)

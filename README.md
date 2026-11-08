@@ -29,11 +29,14 @@ Enter your instance domain, such as `mastodon.social`, and authorize Ceramic in 
 
 ## Shortcuts
 
-Command means <kbd>⌘</kbd> on macOS and <kbd>Ctrl</kbd> on Windows and Linux. Reading shortcuts act on the focused column and are disabled while typing in search.
+Command means <kbd>⌘</kbd> on macOS and <kbd>Ctrl</kbd> on Windows and Linux. Reading shortcuts act on the focused column and are disabled while typing or composing text.
 
 | Shortcut | Action |
 | --- | --- |
-| <kbd>Shift</kbd> + <kbd>H</kbd> / <kbd>Shift</kbd> + <kbd>L</kbd> | Focus the previous / next column; <kbd>J</kbd> and <kbd>K</kbd> also work |
+| <kbd>Shift</kbd> + <kbd>H</kbd> / <kbd>Shift</kbd> + <kbd>L</kbd> | Focus the previous / next column |
+| <kbd>Shift</kbd> + <kbd>J</kbd> / <kbd>Shift</kbd> + <kbd>K</kbd> | Open the next / previous navigation item, stopping at either end |
+| <kbd>f</kbd> | Show letter hints on visible actions inside the focused column; type the letters to activate |
+| <kbd>Backspace</kbd> / <kbd>Esc</kbd> in hints | Correct the letters / exit hints |
 | <kbd>j</kbd> / <kbd>k</kbd> | Scroll down / up |
 | <kbd>d</kbd> / <kbd>u</kbd> | Scroll down / up half a page |
 | <kbd>g</kbd> <kbd>g</kbd> | Go to the top (press twice within one second) |
@@ -44,6 +47,8 @@ Command means <kbd>⌘</kbd> on macOS and <kbd>Ctrl</kbd> on Windows and Linux. 
 | Command + <kbd>N</kbd> / <kbd>R</kbd> | Compose / refresh |
 | <kbd>←</kbd> / <kbd>→</kbd> | Move between images in the image viewer |
 | <kbd>Esc</kbd> | Clear search, leave search, cancel a key sequence, or close an image |
+
+Hints are limited to the top dialog when one is open. Selecting an input or native choice control focuses it; use its normal typing, arrow or Space keys. Scrolling, resizing, or changing the visible targets dismisses hints; press `f` again to refresh them. Native menus retain their normal keyboard controls.
 
 ## Development
 

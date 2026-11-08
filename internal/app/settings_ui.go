@@ -30,6 +30,8 @@ func (r *reader) settingsView(c *ui.Context) {
 		return
 	}
 	ui.DialogBase(c, &r.settingsOpen, func(backdrop, panel ui.Element) {
+		defer dialogHints(c, panel)()
+
 		panel.Width(320).Padding(24).Radius(12).Background(c.Theme().Background).
 			Shadow(0, 8, 28, 0, ui.Hex("#000000").Alpha(.18)).Label(locales.Settings())
 		ui.Column(c).Gap(18).Children(func() {
@@ -46,7 +48,7 @@ func (r *reader) settingsView(c *ui.Context) {
 					selected = languageNames[i]
 				}
 			}
-			if ui.Select(c, &selected, languageNames).Label(locales.Language()).FillWidth().Changed() {
+			if hintInput(c, ui.Select(c, &selected, languageNames).Label(locales.Language()).FillWidth()).Changed() {
 				for i, name := range languageNames {
 					if selected == name {
 						mygo.App.SetLocale(languageTags[i])
@@ -54,7 +56,7 @@ func (r *reader) settingsView(c *ui.Context) {
 				}
 			}
 			ui.Text(c, locales.Appearance()).FontSize(13)
-			if ui.Segmented(c, &r.appearance, locales.System(), locales.Light(), locales.Dark()).Changed() {
+			if hintInput(c, ui.Segmented(c, &r.appearance, locales.System(), locales.Light(), locales.Dark())).Changed() {
 				if r.applyAppearance != nil {
 					r.applyAppearance(appearanceSources[r.appearance])
 				}
@@ -68,7 +70,7 @@ func (r *reader) settingsView(c *ui.Context) {
 				}
 			}
 			r.updateSettings(c)
-			ui.Button(c, locales.Done()).AlignSelf(ui.End).OnClick(func() { r.settingsOpen = false })
+			hintAction(c, ui.Button(c, locales.Done()).AlignSelf(ui.End), func() { r.settingsOpen = false })
 		})
 	})
 }

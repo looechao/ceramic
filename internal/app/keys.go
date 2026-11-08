@@ -24,15 +24,32 @@ func (r *reader) readingKeys(c *ui.Context) {
 		}
 		return
 	}
+	for _, item := range []struct {
+		key  ui.Key
+		step int
+	}{{ui.KeyJ, 1}, {ui.KeyK, -1}} {
+		if c.Shortcut(ui.Shift, item.key) {
+			for i, page := range navigationPages {
+				if page == r.selected {
+					next := i + item.step
+					if next >= 0 && next < len(navigationPages) {
+						r.readingScroll = nil
+						r.navigate(navigationPages[next])
+					}
+					return
+				}
+			}
+		}
+	}
 	ws := r.workspaces[r.selected]
 	if ws == nil {
 		return
 	}
-	if c.Shortcut(ui.Shift, ui.KeyH) || c.Shortcut(ui.Shift, ui.KeyJ) {
+	if c.Shortcut(ui.Shift, ui.KeyH) {
 		r.cycleColumn(ws, -1)
 		return
 	}
-	if c.Shortcut(ui.Shift, ui.KeyL) || c.Shortcut(ui.Shift, ui.KeyK) {
+	if c.Shortcut(ui.Shift, ui.KeyL) {
 		r.cycleColumn(ws, 1)
 		return
 	}

@@ -22,9 +22,8 @@ func (r *reader) exploreBrowse(c *ui.Context, source *feedState) {
 				if page == "federated" {
 					icon = federatedBrowseIcon
 				}
-				button := ui.ButtonBase(c.Key(page)).Label(label).Tooltip(hint).
-					Height(36).Padding(8, 10).Gap(7).Radius(8).
-					OnClick(func() { r.appendColumn(source, &feedState{kind: page}) })
+				button := hintAction(c, ui.ButtonBase(c.Key(page)).Label(label).Tooltip(hint).
+					Height(36).Padding(8, 10).Gap(7).Radius(8), func() { r.appendColumn(source, &feedState{kind: page}) })
 				ink := postActionStyle(c, button, t.Text, true, false)
 				button.Children(func() {
 					ui.Icon(c, icon).Size(18, 18).TextColor(ink)

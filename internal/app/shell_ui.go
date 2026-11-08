@@ -13,6 +13,13 @@ import (
 )
 
 func (r *reader) view(c *ui.Context) {
+	beginHints(c)
+	hints(c).contentOnlyBlocked = true
+	if hints(c).active {
+		r.readingScroll = nil
+		r.pendingG = time.Time{}
+	}
+	defer drawHints(c)
 	r.releaseShownImagePixels()
 	// Keep the current rendered working set resident. Release its protection
 	// on the next view, so leaving a column also permits cache reclamation.
@@ -155,7 +162,7 @@ func (r *reader) shell(c *ui.Context) {
 		r.composePopup(c)
 	} else if ws := r.workspaces[r.selected]; ws != nil && ws.focused != nil && ws.focused.preview != nil {
 		r.previewView(c, ws.focused)
-	} else {
+	} else if !hints(c).active && hints(c).pending == nil {
 		r.readingKeys(c)
 	}
 }
@@ -256,7 +263,7 @@ func (r *reader) pane(c *ui.Context, f *feedState, ws *workspace, index int, war
 	ui.Toolbar(c, func() {
 
 		if index > 0 {
-			ui.ButtonBase(c).Size(28, 28).Label(locales.CloseColumn()).Tooltip(locales.CloseColumnLabel() + shortcutHint("W")).OnClick(func() { r.closeColumn(ws, f) }).Children(func() { ui.Icon(c, closeIcon).Size(18, 18).TextColor(t.TextMuted) })
+			hintAction(c, ui.ButtonBase(c).Size(28, 28).Label(locales.CloseColumn()).Tooltip(locales.CloseColumnLabel()+shortcutHint("W")), func() { r.closeColumn(ws, f) }).Children(func() { ui.Icon(c, closeIcon).Size(18, 18).TextColor(t.TextMuted) })
 		}
 		title := map[string]string{"home": locales.Home(), "search": locales.Explore(), "local": locales.Local(), "federated": locales.Federated(), "profile": locales.ProfileLabel(), "conversation": locales.Conversation(), "notifications": locales.Notifications(), "bookmarks": locales.Bookmarks(), "favorites": locales.Favorites(), "following": locales.Following(), "followers": locales.Followers()}[f.kind]
 		if index > 0 && f.kind == "profile" {
@@ -264,12 +271,17 @@ func (r *reader) pane(c *ui.Context, f *feedState, ws *workspace, index int, war
 		}
 		r.emojiText(c, title, f.profile.Emojis, 14).FontWeight(600)
 		ui.Spacer(c)
-		ui.ButtonBase(c).Size(28, 28).Label(locales.RefreshLabel() + title).Tooltip(locales.RefreshLabel() + title).Disabled(f.busy).OnClick(func() { r.loadFeed(f, false) }).Children(func() { ui.Icon(c, refreshIcon).Size(16, 16).TextColor(t.TextMuted) })
+		hintAction(c, ui.ButtonBase(c).Size(28, 28).Label(locales.RefreshLabel()+title).Tooltip(locales.RefreshLabel()+title).Disabled(f.busy), func() { r.loadFeed(f, false) }).Children(func() { ui.Icon(c, refreshIcon).Size(16, 16).TextColor(t.TextMuted) })
 	}).Background(header).Height(48).Padding(8, 16).BorderWidth(0, 0, 1, 0).BorderColor(postDivider(c))
 	if !warm {
 		return
 	}
-	ui.Column(c).Grow(1).Shrink(1).FillWidth().Background(paper).Children(func() {
+	body := ui.Column(c).Grow(1).Shrink(1).FillWidth().Background(paper)
+	body.Children(func() {
+		h := hints(c)
+		previousBlocked := h.contentOnlyBlocked
+		h.contentOnlyBlocked = f != ws.focused
+		defer func() { h.contentOnlyBlocked = previousBlocked }()
 		scope := map[string]string{"bookmarks": "read:bookmarks", "favorites": "read:favourites"}[f.kind]
 		if scope != "" && !r.hasScope(scope) {
 			ui.Text(c, locales.MissingPermissionsLogOutAndLogInAgain()).Padding(16)
@@ -278,13 +290,13 @@ func (r *reader) pane(c *ui.Context, f *feedState, ws *workspace, index int, war
 		if f.message != "" {
 			ui.Text(c, f.message).FontSize(12).Padding(10, 14).Background(t.Surface)
 			if !f.busy && !r.authorizing && !f.authRequired {
-				ui.Button(c, locales.Retry()).Margin(4, 14).OnClick(func() { r.loadFeed(f, f.failedMore) })
+				hintAction(c, ui.Button(c, locales.Retry()).Margin(4, 14), func() { r.loadFeed(f, f.failedMore) })
 			}
 		}
 		if f.kind == "search" {
 			r.searchHeader(c)
 		}
-		r.timelineView(c, f)
+		r.timelineView(c, f, body)
 	})
 }
 
@@ -326,8 +338,9 @@ func (r *reader) sidebar(c *ui.Context) {
 						r.logout()
 					}
 				})
+				hintInput(c, avatar)
 			} else {
-				avatar.OnClick(func() {
+				hintAction(c, avatar, func() {
 					if r.session != nil {
 						r.navigate("profile")
 					} else {
@@ -368,7 +381,7 @@ func (r *reader) sidebar(c *ui.Context) {
 					}
 					tooltip = locales.UnreadNotifications(label, unread)
 				}
-				ui.ButtonBase(c.Key(page)).Size(48, 44).Radius(10).Background(bg).Label(label).Tooltip(tooltip).OnClick(func() {
+				hintAction(c, ui.ButtonBase(c.Key(page)).Size(48, 44).Radius(10).Background(bg).Label(label).Tooltip(tooltip), func() {
 					if r.session != nil {
 						r.navigate(page)
 					} else {
@@ -382,7 +395,7 @@ func (r *reader) sidebar(c *ui.Context) {
 				})
 			}
 			ui.Spacer(c)
-			ui.ButtonBase(c).Size(48, 44).Radius(10).Label(locales.WriteAPost()).Tooltip(locales.WriteAPostLabel() + shortcutHint("N")).Disabled(r.session == nil).OnClick(func() {
+			hintAction(c, ui.ButtonBase(c).Size(48, 44).Radius(10).Label(locales.WriteAPost()).Tooltip(locales.WriteAPostLabel()+shortcutHint("N")).Disabled(r.session == nil), func() {
 				if r.openWriting != nil {
 					r.openWriting()
 				}
