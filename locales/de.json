@@ -255,5 +255,7 @@
   "DeletePost": "Beitrag löschen",
   "DeletePostConfirmation": "Diesen Beitrag löschen? Dies kann nicht rückgängig gemacht werden.",
   "Cancel": "Abbrechen",
-  "SaveChanges": "Änderungen speichern"
+  "SaveChanges": "Änderungen speichern",
+  "PostOverLimit": "{value0} Zeichen über dem Limit. Kürze deinen Beitrag vor dem Veröffentlichen.",
+  "PostLimitsUnavailable": "Das Zeichenlimit konnte nicht geladen werden. Versuche es erneut, um zu veröffentlichen."
 }

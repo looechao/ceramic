@@ -18,8 +18,8 @@ func (r *reader) emojiBitmap(emoji mastodon.CustomEmoji) *ui.Bitmap {
 	return nil
 }
 
-func (r *reader) renderRichText(c *ui.Context, runs []mastodon.TextRun, size float32, open func(), input func(ui.InputEvent)) ui.Element {
-	return renderRichText(c, runs, size, open, input, r.emojiBitmap)
+func (r *reader) renderRichText(c *ui.Context, runs []mastodon.TextRun, size float32, open func(), input func(ui.InputEvent), links ...func(mastodon.TextRun) bool) ui.Element {
+	return renderRichTextWithLinks(c, runs, size, open, input, r.emojiBitmap, links...)
 }
 
 func (r *reader) emojiText(c *ui.Context, text string, emojis []mastodon.CustomEmoji, size float32) ui.Element {
@@ -30,7 +30,7 @@ func (r *reader) emojiText(c *ui.Context, text string, emojis []mastodon.CustomE
 
 // One native paragraph keeps wrapping, links and text selection intact. Copying
 // replaces each inline object with its original shortcode, not U+FFFC.
-func appendRichRuns(c *ui.Context, paragraph ui.Element, runs []mastodon.TextRun, size float32, load func(mastodon.CustomEmoji) *ui.Bitmap) func(ui.InputEvent) bool {
+func appendRichRuns(c *ui.Context, paragraph ui.Element, runs []mastodon.TextRun, size float32, load func(mastodon.CustomEmoji) *ui.Bitmap, links ...func(mastodon.TextRun) bool) func(ui.InputEvent) bool {
 	pictures := map[int]*ui.Bitmap{}
 	var units []string
 	paragraph.Children(func() {
@@ -71,7 +71,17 @@ func appendRichRuns(c *ui.Context, paragraph ui.Element, runs []mastodon.TextRun
 				end++
 			}
 			services := c.Services()
-			link := hintAction(c, ui.RichText(c).Role(ui.RoleLink).Cursor(ui.CursorPointer).Focusable(), func() { services.OpenURL(target) })
+			linkRun := runs[i]
+			linkRun.Text = ""
+			for _, run := range runs[i:end] {
+				linkRun.Text += run.Text
+			}
+			link := hintAction(c, ui.RichText(c).Role(ui.RoleLink).Cursor(ui.CursorPointer).Focusable(), func() {
+				if len(links) > 0 && links[0] != nil && links[0](linkRun) {
+					return
+				}
+				services.OpenURL(target)
+			})
 			ink := c.Theme().Text
 			if link.Hovered() || link.Focused() {
 				ink = ui.Hex("#1769c2")

@@ -380,5 +380,7 @@
   "DeletePost": "删除帖子",
   "DeletePostConfirmation": "确定删除这条帖子？此操作无法撤销。",
   "Cancel": "取消",
-  "SaveChanges": "保存修改"
+  "SaveChanges": "保存修改",
+  "PostOverLimit": "已超出 {value0} 字，请缩短内容后发布。",
+  "PostLimitsUnavailable": "无法获取发布字数限制，请重试后发布。"
 }

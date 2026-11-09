@@ -192,10 +192,12 @@ func sameColumn(a, b *feedState) bool {
 	switch a.kind {
 	case "local", "federated":
 		return true
+	case "hashtag":
+		return strings.EqualFold(a.query, b.query)
 	case "conversation":
 		return a.focalID != "" && a.focalID == b.focalID
 	case "profile", "followers", "following":
-		return a.profile.ID != "" && a.profile.ID == b.profile.ID
+		return (a.profile.ID != "" && a.profile.ID == b.profile.ID) || (a.profile.URL != "" && a.profile.URL == b.profile.URL)
 	}
 	return false
 }

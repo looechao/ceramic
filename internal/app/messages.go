@@ -108,6 +108,9 @@ func localizedError(err error) string {
 	}
 	var response mastodon.HTTPError
 	if errors.As(err, &response) {
+		if response.Detail != "" {
+			return response.Detail
+		}
 		return locales.ServiceHTTPError(response.Status)
 	}
 	return err.Error()

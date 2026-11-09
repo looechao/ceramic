@@ -255,5 +255,7 @@
   "DeletePost": "Eliminar publicación",
   "DeletePostConfirmation": "¿Eliminar esta publicación? No se puede deshacer.",
   "Cancel": "Cancelar",
-  "SaveChanges": "Guardar cambios"
+  "SaveChanges": "Guardar cambios",
+  "PostOverLimit": "Superas el límite en {value0} caracteres. Acorta la publicación.",
+  "PostLimitsUnavailable": "No se pudo cargar el límite de caracteres. Reinténtalo para poder publicar."
 }

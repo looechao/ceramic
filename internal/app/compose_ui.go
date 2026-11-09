@@ -6,32 +6,34 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
-	"unicode/utf8"
+	"fmt"
 
 	"ceramic/internal/mastodon"
 	"github.com/egoist/mygo/ui"
 )
 
 type composer struct {
-	draftID                   string
-	replyTo, replyAccount     string
-	focusEditor               bool
-	editorCaret               int
-	mentions                  mentionState
-	draftsOpen                bool
-	cancelPublish             context.CancelFunc
-	attachments               []composeAttachment
-	pollEnabled, pollMultiple bool
-	pollOptions               []string
-	pollDuration              int
-	showSpoiler               bool
-	text, spoiler, audience   string
-	message                   string
-	busy                      bool
-	key, payload              string
-	update                    func(func())
-	close                     func()
-	open                      bool
+	limits                      mastodon.PostLimits
+	limitsLoading, limitsFailed bool
+	draftID                     string
+	replyTo, replyAccount       string
+	focusEditor                 bool
+	editorCaret                 int
+	mentions                    mentionState
+	draftsOpen                  bool
+	cancelPublish               context.CancelFunc
+	attachments                 []composeAttachment
+	pollEnabled, pollMultiple   bool
+	pollOptions                 []string
+	pollDuration                int
+	showSpoiler                 bool
+	text, spoiler, audience     string
+	message                     string
+	busy                        bool
+	key, payload                string
+	update                      func(func())
+	close                       func()
+	open                        bool
 }
 
 func (r *reader) showComposer() {
@@ -61,6 +63,7 @@ func (r *reader) showComposer() {
 	d.update = r.update
 	d.close = func() { r.closeComposer(d) }
 	r.readingScroll = nil
+	r.loadPostLimits(d)
 }
 
 func (r *reader) composePopup(c *ui.Context) {
@@ -148,6 +151,12 @@ func (r *reader) composeView(c *ui.Context, d *composer) {
 			ui.Text(c, locales.PleaseLogInFirst()).Padding(20)
 			return
 		}
+		if d.overLimit() {
+			ui.Text(c, locales.PostOverLimit(fmt.Sprint(d.limits.Count(d.text, d.spoiler)-d.limits.WithDefaults().MaxCharacters))).FontSize(12).Padding(8, 20).TextColor(t.Text)
+		}
+		if d.limitsFailed {
+			hintAction(c, ui.Button(c, locales.Retry()), func() { r.loadPostLimits(d) })
+		}
 		if d.showSpoiler || d.spoiler != "" {
 			hintInput(c, ui.TextInput(c, &d.spoiler).Label(locales.ContentWarning()).Placeholder(locales.ContentWarningOptional()).FillWidth().Padding(14, 20).BorderWidth(0).Radius(0).Background(t.Accent.Alpha(.06)).Disabled(d.busy))
 		}
@@ -205,7 +214,14 @@ func (r *reader) composeView(c *ui.Context, d *composer) {
 				}
 			})
 			ui.Spacer(c)
-			ui.Text(c, locales.CharacterCount(utf8.RuneCountInString(d.text)+utf8.RuneCountInString(d.spoiler))).FontSize(12).TextColor(t.TextMuted)
+			ink := t.TextMuted
+			if d.overLimit() {
+				ink = ui.Hex("#ce3150")
+				if t.Dark {
+					ink = ui.Hex("#ff718b")
+				}
+			}
+			ui.Text(c, fmt.Sprintf("%d / %d", d.limits.Count(d.text, d.spoiler), d.limits.WithDefaults().MaxCharacters)).FontSize(12).TextColor(ink)
 		})
 	})
 }
@@ -238,7 +254,12 @@ func (d *composer) draft() mastodon.PostDraft {
 	}
 	return result
 }
-func (d *composer) ready() bool { return d.draft().Validate() == nil }
+func (d *composer) overLimit() bool {
+	return d.limits.Count(d.text, d.spoiler) > d.limits.WithDefaults().MaxCharacters
+}
+func (d *composer) ready() bool {
+	return !d.limitsLoading && !d.limitsFailed && !d.overLimit() && d.draft().Validate() == nil
+}
 
 func (r *reader) publish(d *composer) {
 	if d.busy || d.update == nil || !r.hasScope("write:statuses") || !d.ready() {
@@ -321,7 +342,8 @@ func (r *reader) publish(d *composer) {
 			d.pollEnabled = false
 			d.pollOptions = nil
 			d.showSpoiler = false
-			d.message = locales.Published()
+			d.message = ""
+			d.open = false
 			if r.update != nil {
 				r.update(func() {
 					if gen == r.generation {
@@ -329,6 +351,34 @@ func (r *reader) publish(d *composer) {
 					}
 				})
 			}
+		})
+	}()
+}
+
+// The result belongs to this composer session; a late login response cannot
+// change another account's publishing limit.
+func (r *reader) loadPostLimits(d *composer) {
+	if r.session == nil || r.update == nil || d.limitsLoading || d.limits.MaxCharacters > 0 {
+		return
+	}
+	d.limitsLoading, d.limitsFailed = true, false
+	session, gen, update := r.session, r.generation, r.update
+	go func() {
+		limits, err := r.service.PostLimits(session)
+		update(func() {
+			if r.generation != gen || r.composer != d {
+				return
+			}
+			d.limitsLoading = false
+			if err != nil {
+				d.limitsFailed = true
+				d.message = locales.PostLimitsUnavailable()
+				return
+			}
+			if d.message == locales.PostLimitsUnavailable() {
+				d.message = ""
+			}
+			d.limits = limits
 		})
 	}()
 }

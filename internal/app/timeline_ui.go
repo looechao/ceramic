@@ -106,7 +106,7 @@ func (r *reader) timelineView(c *ui.Context, f *feedState, body ui.Element) {
 				if f.kind == "favorites" {
 					label = locales.NoFavoritesYet()
 				}
-				if f.kind == "profile" {
+				if f.kind == "profile" || f.kind == "hashtag" {
 					label = locales.NoPostsToDisplayYet()
 				}
 				if f.kind == "search" {
@@ -209,7 +209,7 @@ func (r *reader) notificationRow(c *ui.Context, f *feedState, n mastodon.Notific
 				}, func(ev ui.InputEvent) {
 					hover.input(ev, true)
 					r.postTextInput(f, ev)
-				})
+				}, r.postLink(f, *relation))
 				r.pollView(c, relation.Poll, relation.URL)
 			}
 			if warning == "" {
@@ -287,7 +287,7 @@ func (r *reader) profileHeader(c *ui.Context, f *feedState, p mastodon.Account) 
 			})
 		}
 		if runs := mastodon.ParseText(p.Note, p.Emojis...); len(runs) > 0 {
-			r.renderRichText(c, runs, 14, nil, nil).LineHeight(1.65).FillWidth()
+			r.renderRichText(c, runs, 14, nil, nil, r.postLink(f, mastodon.Status{})).LineHeight(1.65).FillWidth()
 		}
 		if len(p.Fields) > 0 {
 			ui.Column(c).FillWidth().Gap(2).Children(func() {
@@ -299,7 +299,7 @@ func (r *reader) profileHeader(c *ui.Context, f *feedState, p mastodon.Account) 
 								ui.Icon(c, verifiedIcon).Size(13, 13).TextColor(t.TextMuted).Tooltip(locales.ThisLinkWasVerifiedByTheServer())
 							}
 						})
-						r.renderRichText(c, mastodon.ParseText(field.Value, p.Emojis...), 13, nil, nil).FillWidth().LineHeight(1.45)
+						r.renderRichText(c, mastodon.ParseText(field.Value, p.Emojis...), 13, nil, nil, r.postLink(f, mastodon.Status{})).FillWidth().LineHeight(1.45)
 					})
 				}
 			})

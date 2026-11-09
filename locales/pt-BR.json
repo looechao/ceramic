@@ -255,5 +255,7 @@
   "DeletePost": "Excluir publicação",
   "DeletePostConfirmation": "Excluir esta publicação? Esta ação não pode ser desfeita.",
   "Cancel": "Cancelar",
-  "SaveChanges": "Salvar alterações"
+  "SaveChanges": "Salvar alterações",
+  "PostOverLimit": "O limite foi excedido em {value0} caracteres. Encurte a publicação.",
+  "PostLimitsUnavailable": "Não foi possível carregar o limite de caracteres. Tente novamente para publicar."
 }
