@@ -2648,3 +2648,23 @@ func SaveChanges() string { return In(i18n.Locale()).SaveChanges() }
 func (msgs Messages) SaveChanges() string {
 	return Catalog.Format(msgs.locale, "SaveChanges", nil)
 }
+
+// PostOverLimit says "已超出 {value0} 字，请缩短内容后发布。"
+// in the language the app shows.
+func PostOverLimit(value0 string) string { return In(i18n.Locale()).PostOverLimit(value0) }
+
+// PostOverLimit says "已超出 {value0} 字，请缩短内容后发布。"
+// in the language of msgs.
+func (msgs Messages) PostOverLimit(value0 string) string {
+	return Catalog.Format(msgs.locale, "PostOverLimit", map[string]any{"value0": value0})
+}
+
+// PostLimitsUnavailable says "无法获取发布字数限制，请重试后发布。"
+// in the language the app shows.
+func PostLimitsUnavailable() string { return In(i18n.Locale()).PostLimitsUnavailable() }
+
+// PostLimitsUnavailable says "无法获取发布字数限制，请重试后发布。"
+// in the language of msgs.
+func (msgs Messages) PostLimitsUnavailable() string {
+	return Catalog.Format(msgs.locale, "PostLimitsUnavailable", nil)
+}

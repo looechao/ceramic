@@ -54,7 +54,7 @@ func (r *reader) post(c *ui.Context, f *feedState, p *postView) {
 					}, func(ev ui.InputEvent) {
 						hover.input(ev, true)
 						r.postTextInput(f, ev)
-					})
+					}, r.postLink(f, s))
 					r.postManagementMenu(body, f, s, true)
 					r.pollView(c, s.Poll, s.URL)
 					if s.Card != nil && len(s.Media) == 0 {
@@ -320,6 +320,14 @@ func (r *reader) postTextInput(f *feedState, ev ui.InputEvent) {
 }
 
 func renderRichText(c *ui.Context, runs []mastodon.TextRun, size float32, open func(), input func(ui.InputEvent), loaders ...func(mastodon.CustomEmoji) *ui.Bitmap) ui.Element {
+	var loader func(mastodon.CustomEmoji) *ui.Bitmap
+	if len(loaders) > 0 {
+		loader = loaders[0]
+	}
+	return renderRichTextWithLinks(c, runs, size, open, input, loader)
+}
+
+func renderRichTextWithLinks(c *ui.Context, runs []mastodon.TextRun, size float32, open func(), input func(ui.InputEvent), loader func(mastodon.CustomEmoji) *ui.Bitmap, links ...func(mastodon.TextRun) bool) ui.Element {
 	paragraph := ui.RichText(c).FontSize(size).LineHeight(1.55).Selectable()
 	var onInput func(ui.InputEvent) bool
 	if open == nil {
@@ -352,11 +360,7 @@ func renderRichText(c *ui.Context, runs []mastodon.TextRun, size float32, open f
 			}
 		})
 	}
-	var loader func(mastodon.CustomEmoji) *ui.Bitmap
-	if len(loaders) > 0 {
-		loader = loaders[0]
-	}
-	copyEmoji := appendRichRuns(c, paragraph, runs, size, loader)
+	copyEmoji := appendRichRuns(c, paragraph, runs, size, loader, links...)
 	paragraph.HandleInput(func(ev ui.InputEvent) bool {
 		if copyEmoji != nil && copyEmoji(ev) {
 			return true

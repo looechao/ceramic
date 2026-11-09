@@ -255,5 +255,7 @@
   "DeletePost": "Supprimer le message",
   "DeletePostConfirmation": "Supprimer ce message ? Cette action est irréversible.",
   "Cancel": "Annuler",
-  "SaveChanges": "Enregistrer"
+  "SaveChanges": "Enregistrer",
+  "PostOverLimit": "Limite dépassée de {value0} caractères. Raccourcissez votre publication.",
+  "PostLimitsUnavailable": "Impossible de charger la limite de caractères. Réessayez pour pouvoir publier."
 }

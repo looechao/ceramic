@@ -93,7 +93,16 @@ func (a *Client) requestExtraContext(ctx context.Context, method, endpoint, toke
 		case 429:
 			return nil, MessageRateLimited
 		}
-		return nil, HTTPError{Status: res.StatusCode}
+		response := HTTPError{Status: res.StatusCode}
+		if res.StatusCode == http.StatusUnprocessableEntity {
+			var body struct {
+				Error string `json:"error"`
+			}
+			if json.NewDecoder(io.LimitReader(res.Body, 8192)).Decode(&body) == nil {
+				response.Detail = strings.TrimSpace(body.Error)
+			}
+		}
+		return nil, response
 	}
 	if err := json.NewDecoder(io.LimitReader(res.Body, 8<<20)).Decode(out); err != nil {
 		return nil, MessageInvalidResponse

@@ -255,5 +255,7 @@
   "DeletePost": "Delete post",
   "DeletePostConfirmation": "Delete this post? This cannot be undone.",
   "Cancel": "Cancel",
-  "SaveChanges": "Save changes"
+  "SaveChanges": "Save changes",
+  "PostOverLimit": "{value0} characters over the limit. Shorten your post to publish.",
+  "PostLimitsUnavailable": "Could not load the posting limit. Retry to enable publishing."
 }

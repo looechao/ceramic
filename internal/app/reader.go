@@ -222,6 +222,8 @@ func (r *reader) loadFeed(f *feedState, more bool) {
 		var err error
 		person := f.profile
 		switch f.kind {
+		case "hashtag":
+			posts, err = r.service.HashtagTimeline(f.query, cursor)
 		case "local", "federated":
 			posts, err = r.service.PublicTimeline(f.kind == "local", cursor)
 		case "bookmarks", "favorites":
@@ -233,11 +235,13 @@ func (r *reader) loadFeed(f *feedState, more bool) {
 		case "conversation":
 			posts, err = r.service.Conversation(f.focalID)
 		case "profile":
-			if !more {
-				person, err = r.service.Profile(f.profile.ID)
+			if person.ID == "" {
+				person, err = r.service.ResolveAccount(person.URL)
+			} else if !more {
+				person, err = r.service.Profile(person.ID)
 			}
 			if err == nil {
-				posts, err = r.service.AccountPosts(f.profile.ID, cursor)
+				posts, err = r.service.AccountPosts(person.ID, cursor)
 			}
 		case "search":
 			var result mastodon.SearchResult

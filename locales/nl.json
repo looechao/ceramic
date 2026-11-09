@@ -255,5 +255,7 @@
   "DeletePost": "Bericht verwijderen",
   "DeletePostConfirmation": "Dit bericht verwijderen? Dit kan niet ongedaan worden gemaakt.",
   "Cancel": "Annuleren",
-  "SaveChanges": "Wijzigingen opslaan"
+  "SaveChanges": "Wijzigingen opslaan",
+  "PostOverLimit": "{value0} tekens boven de limiet. Kort je bericht in om het te plaatsen.",
+  "PostLimitsUnavailable": "De tekenlimiet kon niet worden geladen. Probeer het opnieuw om te kunnen publiceren."
 }

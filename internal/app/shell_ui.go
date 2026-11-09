@@ -273,8 +273,14 @@ func (r *reader) pane(c *ui.Context, f *feedState, ws *workspace, index int, war
 			hintAction(c, ui.ButtonBase(c).Size(28, 28).Label(locales.CloseColumn()).Tooltip(locales.CloseColumnLabel()+shortcutHint("W")), func() { r.closeColumn(ws, f) }).Children(func() { ui.Icon(c, closeIcon).Size(18, 18).TextColor(t.TextMuted) })
 		}
 		title := map[string]string{"home": locales.Home(), "search": locales.Explore(), "local": locales.Local(), "federated": locales.Federated(), "profile": locales.ProfileLabel(), "conversation": locales.Conversation(), "notifications": locales.Notifications(), "bookmarks": locales.Bookmarks(), "favorites": locales.Favorites(), "following": locales.Following(), "followers": locales.Followers()}[f.kind]
+		if f.kind == "hashtag" {
+			title = "#" + f.query
+		}
 		if index > 0 && f.kind == "profile" {
 			title = f.profile.Name()
+			if title == "" {
+				title = locales.ProfileLabel()
+			}
 		}
 		r.emojiText(c, title, f.profile.Emojis, 14).FontWeight(600)
 		ui.Spacer(c)

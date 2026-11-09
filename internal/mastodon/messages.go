@@ -143,7 +143,10 @@ func (m Message) Error() string {
 	return string(m)
 }
 
-type HTTPError struct{ Status int }
+type HTTPError struct {
+	Status int
+	Detail string
+}
 
 func (e HTTPError) Error() string { return fmt.Sprintf("HTTP %d", e.Status) }
 

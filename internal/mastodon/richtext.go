@@ -9,6 +9,7 @@ import (
 )
 
 type TextRun struct {
+	LinkKind     string
 	Emoji        *CustomEmoji
 	Text, URL    string
 	Bold, Italic bool
@@ -62,7 +63,18 @@ func ParseText(source string, emojis ...CustomEmoji) []TextRun {
 				add("\n", style)
 				return
 			case "a":
+				style.LinkKind = ""
 				for _, a := range n.Attr {
+					if a.Key == "class" {
+						for _, class := range strings.Fields(a.Val) {
+							if class == "mention" && style.LinkKind == "" {
+								style.LinkKind = "mention"
+							}
+							if class == "hashtag" {
+								style.LinkKind = "hashtag"
+							}
+						}
+					}
 					if a.Key == "href" {
 						style.URL = SafeURL(a.Val)
 					}
