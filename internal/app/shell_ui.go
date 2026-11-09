@@ -339,6 +339,13 @@ func (r *reader) sidebar(c *ui.Context) {
 				bg = t.Text.Alpha(0.09)
 			}
 			avatar := ui.ButtonBase(c).Size(48, 48).Radius(10).Background(bg).Label(locales.Profile()).Tooltip(locales.ProfileLabelText() + shortcutHint("1"))
+			profileColor := t.TextMuted
+			if r.selected == "profile" {
+				profileColor = t.Text
+			}
+			profileMotion := ui.Local(avatar, "navigation-motion", func() navigationMotion {
+				return navigationMotion{selected: r.selected == "profile", color: profileColor, from: profileColor}
+			})
 			if r.selected == "profile" && r.session != nil {
 				avatar.Menu(func(m *ui.Menu) {
 					if m.Item(locales.Settings()).Chosen() {
@@ -351,6 +358,7 @@ func (r *reader) sidebar(c *ui.Context) {
 				hintInput(c, avatar)
 			} else {
 				hintAction(c, avatar, func() {
+					profileMotion.activate()
 					if r.session != nil {
 						r.navigate("profile")
 					} else {
@@ -359,20 +367,26 @@ func (r *reader) sidebar(c *ui.Context) {
 				})
 			}
 			avatar.Children(func() {
+				scale, color := profileMotion.frame(avatar, r.selected == "profile", profileColor)
 				if r.session == nil {
-					ui.Icon(c, navIcons[2]).Size(24, 24).TextColor(t.TextMuted)
+					icon := navIcons[2]
+					if r.selected == "profile" {
+						icon = profileFilledIcon
+					}
+					ui.Icon(c, icon).Size(24, 24).TextColor(color).Scale(scale, scale)
 					return
 				}
 				var me mastodon.Account
 				_ = json.Unmarshal(r.session.Account, &me)
-				r.accountAvatar(c, me.Name(), me.Avatar, 32, me.AvatarStatic)
+				r.accountAvatar(c, me.Name(), me.Avatar, 32, me.AvatarStatic).Scale(scale, scale)
 			})
 			for i, page := range navigationPages[1:] {
 				label := navigationLabels()[i+1]
 				icon := []*ui.SVG{navIcons[0], bellIcon, bookmarkIcon, heartIcon, navIcons[1]}[i]
 				bg, fg := ui.Transparent, t.TextMuted
 				if r.selected == page {
-					bg, fg = t.Text.Alpha(0.09), t.Accent
+					bg, fg = t.Text.Alpha(0.09), t.Text
+					icon = []*ui.SVG{houseFilledIcon, bellUnreadIcon, bookmarkFilledIcon, heartFilledIcon, navIcons[1]}[i]
 				}
 				tooltip := label + " · " + shortcutHint(fmt.Sprint(i+2))
 				// Unread is the one warm clay color in the interface.
@@ -391,14 +405,20 @@ func (r *reader) sidebar(c *ui.Context) {
 					}
 					tooltip = locales.UnreadNotifications(label, unread)
 				}
-				hintAction(c, ui.ButtonBase(c.Key(page)).Size(48, 44).Radius(10).Background(bg).Label(label).Tooltip(tooltip), func() {
+				button := ui.ButtonBase(c.Key(page)).Size(48, 44).Radius(10).Background(bg).Label(label).Tooltip(tooltip)
+				motion := ui.Local(button, "navigation-motion", func() navigationMotion {
+					return navigationMotion{selected: r.selected == page, color: fg, from: fg}
+				})
+				hintAction(c, button, func() {
+					motion.activate()
 					if r.session != nil {
 						r.navigate(page)
 					} else {
 						r.selected = page
 					}
 				}).Children(func() {
-					glyph := ui.Icon(c, icon).Size(22, 22).TextColor(fg)
+					scale, color := motion.frame(button, r.selected == page, fg)
+					glyph := ui.Icon(c, icon).Size(22, 22).TextColor(color).Scale(scale, scale)
 					if unread > 0 {
 						ui.Badge(c, unreadLabel(unread)).AttachTo(glyph, ui.AnchorTopRight, ui.AnchorCenter).BorderWidth(2).BorderColor(t.Surface).Background(alert).TextColor(alertText).FontSize(10).Bold().Padding(1, 5)
 					}
