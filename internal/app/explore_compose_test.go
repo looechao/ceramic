@@ -105,7 +105,8 @@ func TestNativeComposerPollAndImages(t *testing.T) {
 		t.Fatal("publish clipped")
 	}
 	tt.Click("投票")
-	d.attachments = []composeAttachment{{name: "preview.png", bitmap: loginLogo, digest: "fixture"}}
+	d.attachments = []composeAttachment{{name: "preview.png", digest: "fixture"}}
+	r.composeBitmaps = map[string]*ui.Bitmap{"fixture": loginLogo}
 	tt.SetSize(560, 680)
 	tt.SetDark(false)
 	tt.Frame()

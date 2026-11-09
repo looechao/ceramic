@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 )
 
-func (r *reader) canBoost(s mastodon.Status) bool {
+func (r *appViewModel) canBoost(s mastodon.Status) bool {
 	if s.Reblogged {
 		return true
 	}
@@ -21,7 +21,7 @@ func (r *reader) canBoost(s mastodon.Status) bool {
 	return false
 }
 
-func (r *reader) interact(f *feedState, s mastodon.Status, action string) {
+func (r *appViewModel) interact(f *feedState, s mastodon.Status, action string) {
 	if s.Reblog != nil {
 		s = *s.Reblog
 	}
@@ -42,10 +42,11 @@ func (r *reader) interact(f *feedState, s mastodon.Status, action string) {
 	r.interactions[s.ID] = true
 	f.message = ""
 	gen, session := r.generation, r.session
+	service, update := r.service.ForSession(r.ctx, session), r.update
 	go func() {
-		updated, err := r.service.Interact(session, s.ID, action)
-		r.update(func() {
-			if gen != r.generation {
+		updated, err := service.Interact(session, s.ID, action)
+		update(func() {
+			if r.closed || gen != r.generation {
 				return
 			}
 			delete(r.interactions, s.ID)
@@ -60,7 +61,7 @@ func (r *reader) interact(f *feedState, s mastodon.Status, action string) {
 
 // Patch only the action's fields, preserving text, reading state and unrelated
 // interactions in every visible copy, including boost and notification wrappers.
-func (r *reader) syncInteraction(updated mastodon.Status, action string) {
+func (r *appViewModel) syncInteraction(updated mastodon.Status, action string) {
 	var patch func(*mastodon.Status)
 	patch = func(s *mastodon.Status) {
 		if s == nil {
@@ -81,25 +82,7 @@ func (r *reader) syncInteraction(updated mastodon.Status, action string) {
 			s.Bookmarked = updated.Bookmarked
 		}
 	}
-	feeds := map[*feedState]bool{}
-	for _, f := range []*feedState{r.home, r.searchFeed, r.notifications, r.ownProfile, r.bookmarks, r.favorites} {
-		if f != nil {
-			feeds[f] = true
-		}
-	}
-	for _, ws := range r.workspaces {
-		for _, f := range ws.columns {
-			feeds[f] = true
-		}
-	}
-	for f := range feeds {
-		for _, p := range f.posts {
-			patch(&p.status)
-		}
-		for i := range f.notifications {
-			patch(f.notifications[i].Status)
-		}
-	}
+	r.visitPosts(patch)
 	// Refresh saved lists on next visit without disturbing an active reading path.
 	if action == "favourite" || action == "unfavourite" {
 		r.favorites.loaded = false

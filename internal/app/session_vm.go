@@ -47,10 +47,28 @@ func (r *appViewModel) login() {
 }
 
 func (r *appViewModel) logout() bool {
+	if r.composer != nil && !r.saveDraft(r.composer) {
+		return false
+	}
 	if err := r.service.Logout(); err != nil {
 		r.feedState.message = localizedError(err)
 		return false
 	}
+	if r.composer != nil && r.composer.cancelPublish != nil {
+		r.composer.cancelPublish()
+	}
+	if r.composer != nil && r.composer.close != nil {
+		r.composer.busy = false
+		r.composer.open = false
+	}
+	if r.composer != nil {
+		r.composer.stopMentions()
+	}
+	r.composer = nil
+	r.postManager = nil
+	r.drafts = nil
+	r.draftsOwner = ""
+
 	r.stopStream()
 	r.cancelTasks()
 	r.ctx, r.cancelTasks = context.WithCancel(context.Background())

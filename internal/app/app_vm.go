@@ -8,6 +8,11 @@ import (
 // Operations run on the host's serialized context. Workers capture inputs
 // before starting and return results through update; tests inject a queue.
 type appViewModel struct {
+	composer        *composer
+	postManager     *postManager
+	drafts          []savedDraft
+	draftsOwner     string
+	preferencesPath string
 	notificationsViewModel
 	navigationViewModel
 	sessionViewModel
@@ -36,23 +41,6 @@ func newAppViewModel(service *mastodon.Client, dispatch func(func())) *appViewMo
 	return r
 }
 func (r *appViewModel) load(more bool) { r.loadFeed(r.feedState, more) }
-func (r *appViewModel) eachFeed(visit func(*feedState)) {
-	seen := map[*feedState]bool{}
-	add := func(f *feedState) {
-		if f != nil && !seen[f] {
-			seen[f] = true
-			visit(f)
-		}
-	}
-	for _, f := range []*feedState{r.feedState, r.home, r.searchFeed, r.ownProfile, r.bookmarks, r.favorites, r.notifications} {
-		add(f)
-	}
-	for _, ws := range r.workspaces {
-		for _, f := range ws.columns {
-			add(f)
-		}
-	}
-}
 func (f *feedState) close() {
 	f.closed = true
 	if f.cancel != nil {
@@ -64,6 +52,9 @@ func (f *feedState) close() {
 func (r *appViewModel) close() {
 	if r.closed {
 		return
+	}
+	if r.composer != nil {
+		r.composer.stopMentions()
 	}
 	r.cancelTasks()
 	r.closed = true

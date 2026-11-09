@@ -9,21 +9,17 @@ import (
 )
 
 type reader struct {
+	composeBitmaps map[string]*ui.Bitmap
 	*appViewModel
 	columnViews         map[*feedState]*columnViewState
 	workspaceViews      map[*workspace]*workspaceViewState
-	postManager         *postManager
-	drafts              []savedDraft
-	draftsOwner         string
 	applyAppearance     func(mygo.ThemeSource)
 	settingsOpen        bool
 	automaticUpdates    bool
 	checkUpdates        func()
 	setAutomaticUpdates func(bool)
 	appearance          int
-	preferencesPath     string
 	parentWindow        *mygo.Window
-	composer            *composer
 	openWriting         func()
 	keyboardTarget      ui.Element
 	readingScroll       *readingMotion

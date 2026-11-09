@@ -12,7 +12,6 @@ import (
 	"sort"
 
 	"ceramic/internal/mastodon"
-	"github.com/egoist/mygo/ui"
 )
 
 type draftImage struct {
@@ -24,7 +23,7 @@ type diskDraft struct {
 	Images []draftImage
 }
 
-func (r *reader) draftDirectory() string {
+func (r *appViewModel) draftDirectory() string {
 	if r.session == nil || r.preferencesPath == "" {
 		return ""
 	}
@@ -48,7 +47,7 @@ func validDraftID(id string) bool {
 	return true
 }
 
-func (r *reader) loadDrafts() error {
+func (r *appViewModel) loadDrafts() error {
 	dir := r.draftDirectory()
 	if dir == r.draftsOwner {
 		return nil
@@ -108,18 +107,17 @@ func readDiskDraft(path string, withImages bool) (savedDraft, error) {
 		a := composeAttachment{name: img.Name, description: img.Description, uploadedDescription: img.UploadedDescription, id: img.ID, digest: img.Digest}
 		if withImages {
 			a.data = img.Data
-			bitmap, err := decodeComposeImage(a.data)
+			err := validateComposeImage(a.data)
 			if err != nil {
 				return savedDraft{}, err
 			}
-			a.bitmap = bitmap
 		}
 		disk.Draft.Attachments = append(disk.Draft.Attachments, a)
 	}
 	return disk.Draft, nil
 }
 
-func (r *reader) persistDraft(saved savedDraft) error {
+func (r *appViewModel) persistDraft(saved savedDraft) error {
 	dir := r.draftDirectory()
 	if dir == "" {
 		return nil
@@ -153,7 +151,7 @@ func (r *reader) persistDraft(saved savedDraft) error {
 	return os.Rename(f.Name(), filepath.Join(dir, saved.ID+".json"))
 }
 
-func (r *reader) removeDraftFile(id string) error {
+func (r *appViewModel) removeDraftFile(id string) error {
 	dir := r.draftDirectory()
 	if dir == "" {
 		return nil
@@ -173,23 +171,15 @@ func diskDraftMetadata(saved savedDraft) savedDraft {
 	saved.Attachments = append([]composeAttachment(nil), saved.Attachments...)
 	for i := range saved.Attachments {
 		saved.Attachments[i].data = nil
-		saved.Attachments[i].bitmap = nil
 	}
 	return saved
 }
 
 // Called on close and application exit; failed writes leave the editor open.
-func (r *reader) closeComposer(d *composer) {
+func (r *appViewModel) closeComposer(d *composer) {
 	d.stopMentions()
 	if !d.busy && r.saveDraft(d) {
 		d.open = false
 		d.draftsOpen = false
 	}
-}
-
-func decodeComposeImage(data []byte) (*ui.Bitmap, error) {
-	if len(data) > 16<<20 {
-		return nil, errors.New(locales.ImagesMustBeNoLargerThan16Mb())
-	}
-	return boundedComposeBitmap(data)
 }

@@ -48,7 +48,7 @@ func TestInteractionStateAndFailure(t *testing.T) {
 		}
 	}))
 	defer server.Close()
-	r := testReader(t)
+	r := testViewModel(t)
 	r.session = &mastodon.Session{Instance: server.URL, Token: "test", Scopes: mastodon.Scopes}
 	callbacks := make(chan func(), 4)
 	r.update = func(fn func()) { callbacks <- fn }

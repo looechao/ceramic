@@ -82,7 +82,7 @@ func TestPublishRetryRetainsDraftAndKey(t *testing.T) {
 		io.WriteString(w, `{}`)
 	}))
 	defer server.Close()
-	r := testReader(t)
+	r := testViewModel(t)
 	r.session = &mastodon.Session{Instance: server.URL, Token: "test", Scopes: "write:statuses"}
 	callbacks := make(chan func(), 4)
 	d := &composer{text: "draft", audience: "public", update: func(fn func()) { callbacks <- fn }}
@@ -141,7 +141,7 @@ func TestImagePublishRetryKeepsUploadedMedia(t *testing.T) {
 		}
 	}))
 	defer server.Close()
-	r := testReader(t)
+	r := testViewModel(t)
 	r.session = &mastodon.Session{Instance: server.URL, Token: "test", Scopes: mastodon.Scopes}
 	callbacks := make(chan func(), 1)
 	// A PNG signature is sufficient for the transport test; decoding is covered by the picker.
@@ -183,7 +183,7 @@ func TestLogoutCancelsPendingImagePublication(t *testing.T) {
 		}
 	}))
 	defer server.Close()
-	r := testReader(t)
+	r := testViewModel(t)
 	r.session = &mastodon.Session{Instance: server.URL, Token: "test", Scopes: mastodon.Scopes}
 	callbacks := make(chan func(), 1)
 	d := &composer{audience: "public", attachments: []composeAttachment{{name: "test.png", digest: "fixture", data: []byte("\x89PNG\r\n\x1a\n")}}, update: func(fn func()) { callbacks <- fn }}

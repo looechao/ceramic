@@ -25,7 +25,7 @@ func TestFollowStateTransitions(t *testing.T) {
 		}
 	}))
 	defer server.Close()
-	r := testReader(t)
+	r := testViewModel(t)
 	r.session = &mastodon.Session{Instance: server.URL, Token: "test", Scopes: mastodon.Scopes, Account: json.RawMessage(`{"id":"me"}`)}
 	q := make(chan func(), 8)
 	r.update = func(fn func()) { q <- fn }

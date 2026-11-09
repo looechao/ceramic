@@ -37,6 +37,18 @@ func (r *reader) workspaceView(ws *workspace) *workspaceViewState {
 	return r.workspaceViews[ws]
 }
 func (r *reader) pruneViewState() {
+	liveImages := map[string]bool{}
+	if d := r.composer; d != nil {
+		for _, a := range d.attachments {
+			liveImages[a.digest] = true
+		}
+	}
+	for key := range r.composeBitmaps {
+		if !liveImages[key] {
+			delete(r.composeBitmaps, key)
+		}
+	}
+
 	for f := range r.columnViews {
 		if f.closed {
 			delete(r.columnViews, f)
