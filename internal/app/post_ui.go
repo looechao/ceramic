@@ -216,6 +216,9 @@ func (r *reader) postFooter(c *ui.Context, f *feedState, s mastodon.Status) {
 			}
 			ink := t.Text
 			icon := item.icon
+			if i == 3 && item.active {
+				icon = bookmarkFilledIcon
+			}
 			if i == 2 {
 				ink = ui.Hex("#ce3150")
 				if t.Dark {
