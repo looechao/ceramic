@@ -135,8 +135,9 @@ func (r *appViewModel) loadFeed(f *feedState, more bool) {
 				f.applyNotifications(notices, more)
 				if wasLoaded && !more && r.selected != "notifications" && f == r.notifications {
 					for _, n := range notices {
-						if !known[n.ID] {
+						if !known[n.ID] && !r.deletedPost(n.Status) {
 							r.unread++
+							known[n.ID] = true
 						}
 					}
 				}
@@ -147,6 +148,7 @@ func (r *appViewModel) loadFeed(f *feedState, more bool) {
 					f.end = next == "" || next == cursor || len(posts) == 0
 				}
 			}
+			r.discardDeleted(f)
 			if f.kind == "conversation" {
 				f.end = true
 				if firstLoad {

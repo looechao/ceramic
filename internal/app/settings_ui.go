@@ -2,9 +2,6 @@ package app
 
 import (
 	"ceramic/locales"
-	"encoding/json"
-	"os"
-	"path/filepath"
 
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/i18n"
@@ -12,18 +9,6 @@ import (
 )
 
 var appearanceSources = []mygo.ThemeSource{mygo.ThemeSystem, mygo.ThemeLight, mygo.ThemeDark}
-
-func (r *reader) loadPreferences(path string) {
-	r.preferencesPath = path
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return
-	}
-	var pref struct{ Appearance int }
-	if json.Unmarshal(data, &pref) == nil && pref.Appearance >= 0 && pref.Appearance < len(appearanceSources) {
-		r.appearance = pref.Appearance
-	}
-}
 
 func (r *reader) settingsView(c *ui.Context) {
 	if !r.settingsOpen {
@@ -60,14 +45,7 @@ func (r *reader) settingsView(c *ui.Context) {
 				if r.applyAppearance != nil {
 					r.applyAppearance(appearanceSources[r.appearance])
 				}
-				if r.preferencesPath != "" {
-					data, _ := json.Marshal(struct{ Appearance int }{r.appearance})
-					if err := os.MkdirAll(filepath.Dir(r.preferencesPath), 0700); err == nil {
-						if err = os.WriteFile(r.preferencesPath, data, 0600); err != nil {
-							r.feedState.message = locales.AppearanceChangedButSettingsCouldNotBeSaved()
-						}
-					}
-				}
+				r.savePreferences()
 			}
 			r.updateSettings(c)
 			hintAction(c, ui.Button(c, locales.Done()).AlignSelf(ui.End), func() { r.settingsOpen = false })

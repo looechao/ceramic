@@ -57,7 +57,7 @@ func (r *appViewModel) logout() bool {
 	if r.composer != nil && r.composer.cancelPublish != nil {
 		r.composer.cancelPublish()
 	}
-	if r.composer != nil && r.composer.close != nil {
+	if r.composer != nil {
 		r.composer.busy = false
 		r.composer.open = false
 	}

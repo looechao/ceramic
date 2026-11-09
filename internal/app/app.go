@@ -60,12 +60,6 @@ func Run() {
 		window.OnClosed(func() {
 			closed.Store(true)
 			reader.appViewModel.close()
-			if reader.composer != nil {
-				reader.composer.stopMentions()
-				if reader.composer.cancelPublish != nil {
-					reader.composer.cancelPublish()
-				}
-			}
 		})
 		reader.closeWindow = window.Close
 		reader.openWriting = func() { reader.showComposer() }
@@ -119,9 +113,8 @@ func Run() {
 		rebuildMenu()
 		mygo.App.OnLocaleChanged(func(string) { rebuildMenu() })
 		window.OnClose(func(e *mygo.CloseEvent) {
-			if reader.composer != nil && !reader.saveDraft(reader.composer) {
+			if !reader.prepareClose() {
 				e.PreventDefault()
-				reader.composer.open = true
 			}
 		})
 		window.OnClosed(func() { mygo.App.Quit() })

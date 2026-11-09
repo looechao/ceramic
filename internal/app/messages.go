@@ -1,6 +1,7 @@
 package app
 
 import (
+	"ceramic/internal/draftstore"
 	"ceramic/internal/mastodon"
 	"ceramic/locales"
 	"errors"
@@ -101,6 +102,20 @@ func serviceMessage(m mastodon.Message) string {
 func localizedError(err error) string {
 	if err == nil {
 		return ""
+	}
+	switch {
+	case errors.Is(err, draftstore.ErrID):
+		return locales.InvalidDraftId()
+	case errors.Is(err, draftstore.ErrIDMismatch):
+		return locales.DraftIdMismatch()
+	case errors.Is(err, draftstore.ErrSize):
+		return locales.DraftIsTooLargeOrUnreadable()
+	case errors.Is(err, draftstore.ErrImages):
+		return locales.InvalidDraftImageCount()
+	case errors.Is(err, draftstore.ErrImageSize):
+		return locales.ImagesMustBeNoLargerThan16Mb()
+	case errors.Is(err, draftstore.ErrImageFormat):
+		return locales.ChooseAPngJpegOrGifImageUpTo24Megapixels()
 	}
 	var message mastodon.Message
 	if errors.As(err, &message) {

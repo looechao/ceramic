@@ -8,6 +8,7 @@ import (
 // Operations run on the host's serialized context. Workers capture inputs
 // before starting and return results through update; tests inject a queue.
 type appViewModel struct {
+	appearance      int
 	composer        *composer
 	postManager     *postManager
 	drafts          []savedDraft
@@ -41,6 +42,14 @@ func newAppViewModel(service *mastodon.Client, dispatch func(func())) *appViewMo
 	return r
 }
 func (r *appViewModel) load(more bool) { r.loadFeed(r.feedState, more) }
+
+func (r *appViewModel) prepareClose() bool {
+	if r.composer != nil && !r.saveDraft(r.composer) {
+		r.composer.open = true
+		return false
+	}
+	return true
+}
 func (f *feedState) close() {
 	f.closed = true
 	if f.cancel != nil {

@@ -8,6 +8,9 @@ login, and `imagecache` keeps downloaded images on disk. Dependencies point one
 way: `app` uses `mastodon` and `imagecache`, and neither of those imports MyGo
 or each other.
 
+`draftstore` and `preferences` persist model data without MyGo or ViewModel
+dependencies. See `docs/architecture.md` for state ownership and async lifetimes.
+
 Views go in `*_ui.go` files and share the `reader` host and its ViewModel,
 so the interface stays one package. Business state and operations go in `*_vm.go`
 without MyGo types; widget and display state stay in the host. Add a package for a new protocol, such as Misskey, beside

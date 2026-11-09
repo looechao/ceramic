@@ -12,21 +12,16 @@ func (r *reader) chooseImages(d *composer) {
 		return mygo.Dialog.Open(mygo.OpenDialogOptions{Parent: parent, Title: locales.AddImages(), Multiple: true, Filters: []mygo.FileFilter{{Name: locales.Images(), Extensions: []string{"png", "jpg", "jpeg", "gif"}}}})
 	})
 }
-func decodeComposeImage(data []byte) (*ui.Bitmap, error) {
-	if err := validateComposeImage(data); err != nil {
-		return nil, err
-	}
-	return ui.DecodeBitmap(data)
-}
-func boundedComposeBitmap(data []byte) (*ui.Bitmap, error) { return decodeComposeImage(data) }
 func (r *reader) composeBitmap(a composeAttachment) *ui.Bitmap {
 	if r.composeBitmaps == nil {
 		r.composeBitmaps = map[string]*ui.Bitmap{}
 	}
-	if bitmap := r.composeBitmaps[a.digest]; bitmap != nil {
+	if bitmap, decoded := r.composeBitmaps[a.digest]; decoded {
 		return bitmap
 	}
-	bitmap, _ := decodeComposeImage(a.data)
+	// Model has already validated dimensions and image data. Decode only the
+	// display resource here, once per attachment (including failed decodes).
+	bitmap, _ := ui.DecodeBitmap(a.data)
 	r.composeBitmaps[a.digest] = bitmap
 	return bitmap
 }

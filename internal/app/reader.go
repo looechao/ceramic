@@ -18,7 +18,6 @@ type reader struct {
 	automaticUpdates    bool
 	checkUpdates        func()
 	setAutomaticUpdates func(bool)
-	appearance          int
 	parentWindow        *mygo.Window
 	openWriting         func()
 	keyboardTarget      ui.Element

@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -195,5 +196,33 @@ func TestColumnViewStateSurvivesNavigationAndReleasesOnClose(t *testing.T) {
 	r.closeColumn(r.workspaces["home"], detail)
 	if _, retained := r.columnViews[detail]; retained {
 		t.Fatal("closed column retained its widget state")
+	}
+}
+
+func TestViewModelNotificationPollSkipsDeletedAndDuplicateNotices(t *testing.T) {
+	vm, q := connectViewModel(t, func(w http.ResponseWriter, r *http.Request) {
+		io.WriteString(w, `[{"id":"3","status":{"id":"deleted"}},{"id":"2","status":{"id":"kept"}},{"id":"2","status":{"id":"kept"}}]`)
+	})
+	vm.deletedPosts = map[string]bool{"deleted": true}
+	vm.notifications.loaded = true
+	vm.loadFeed(vm.notifications, false)
+	nextNotificationUpdate(t, q)()
+	if vm.unread != 1 || len(vm.notifications.notifications) != 1 || vm.notifications.cursor != "2" {
+		t.Fatal("poll restored a deleted post, double-counted unread, or lost its cursor")
+	}
+}
+
+func TestViewModelDraftSaveFailureBlocksCloseAndLogout(t *testing.T) {
+	vm := testViewModel(t)
+	vm.preferencesPath = filepath.Join(t.TempDir(), "preferences.json")
+	vm.session = &mastodon.Session{Instance: "https://example.social", Account: []byte(`{"id":"me"}`)}
+	vm.showComposer()
+	vm.composer.text = "keep this"
+	if err := os.WriteFile(filepath.Join(filepath.Dir(vm.preferencesPath), "drafts"), []byte("blocked"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	vm.closeComposer(vm.composer)
+	if !vm.composer.open || vm.composer.message == "" || vm.prepareClose() || vm.logout() || vm.session == nil || vm.composer.text != "keep this" {
+		t.Fatal("storage failure discarded draft or session")
 	}
 }

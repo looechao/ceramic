@@ -1,7 +1,7 @@
-package app
+package draftstore
 
 // Older drafts stored translated labels. Only this migration understands them.
-func migratedAudience(value string) string {
+func Audience(value string) string {
 	if stable, ok := map[string]string{"公开": "public", "低调公开": "unlisted", "仅关注者": "private", "私密提及": "direct"}[value]; ok {
 		return stable
 	}
@@ -12,7 +12,7 @@ func migratedAudience(value string) string {
 	return "public"
 }
 
-func migratedDuration(d savedDraft) int {
+func PollDuration(d Draft) int {
 	if d.PollSeconds > 0 {
 		return d.PollSeconds
 	}

@@ -10,6 +10,11 @@ import (
 )
 
 func (r *reader) showComposer() { r.appViewModel.showComposer(); r.readingScroll = nil }
+
+func (r *reader) showReply(status mastodon.Status) {
+	r.appViewModel.showReply(status)
+	r.readingScroll = nil
+}
 func (r *reader) composePopup(c *ui.Context) {
 	d := r.composer
 	if d == nil || !d.open {

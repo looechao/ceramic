@@ -82,6 +82,7 @@ func (r *appViewModel) syncInteraction(updated mastodon.Status, action string) {
 			s.Bookmarked = updated.Bookmarked
 		}
 	}
+	r.eachFeed(func(f *feedState) { f.contentRevision++ })
 	r.visitPosts(patch)
 	// Refresh saved lists on next visit without disturbing an active reading path.
 	if action == "favourite" || action == "unfavourite" {
