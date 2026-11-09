@@ -168,9 +168,9 @@ func TestProfileAndConnectionsReuseColumns(t *testing.T) {
 	r.openProfileFrom(r.home, person)
 	ws := r.workspaces["home"]
 	profile := ws.focused
-	profile.scroll.Y = 123
+	r.columnView(profile).scroll.Y = 123
 	r.openProfileFrom(r.home, person)
-	if len(ws.columns) != 2 || ws.focused != profile || profile.scroll.Y != 123 {
+	if len(ws.columns) != 2 || ws.focused != profile || r.columnView(profile).scroll.Y != 123 {
 		t.Fatal("duplicate profile or lost reading position")
 	}
 	r.openConnections(profile, "followers")

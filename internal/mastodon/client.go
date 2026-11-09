@@ -18,15 +18,16 @@ import (
 const requestTimeout = 25 * time.Second
 
 type Client struct {
-	mu            sync.Mutex
-	origin, path  string
-	session       *Session
-	pending       *pendingLogin
-	loginError    error
-	formatMessage func(Message) string
-	version       uint64
-	client        *http.Client
-	open          func(string) error
+	requestContext context.Context
+	mu             sync.Mutex
+	origin, path   string
+	session        *Session
+	pending        *pendingLogin
+	loginError     error
+	formatMessage  func(Message) string
+	version        uint64
+	client         *http.Client
+	open           func(string) error
 }
 
 func New(path string, formatters ...func(Message) string) *Client {
@@ -56,7 +57,17 @@ func (a *Client) requestHeaders(method, endpoint, token string, form url.Values,
 }
 
 func (a *Client) requestExtra(method, endpoint, token string, form url.Values, out any, headers http.Header) (http.Header, error) {
-	return a.requestExtraContext(context.Background(), method, endpoint, token, form, out, headers)
+	ctx := a.requestContext
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	return a.requestExtraContext(ctx, method, endpoint, token, form, out, headers)
+}
+
+// ForSession creates a request client bound to the captured session
+// and operation lifetime. It shares the HTTP transport, not mutable login state.
+func (a *Client) ForSession(ctx context.Context, session *Session) *Client {
+	return &Client{session: session, client: a.client, requestContext: ctx, formatMessage: a.formatMessage}
 }
 
 func (a *Client) requestExtraContext(ctx context.Context, method, endpoint, token string, form url.Values, out any, headers http.Header) (http.Header, error) {

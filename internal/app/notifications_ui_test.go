@@ -76,7 +76,7 @@ func TestNativeNotificationReadingAnchorSurvivesPoll(t *testing.T) {
 	f.loaded, f.end, f.cursor = true, true, "1"
 	r.navigate("notifications")
 	tt := ui.NewTester(r.view, 1240, 820)
-	f.list.ScrollTo(45, ui.Start)
+	r.columnView(f).list.ScrollTo(45, ui.Start)
 	tt.Frame()
 	before, ok := tt.Find("notice-body-15")
 	if !ok {

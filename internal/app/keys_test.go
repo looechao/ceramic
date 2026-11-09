@@ -22,14 +22,14 @@ func TestReadingKeysAndInputIsolation(t *testing.T) {
 	tt.Key(0, ui.KeyJ)
 	tt.Advance(250 * time.Millisecond)
 	tt.Frame()
-	if r.home.scroll.Y <= 0 {
+	if r.columnView(r.home).scroll.Y <= 0 {
 		t.Fatal("j did not scroll")
 	}
-	before := r.home.scroll.Y
+	before := r.columnView(r.home).scroll.Y
 	tt.Key(0, ui.KeyD)
 	tt.Advance(250 * time.Millisecond)
 	tt.Frame()
-	if r.home.scroll.Y <= before+100 {
+	if r.columnView(r.home).scroll.Y <= before+100 {
 		t.Fatal("d did not scroll half page")
 	}
 	tt.Key(0, ui.KeyU)
@@ -39,13 +39,13 @@ func TestReadingKeysAndInputIsolation(t *testing.T) {
 	tt.Key(0, ui.KeyG)
 	tt.Advance(time.Millisecond)
 	tt.Frame()
-	if r.home.scroll.Y != 0 {
-		t.Fatal("gg did not return to top", r.home.scroll.Y)
+	if r.columnView(r.home).scroll.Y != 0 {
+		t.Fatal("gg did not return to top", r.columnView(r.home).scroll.Y)
 	}
 	tt.Key(ui.Shift, ui.KeyG)
 	tt.Advance(time.Millisecond)
 	tt.Frame()
-	if r.home.scroll.Y <= 100 {
+	if r.columnView(r.home).scroll.Y <= 100 {
 		t.Fatal("G did not go to bottom")
 	}
 	r.openProfileFrom(r.home, mastodon.Account{ID: "one", DisplayName: "One"})
@@ -82,7 +82,7 @@ func TestReadingKeysAndInputIsolation(t *testing.T) {
 	for i, key := range []ui.Key{ui.KeyJ, ui.KeyK, ui.KeyU, ui.KeyD, ui.KeyG} {
 		tt.TypeKey(0, key, string("jkudg"[i]))
 	}
-	if r.selected != "search" || len(r.workspaces["search"].columns) != 1 || r.searchFeed.scroll.Y != 0 {
+	if r.selected != "search" || len(r.workspaces["search"].columns) != 1 || r.columnView(r.searchFeed).scroll.Y != 0 {
 		t.Fatal("typing triggered navigation")
 	}
 	if r.query != "jkudg" {
@@ -146,27 +146,27 @@ func TestReadingScrollTapsAndReversal(t *testing.T) {
 	tt := ui.NewTester(r.view, 900, 820)
 	tt.Key(0, ui.KeyJ)
 	tt.Advance(40 * time.Millisecond)
-	if r.home.scroll.Y <= 0 || r.home.scroll.Y >= 60 {
-		t.Fatal("tap did not animate", r.home.scroll.Y)
+	if r.columnView(r.home).scroll.Y <= 0 || r.columnView(r.home).scroll.Y >= 60 {
+		t.Fatal("tap did not animate", r.columnView(r.home).scroll.Y)
 	}
 	tt.Key(0, ui.KeyJ)
 	tt.Advance(300 * time.Millisecond)
-	if d := r.home.scroll.Y - 120; d < -0.1 || d > 0.1 {
-		t.Fatal("two taps lost distance", r.home.scroll.Y)
+	if d := r.columnView(r.home).scroll.Y - 120; d < -0.1 || d > 0.1 {
+		t.Fatal("two taps lost distance", r.columnView(r.home).scroll.Y)
 	}
 	tt.KeyDown(ui.KeyJ)
 	tt.Advance(80 * time.Millisecond)
-	before := r.home.scroll.Y
+	before := r.columnView(r.home).scroll.Y
 	tt.KeyDown(ui.KeyK)
 	tt.Advance(40 * time.Millisecond)
-	if r.home.scroll.Y >= before {
+	if r.columnView(r.home).scroll.Y >= before {
 		t.Fatal("reversal failed")
 	}
 	tt.KeyUp(ui.KeyK)
 	tt.Key(0, ui.KeyG)
 	tt.Key(0, ui.KeyG)
 	tt.Advance(200 * time.Millisecond)
-	if r.home.scroll.Y != 0 {
+	if r.columnView(r.home).scroll.Y != 0 {
 		t.Fatal("gg did not cancel motion")
 	}
 }
@@ -181,35 +181,35 @@ func TestHeldReadingStartsWithoutRepeat(t *testing.T) {
 	tt := ui.NewTester(r.view, 900, 820)
 	tt.KeyDown(ui.KeyJ)
 	tt.Advance(160 * time.Millisecond)
-	before := r.home.scroll.Y
+	before := r.columnView(r.home).scroll.Y
 	tt.Advance(80 * time.Millisecond)
-	if r.home.scroll.Y <= before+20 {
-		t.Fatalf("held key stopped waiting for OS repeat: %.1f -> %.1f", before, r.home.scroll.Y)
+	if r.columnView(r.home).scroll.Y <= before+20 {
+		t.Fatalf("held key stopped waiting for OS repeat: %.1f -> %.1f", before, r.columnView(r.home).scroll.Y)
 	}
 	// Repeated keydowns must not restart the motion or add queued steps.
 	tt.Frame()
 	for i := 0; i < 5; i++ {
-		before := r.home.scroll.Y
+		before := r.columnView(r.home).scroll.Y
 		tt.KeyDown(ui.KeyJ)
 		tt.Advance(16 * time.Millisecond)
 		tt.Frame()
-		moved := r.home.scroll.Y - before
+		moved := r.columnView(r.home).scroll.Y - before
 		if moved < 9 || moved > 10 {
 			t.Fatalf("uneven held frame: %.2f", moved)
 		}
 	}
 	tt.KeyUp(ui.KeyJ)
-	stopped := r.home.scroll.Y
+	stopped := r.columnView(r.home).scroll.Y
 	tt.Advance(200 * time.Millisecond)
-	if r.home.scroll.Y > stopped+0.1 {
+	if r.columnView(r.home).scroll.Y > stopped+0.1 {
 		t.Fatal("long hold continued after release")
 	}
 	tt.KeyDown(ui.KeyJ)
 	tt.Advance(100 * time.Millisecond)
 	tt.SetFocused(false)
-	stopped = r.home.scroll.Y
+	stopped = r.columnView(r.home).scroll.Y
 	tt.Advance(time.Second)
-	if r.home.scroll.Y > stopped+0.1 {
+	if r.columnView(r.home).scroll.Y > stopped+0.1 {
 		t.Fatal("scroll continued in background")
 	}
 }
@@ -224,20 +224,20 @@ func TestCapitalGReachesLoadedEnd(t *testing.T) {
 	tt := ui.NewTester(r.view, 900, 820)
 	tt.Key(ui.Shift, ui.KeyG)
 	tt.Advance(100 * time.Millisecond)
-	if !r.home.list.AtEnd() {
-		t.Fatalf("G missed end: y=%v max=%v", r.home.scroll.Y, r.home.scroll.MaxY)
+	if !r.columnView(r.home).list.AtEnd() {
+		t.Fatalf("G missed end: y=%v max=%v", r.columnView(r.home).scroll.Y, r.columnView(r.home).scroll.MaxY)
 	}
 	tt.Key(0, ui.KeyG)
 	tt.Key(0, ui.KeyG)
 	tt.Advance(100 * time.Millisecond)
-	if r.home.scroll.Y != 0 {
-		t.Fatalf("gg missed start: %v", r.home.scroll.Y)
+	if r.columnView(r.home).scroll.Y != 0 {
+		t.Fatalf("gg missed start: %v", r.columnView(r.home).scroll.Y)
 	}
 	tt.KeyDown(ui.KeyJ)
 	tt.Advance(40 * time.Millisecond)
 	tt.Key(ui.Shift, ui.KeyG)
 	tt.Advance(100 * time.Millisecond)
-	if !r.home.list.AtEnd() {
-		t.Fatalf("G during hold missed end: y=%v max=%v", r.home.scroll.Y, r.home.scroll.MaxY)
+	if !r.columnView(r.home).list.AtEnd() {
+		t.Fatalf("G during hold missed end: y=%v max=%v", r.columnView(r.home).scroll.Y, r.columnView(r.home).scroll.MaxY)
 	}
 }

@@ -50,7 +50,7 @@ func TestNativeLogin(t *testing.T) {
 	if err := tt.Click("继续"); err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(r.message, "域名") {
+	if !strings.Contains(r.loginMessage, "域名") {
 		t.Fatal("missing inline validation")
 	}
 	tt.SetSize(420, 560)
@@ -58,7 +58,7 @@ func TestNativeLogin(t *testing.T) {
 	tt.SetDark(true)
 	savePreview(t, tt, "native-login-dark")
 	r.authorizing = true
-	r.message = "请在浏览器中授权，完成后返回 Ceramic。"
+	r.loginMessage = "请在浏览器中授权，完成后返回 Ceramic。"
 	tt.Frame()
 	savePreview(t, tt, "native-login-authorizing")
 	tt.SetDark(false)
@@ -75,7 +75,7 @@ func TestNativeLogin(t *testing.T) {
 func TestNativeTimeline(t *testing.T) {
 	r := testReader(t)
 	r.session = &mastodon.Session{Instance: "https://example.com", Account: json.RawMessage(`{"display_name":"测试账号"}`)}
-	r.applyPosts([]mastodon.Status{{ID: "3", Content: "<p>这是一条用于检查原生排版的测试动态。</p><p>文字直接由 Go 组件渲染，链接也可以 <a href=\"https://example.com\">点击打开</a>。</p>", Account: mastodon.Account{DisplayName: "林间散步", Acct: "forest@example.com"}, URL: "https://example.com/3", CreatedAt: "2026-11-05T05:00:00Z"}, {ID: "2", Content: "<p>折叠内容测试。</p>", Spoiler: "内容警告", Account: mastodon.Account{DisplayName: "远山", Acct: "mountain@example.com"}, URL: "https://example.com/2"}}, false)
+	r.feedState.applyPosts([]mastodon.Status{{ID: "3", Content: "<p>这是一条用于检查原生排版的测试动态。</p><p>文字直接由 Go 组件渲染，链接也可以 <a href=\"https://example.com\">点击打开</a>。</p>", Account: mastodon.Account{DisplayName: "林间散步", Acct: "forest@example.com"}, URL: "https://example.com/3", CreatedAt: "2026-11-05T05:00:00Z"}, {ID: "2", Content: "<p>折叠内容测试。</p>", Spoiler: "内容警告", Account: mastodon.Account{DisplayName: "远山", Acct: "mountain@example.com"}, URL: "https://example.com/2"}}, false)
 	tt := ui.NewTester(r.view, 760, 820)
 	savePreview(t, tt, "native-timeline")
 	if !tt.HasText("首页") {
@@ -85,7 +85,7 @@ func TestNativeTimeline(t *testing.T) {
 		t.Fatal(err)
 	}
 	tt.Advance(time.Second)
-	if !r.posts[1].expanded {
+	if !r.feedState.posts[1].expanded {
 		t.Fatal("CW did not open")
 	}
 	if err := tt.Click("点击打开"); err != nil {
@@ -94,8 +94,8 @@ func TestNativeTimeline(t *testing.T) {
 	if len(tt.OpenedURLs()) != 1 {
 		t.Fatal("native link not opened")
 	}
-	r.applyPosts([]mastodon.Status{{ID: "2"}, {ID: "1", Content: "更早的动态"}}, true)
-	if len(r.posts) != 3 {
+	r.feedState.applyPosts([]mastodon.Status{{ID: "2"}, {ID: "1", Content: "更早的动态"}}, true)
+	if len(r.feedState.posts) != 3 {
 		t.Fatal("duplicate pagination")
 	}
 	tt.Frame()
@@ -159,7 +159,7 @@ func TestConcealedPostsDoNotExposeContent(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Reveal the second placeholder (sensitive media) by clicking its surface.
-	r.home.list.ScrollTo(1, ui.Start)
+	r.columnView(r.home).list.ScrollTo(1, ui.Start)
 	tt.Frame()
 	if err := tt.Click("展开隐藏内容：敏感媒体"); err != nil {
 		t.Fatal(err)
@@ -168,7 +168,7 @@ func TestConcealedPostsDoNotExposeContent(t *testing.T) {
 		t.Fatal("media blur opened a column")
 	}
 	r.home.posts[1].mediaExpanded = false
-	r.home.list.ScrollTo(0, ui.Start)
+	r.columnView(r.home).list.ScrollTo(0, ui.Start)
 	tt.Frame()
 
 	tt.SetDark(true)

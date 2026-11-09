@@ -46,31 +46,10 @@ func (r *reader) view(c *ui.Context) {
 		t.AccentText = ui.Hex("#1d1d1f")
 	}
 	c.SetTheme(&t)
+	r.pruneViewState()
+	r.refreshAuthorization()
 	if r.authorizing {
-		s, _, message := r.service.Snapshot()
-		if s != nil && s != r.session {
-			r.session = s
-			r.relationships = nil
-			r.authorizing = false
-			r.startStream()
-			if r.authFeed != nil {
-				r.authFeed.message = ""
-				r.authFeed.authRequired = false
-				r.loadFeed(r.authFeed, false)
-			} else {
-				r.message = ""
-				r.load(false)
-			}
-		} else if message != nil {
-			r.authorizing = false
-			if r.authFeed != nil {
-				r.authFeed.message = localizedError(message)
-			} else {
-				r.message = localizedError(message)
-			}
-		} else {
-			c.After(500 * time.Millisecond)
-		}
+		c.After(500 * time.Millisecond)
 	}
 	if r.session != nil {
 		r.shell(c)
@@ -129,7 +108,7 @@ func (r *reader) shell(c *ui.Context) {
 			width = min(float32(580), (available-columnGap)/2)
 		}
 		if ws.reveal {
-			ws.scroll.X = 1e9
+			r.workspaceView(ws).scroll.X = 1e9
 			ws.reveal = false
 		}
 		backdrop := ui.Hex("#eeeef0")
@@ -162,7 +141,7 @@ func (r *reader) shell(c *ui.Context) {
 		r.postManagementPopup(c)
 	} else if r.composer != nil && r.composer.open {
 		r.composePopup(c)
-	} else if ws := r.workspaces[r.selected]; ws != nil && ws.focused != nil && ws.focused.preview != nil {
+	} else if ws := r.workspaces[r.selected]; ws != nil && ws.focused != nil && r.columnView(ws.focused).preview != nil {
 		r.previewView(c, ws.focused)
 	} else if !hints(c).active && hints(c).pending == nil {
 		r.readingKeys(c)
@@ -171,15 +150,15 @@ func (r *reader) shell(c *ui.Context) {
 
 func (r *reader) columns(c *ui.Context, ws *workspace, compact bool, width, available float32, backdrop, paper ui.Color) {
 	t := c.Theme()
-	ui.ScrollHorizontal(c.Key(ws)).TrackScroll(&ws.scroll).Fill().Padding(columnGap).Gap(columnGap).Background(backdrop).HandleInput(func(ev ui.InputEvent) bool {
+	ui.ScrollHorizontal(c.Key(ws)).TrackScroll(&r.workspaceView(ws).scroll).Fill().Padding(columnGap).Gap(columnGap).Background(backdrop).HandleInput(func(ev ui.InputEvent) bool {
 		r.readingScrollInput(ev)
-		return ws.trackpad.scroll(ev, &ws.scroll, nil)
+		return r.workspaceView(ws).trackpad.scroll(ev, &r.workspaceView(ws).scroll, nil)
 	}).Children(func() {
 		for i, f := range ws.columns {
 			if compact && f != ws.focused {
 				continue
 			}
-			f.width = width
+			r.columnView(f).width = width
 			column := ui.Column(c.Key(f)).Width(width).Shrink(0).FillHeight().Background(paper).Radius(12).Clip().BorderWidth(1).BorderColor(t.Text.Alpha(0.08)).Shadow(0, 2, 8, 0, ui.Hex("#000000").Alpha(0.04))
 			column.Focusable()
 			if t.Dark {
@@ -190,17 +169,17 @@ func (r *reader) columns(c *ui.Context, ws *workspace, compact bool, width, avai
 			}
 			if ws.focused == f {
 				r.keyboardTarget = column
-				if f.preview == nil {
+				if r.columnView(f).preview == nil {
 					r.advanceReadingScroll(c)
 				}
 			}
 			column.HandleInput(func(ev ui.InputEvent) bool {
 				r.readingScrollInput(ev)
-				scroll := &f.scroll
+				scroll := &r.columnView(f).scroll
 				if ev.Y < 48 {
 					scroll = nil
 				}
-				if ws.trackpad.scroll(ev, &ws.scroll, scroll) {
+				if r.workspaceView(ws).trackpad.scroll(ev, &r.workspaceView(ws).scroll, scroll) {
 					return true
 				}
 				if ev.Kind == ui.InputPointerDown {
@@ -224,16 +203,16 @@ func (r *reader) columns(c *ui.Context, ws *workspace, compact bool, width, avai
 			column.Children(func() {
 				// Apply jumps before List/TrackScroll consume this frame's position.
 				if f.readingJump != 0 {
-					scroll := &f.scroll
+					scroll := &r.columnView(f).scroll
 					if f.readingJump > 0 {
 						scroll.Y = 1e9
-						if f.preview == nil {
-							f.list.ScrollToEnd()
+						if r.columnView(f).preview == nil {
+							r.columnView(f).list.ScrollToEnd()
 						}
 					} else {
 						scroll.Y = 0
-						if f.preview == nil {
-							f.list.ScrollTo(0, ui.Start)
+						if r.columnView(f).preview == nil {
+							r.columnView(f).list.ScrollTo(0, ui.Start)
 						}
 					}
 					f.readingJump = 0
@@ -241,7 +220,7 @@ func (r *reader) columns(c *ui.Context, ws *workspace, compact bool, width, avai
 				// Keep the column shell and toolbar for layout, focus and
 				// accessibility. Distant bodies retain their feed/ListState,
 				// but do not build rows or request images until approached.
-				warm := compact || f == ws.focused || columnNearViewport(i, len(ws.columns), width, available, ws.scroll.X)
+				warm := compact || f == ws.focused || columnNearViewport(i, len(ws.columns), width, available, r.workspaceView(ws).scroll.X)
 				r.pane(c, f, ws, i, warm)
 			})
 		}

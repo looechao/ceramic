@@ -21,39 +21,39 @@ import (
 func TestNativeNavigation(t *testing.T) {
 	r := testReader(t)
 	r.session = &mastodon.Session{Instance: "https://example.com", Account: json.RawMessage(`{"id":"me","display_name":"我的账号","acct":"me"}`)}
-	r.applyPosts([]mastodon.Status{{ID: "3", Content: "<p>首页保留的正文</p>", Account: mastodon.Account{ID: "42", DisplayName: "林间", Acct: "forest@example.com"}, Spoiler: "内容警告"}}, false)
+	r.feedState.applyPosts([]mastodon.Status{{ID: "3", Content: "<p>首页保留的正文</p>", Account: mastodon.Account{ID: "42", DisplayName: "林间", Acct: "forest@example.com"}, Spoiler: "内容警告"}}, false)
 	home := r.feedState
 	tt := ui.NewTester(r.view, 900, 820)
 	if err := tt.Click("展开隐藏内容：内容警告"); err != nil {
 		t.Fatal(err)
 	}
 	tt.Advance(time.Second)
-	if !r.posts[0].expanded {
+	if !r.feedState.posts[0].expanded {
 		t.Fatal("CW closed")
 	}
 	if err := tt.Click("Explore"); err != nil {
 		t.Fatal(err)
 	}
-	if r.kind != "search" || tt.HasText("补充搜索权限") || r.searchKind != "statuses" {
+	if r.feedState.kind != "search" || tt.HasText("补充搜索权限") || r.feedState.searchKind != "statuses" {
 		t.Fatal(tt.Texts())
 	}
 	r.query = "forest"
 	r.submitSearch()
-	r.accounts = []mastodon.Account{{ID: "42", DisplayName: "林间", Acct: "forest@example.com"}}
-	r.loaded = true
-	r.end = true
+	r.feedState.accounts = []mastodon.Account{{ID: "42", DisplayName: "林间", Acct: "forest@example.com"}}
+	r.feedState.loaded = true
+	r.feedState.end = true
 	tt.Frame()
 	savePreview(t, tt, "native-search")
 	if err := tt.Click("林间"); err != nil {
 		t.Fatal(err)
 	}
-	if r.kind != "profile" || r.profile.ID != "42" {
+	if r.feedState.kind != "profile" || r.feedState.profile.ID != "42" {
 		t.Fatal("profile not opened")
 	}
-	r.profile.Note = "<p>在山间散步，记录日常。<a href=\"https://example.com\">个人网站</a></p>"
-	r.profile.Followers = 17
-	r.profile.Statuses = 31
-	r.applyPosts([]mastodon.Status{{ID: "5", Content: "<p>个人页的帖子。</p>", Account: r.profile}}, false)
+	r.feedState.profile.Note = "<p>在山间散步，记录日常。<a href=\"https://example.com\">个人网站</a></p>"
+	r.feedState.profile.Followers = 17
+	r.feedState.profile.Statuses = 31
+	r.feedState.applyPosts([]mastodon.Status{{ID: "5", Content: "<p>个人页的帖子。</p>", Account: r.feedState.profile}}, false)
 	tt.Frame()
 	savePreview(t, tt, "native-profile")
 	if err := tt.Click("关闭此列"); err != nil {
@@ -61,17 +61,17 @@ func TestNativeNavigation(t *testing.T) {
 	}
 	r.navigate("search")
 	tt.Frame()
-	if r.kind != "search" || len(r.accounts) != 1 || r.query != "forest" {
+	if r.feedState.kind != "search" || len(r.feedState.accounts) != 1 || r.query != "forest" {
 		t.Fatal("search was lost")
 	}
 	r.navigate("home")
 	tt.Frame()
-	if r.feedState != home || len(r.posts) != 1 || !r.posts[0].expanded {
+	if r.feedState != home || len(r.feedState.posts) != 1 || !r.feedState.posts[0].expanded {
 		t.Fatal("home was reset")
 	}
 	r.navigate("profile")
 	tt.Frame()
-	if r.profile.ID != "me" {
+	if r.feedState.profile.ID != "me" {
 		t.Fatal("Profile should open self")
 	}
 	for _, size := range [][2]float32{{420, 560}, {900, 560}, {420, 820}, {900, 820}} {
@@ -112,7 +112,7 @@ func TestLoadKeepsResponseOnOriginPage(t *testing.T) {
 	r.logout()
 	release <- struct{}{}
 	(<-updates)()
-	if r.session != nil || len(r.posts) != 0 {
+	if r.session != nil || len(r.feedState.posts) != 0 {
 		t.Fatal("logged-out response applied")
 	}
 }
@@ -150,7 +150,7 @@ func TestNativeColumnsAndMedia(t *testing.T) {
 	if err := tt.Click("媒体排版测试图"); err != nil {
 		t.Fatal(err)
 	}
-	if r.home.preview == nil || r.searchFeed.preview != nil {
+	if r.columnView(r.home).preview == nil || r.columnView(r.searchFeed).preview != nil {
 		t.Fatal("preview changed wrong column")
 	}
 	if err := tt.Click("关闭图片"); err != nil {
@@ -228,7 +228,7 @@ func TestNativeReadingPositionSurvivesNavigation(t *testing.T) {
 	}
 	r.home.loaded = true
 	tt := ui.NewTester(r.view, 760, 820)
-	r.home.list.ScrollTo(30, ui.Start)
+	r.columnView(r.home).list.ScrollTo(30, ui.Start)
 	tt.Frame()
 	before, ok := tt.Find("reading-row-30")
 	if !ok {
@@ -349,18 +349,18 @@ func TestPostClickAndColumnScrolling(t *testing.T) {
 	}
 	r.openProfileFrom(r.feedState, author)
 	tt.Frame()
-	before := ws.scroll.X
+	before := r.workspaceView(ws).scroll.X
 	tt.Scroll(900, 300, -200, 0)
-	if ws.scroll.X >= before {
-		t.Fatalf("touchpad horizontal scrolling failed: %v -> %v", before, ws.scroll.X)
+	if r.workspaceView(ws).scroll.X >= before {
+		t.Fatalf("touchpad horizontal scrolling failed: %v -> %v", before, r.workspaceView(ws).scroll.X)
 	}
-	before = ws.scroll.X
+	before = r.workspaceView(ws).scroll.X
 	// Tester.Wheel cannot carry modifiers; exercise the horizontal wheel delta
 	// produced by MyGo after its built-in Shift axis conversion.
 	tt.Wheel(900, 300, -100, 0)
 	tt.Advance(time.Second)
-	if ws.scroll.X >= before {
-		t.Fatalf("horizontal wheel failed: %v -> %v", before, ws.scroll.X)
+	if r.workspaceView(ws).scroll.X >= before {
+		t.Fatalf("horizontal wheel failed: %v -> %v", before, r.workspaceView(ws).scroll.X)
 	}
 }
 
@@ -522,7 +522,7 @@ func TestConversationReusesExistingColumn(t *testing.T) {
 	r.openConversation(r.home, post)
 	ws := r.workspaces["home"]
 	original := ws.focused
-	original.scroll.Y = 120
+	r.columnView(original).scroll.Y = 120
 	r.openConversation(r.home, mastodon.Status{ID: "another", Content: "Another post"})
 	other := ws.focused
 	for _, source := range []*feedState{r.home, other} {
@@ -530,7 +530,7 @@ func TestConversationReusesExistingColumn(t *testing.T) {
 		if len(ws.columns) != 3 || ws.focused != original || r.feedState != original {
 			t.Fatal("reopening a post must focus its existing conversation")
 		}
-		if original.scroll.Y != 120 || !ws.revealFocus || ws.reveal {
+		if r.columnView(original).scroll.Y != 120 || !ws.revealFocus || ws.reveal {
 			t.Fatal("reopening must preserve reading position and reveal the existing column")
 		}
 	}

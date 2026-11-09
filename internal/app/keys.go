@@ -19,8 +19,8 @@ func (r *reader) readingKeys(c *ui.Context) {
 	if c.Shortcut(0, ui.KeyEscape) {
 		// Escape cancels a prefix first; it never closes the reading column.
 		r.pendingG = time.Time{}
-		if r.feedState.preview != nil {
-			r.feedState.preview = nil
+		if r.columnView(r.feedState).preview != nil {
+			r.columnView(r.feedState).preview = nil
 		}
 		return
 	}
@@ -57,7 +57,7 @@ func (r *reader) readingKeys(c *ui.Context) {
 	if f == nil {
 		return
 	}
-	scroll := &f.scroll
+	scroll := &r.columnView(f).scroll
 	_, height := c.Size()
 	half := max(float32(80), (height-2*columnGap-48)/2)
 	for _, item := range []struct {
@@ -157,7 +157,7 @@ func (r *reader) advanceReadingScroll(c *ui.Context) {
 	}
 	ws := r.workspaces[r.selected]
 	if r.typing || ws == nil || ws.focused != m.feed || !r.keyboardTarget.Focused() ||
-		m.feed.preview != nil || m.scroll != &m.feed.scroll {
+		r.columnView(m.feed).preview != nil || m.scroll != &r.columnView(m.feed).scroll {
 		r.readingScroll = nil
 		return
 	}

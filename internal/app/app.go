@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sync/atomic"
 
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/plugins/updater"
@@ -46,7 +47,26 @@ func Run() {
 		}
 		window := mygo.NewWindow(options)
 		reader.parentWindow = window
-		reader.update = window.Update
+		var closed atomic.Bool
+		reader.update = func(apply func()) {
+			if !closed.Load() {
+				window.Update(func() {
+					if !closed.Load() {
+						apply()
+					}
+				})
+			}
+		}
+		window.OnClosed(func() {
+			closed.Store(true)
+			reader.appViewModel.close()
+			if reader.composer != nil {
+				reader.composer.stopMentions()
+				if reader.composer.cancelPublish != nil {
+					reader.composer.cancelPublish()
+				}
+			}
+		})
 		reader.closeWindow = window.Close
 		reader.openWriting = func() { reader.showComposer() }
 		reader.checkUpdates = updater.CheckForUpdates

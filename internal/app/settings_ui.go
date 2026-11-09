@@ -64,7 +64,7 @@ func (r *reader) settingsView(c *ui.Context) {
 					data, _ := json.Marshal(struct{ Appearance int }{r.appearance})
 					if err := os.MkdirAll(filepath.Dir(r.preferencesPath), 0700); err == nil {
 						if err = os.WriteFile(r.preferencesPath, data, 0600); err != nil {
-							r.message = locales.AppearanceChangedButSettingsCouldNotBeSaved()
+							r.feedState.message = locales.AppearanceChangedButSettingsCouldNotBeSaved()
 						}
 					}
 				}

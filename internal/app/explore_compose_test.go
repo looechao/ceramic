@@ -31,7 +31,7 @@ func TestNativeAccountMenuAndBrowse(t *testing.T) {
 		t.Fatal("browse leaked into rail")
 	}
 	tt.Click("Explore")
-	if r.searchKind != "statuses" {
+	if r.feedState.searchKind != "statuses" {
 		t.Fatal("search must default to posts")
 	}
 	for _, label := range []string{"Local", "Federated"} {
@@ -42,7 +42,7 @@ func TestNativeAccountMenuAndBrowse(t *testing.T) {
 	}
 	root := r.searchFeed
 	tt.Click("Local")
-	if r.kind != "local" || r.selected != "search" {
+	if r.feedState.kind != "local" || r.selected != "search" {
 		t.Fatal("Local must open within Explore")
 	}
 	local := r.feedState
@@ -53,7 +53,7 @@ func TestNativeAccountMenuAndBrowse(t *testing.T) {
 	tt.Frame()
 	tt.Click("关闭此列")
 	tt.Click("Federated")
-	if r.kind != "federated" || r.selected != "search" {
+	if r.feedState.kind != "federated" || r.selected != "search" {
 		t.Fatal("Federated must open within Explore")
 	}
 	tt.Click("关闭此列")

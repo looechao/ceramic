@@ -7,99 +7,8 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
-	"ceramic/internal/mastodon"
 	"ceramic/resources"
 )
-
-func (r *reader) login() {
-	if r.busy || r.authorizing {
-		return
-	}
-	instance, err := mastodon.NormalizeInstance(r.instance)
-	if err != nil {
-		r.message = localizedError(err)
-		return
-	}
-	f := r.feedState
-	r.authFeed = f
-	gen := r.generation
-	r.busy = true
-	r.authorizing = true
-	r.message = locales.ConnectingToServer()
-	go func() {
-		err := r.service.Login(instance)
-		r.update(func() {
-			if gen != r.generation || !r.authorizing {
-				return
-			}
-			f.busy = false
-			if err != nil {
-				r.authorizing = false
-				f.message = localizedError(err)
-				return
-			}
-			r.authorizing = true
-			f.message = locales.AuthorizeInYourBrowserThenReturnToCeramic()
-		})
-	}()
-}
-
-func (r *reader) logout() {
-	if r.composer != nil && !r.saveDraft(r.composer) {
-		return
-	}
-	if err := r.service.Logout(); err != nil {
-		r.message = localizedError(err)
-		return
-	}
-	r.stopStream()
-	r.unread = 0
-	r.interactions = nil
-	r.relationships = nil
-	r.generation++
-	r.session = nil
-	r.authorizing = false
-	r.home = &feedState{kind: "home"}
-	r.feedState = r.home
-	r.searchFeed = &feedState{kind: "search", searchKind: "statuses"}
-	r.notifications = &feedState{kind: "notifications"}
-	r.bookmarks = &feedState{kind: "bookmarks"}
-	r.favorites = &feedState{kind: "favorites"}
-	if r.composer != nil && r.composer.cancelPublish != nil {
-		r.composer.cancelPublish()
-	}
-	if r.composer != nil && r.composer.close != nil {
-		r.composer.busy = false
-		r.composer.open = false
-	}
-	if r.composer != nil {
-		r.composer.stopMentions()
-	}
-	r.composer = nil
-	r.postManager = nil
-	r.deletedPosts = nil
-	r.drafts = nil
-	r.draftsOwner = ""
-	r.ownProfile = nil
-	r.workspaces = nil
-	r.authFeed = nil
-	r.searchAllowed = false
-	r.selected = "home"
-	r.query = ""
-	r.searchTab = 0
-	r.images = map[string]*imageEntry{}
-}
-
-func (r *reader) cancelAuthorization() {
-	r.service.CancelLogin()
-	r.authorizing = false
-	for _, f := range []*feedState{r.authFeed, r.feedState, r.home, r.searchFeed, r.notifications, r.ownProfile} {
-		if f != nil && f == r.authFeed {
-			f.busy = false
-			f.message = ""
-		}
-	}
-}
 
 var loginLogo = func() *ui.Bitmap {
 	bitmap, err := ui.DecodeBitmap(resources.Icon)
@@ -164,12 +73,12 @@ func (r *reader) loginView(c *ui.Context) {
 				ui.Text(c, locales.LogInToCeramic()).TextAlign(ui.Center).FontSize(24).FontWeight(600).Margin(12, 0, 24, 0)
 				ui.Column(c).FillWidth().AlignItems(ui.Center).Children(func() {
 					ui.Text(c, locales.Instance()).FontSize(13).FontWeight(500).Margin(0, 0, 8, 0)
-					hintInput(c, ui.Autocomplete(c.Key("instance"), &r.instance, instanceSuggestions(r.instance)).Label(locales.InstanceAddress()).Placeholder(locales.InstanceDomain()).TextAlign(ui.Center).FillWidth().Height(42).Disabled(r.busy || r.authorizing).OnSubmit(r.login))
+					hintInput(c, ui.Autocomplete(c.Key("instance"), &r.instance, instanceSuggestions(r.instance)).Label(locales.InstanceAddress()).Placeholder(locales.InstanceDomain()).TextAlign(ui.Center).FillWidth().Height(42).Disabled(r.loginBusy || r.authorizing).OnSubmit(r.login))
 					ui.Text(c, locales.ForExampleMastodonSocial()).TextAlign(ui.Center).FontSize(12).TextColor(t.TextMuted).Margin(8, 0, 0, 0)
 					ui.Column(c).FillWidth().MinHeight(40).AlignItems(ui.Center).Justify(ui.Center).Margin(20, 0, 0, 0).Children(func() {
-						if r.busy || r.authorizing {
+						if r.loginBusy || r.authorizing {
 							label := locales.Connecting()
-							if !r.busy {
+							if !r.loginBusy {
 								label = locales.WaitingForBrowserAuthorization()
 							}
 							ui.Row(c).FillWidth().Gap(10).Justify(ui.Center).AlignItems(ui.Center).Children(func() {
@@ -180,12 +89,12 @@ func (r *reader) loginView(c *ui.Context) {
 							hintAction(c, ui.PrimaryButton(c, locales.Continue()).FontSize(13).FillWidth().Height(40).Radius(8), r.login)
 						}
 					})
-					if r.message != "" {
-						ui.Text(c, r.message).TextAlign(ui.Center).FontSize(12).LineHeight(1.5).TextColor(t.TextMuted).FillWidth().Margin(8, 0, 0, 0)
+					if r.loginMessage != "" {
+						ui.Text(c, r.loginMessage).TextAlign(ui.Center).FontSize(12).LineHeight(1.5).TextColor(t.TextMuted).FillWidth().Margin(8, 0, 0, 0)
 					}
 					if r.authorizing {
 						hintAction(c, ui.Button(c, locales.CancelConnection()).FontSize(13).Margin(12, 0, 0, 0), r.cancelAuthorization)
-					} else if !r.busy {
+					} else if !r.loginBusy {
 						ui.Text(c, locales.AuthorizeReadWriteFollowAndPushAccessInYourBrowser()).TextAlign(ui.Center).FontSize(11).LineHeight(1.5).TextColor(t.TextMuted).FillWidth().Margin(16, 0, 0, 0)
 					}
 				})

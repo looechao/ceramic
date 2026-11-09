@@ -37,30 +37,30 @@ func TestNativeImageOverlay(t *testing.T) {
 	if err := tt.Click(media[0].Description); err != nil {
 		t.Fatal(err)
 	}
-	if len(r.home.previewItems) != 2 {
+	if len(r.columnView(r.home).previewItems) != 2 {
 		t.Fatal("gallery included non-images")
 	}
 	if tt.Image().At(10, 10) != before {
 		t.Fatal("overlay painted an opaque or dim backdrop")
 	}
-	originalScroll := r.home.scroll.Y
+	originalScroll := r.columnView(r.home).scroll.Y
 	savePreview(t, tt, "native-image-overlay")
 	tt.Key(0, ui.KeyRight)
-	if r.home.preview.URL != media[2].URL {
+	if r.columnView(r.home).preview.URL != media[2].URL {
 		t.Fatal("right did not advance")
 	}
 	tt.Key(0, ui.KeyRight)
-	if r.home.previewIndex != 1 {
+	if r.columnView(r.home).previewIndex != 1 {
 		t.Fatal("gallery advanced past last image")
 	}
 	tt.Key(0, ui.KeyLeft)
-	if r.home.previewIndex != 0 {
+	if r.columnView(r.home).previewIndex != 0 {
 		t.Fatal("left did not return")
 	}
 	if err := tt.Click("下一张图片"); err != nil {
 		t.Fatal(err)
 	}
-	if r.home.previewIndex != 1 {
+	if r.columnView(r.home).previewIndex != 1 {
 		t.Fatal("next button did not advance")
 	}
 	tt.SetSize(420, 560)
@@ -68,10 +68,10 @@ func TestNativeImageOverlay(t *testing.T) {
 	tt.SetDark(true)
 	savePreview(t, tt, "native-image-overlay-dark")
 	tt.Key(0, ui.KeyEscape)
-	if r.home.preview != nil || len(r.workspaces["home"].columns) != 1 {
+	if r.columnView(r.home).preview != nil || len(r.workspaces["home"].columns) != 1 {
 		t.Fatal("Escape did not dismiss only the image")
 	}
-	if r.home.scroll.Y != originalScroll {
+	if r.columnView(r.home).scroll.Y != originalScroll {
 		t.Fatal("gallery moved the timeline")
 	}
 	if err := tt.Click(media[0].Description); err != nil {
@@ -79,7 +79,7 @@ func TestNativeImageOverlay(t *testing.T) {
 	}
 	// Outside the panel, over the profile rail: dismiss without navigating.
 	tt.ClickAt(44, 88)
-	if r.home.preview != nil || r.selected != "home" {
+	if r.columnView(r.home).preview != nil || r.selected != "home" {
 		t.Fatal("backdrop click leaked into navigation")
 	}
 }

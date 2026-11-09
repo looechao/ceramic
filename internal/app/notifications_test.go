@@ -24,7 +24,7 @@ func nextNotificationUpdate(t *testing.T, q chan func()) func() {
 func TestNotificationsInitialSeed(t *testing.T) {
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { io.WriteString(w, `[{"id":"old"}]`) }))
 	defer s.Close()
-	r := testReader(t)
+	r := testViewModel(t)
 	r.session = &mastodon.Session{Instance: s.URL, Token: "test", Scopes: mastodon.Scopes}
 	r.service.SetSession(r.session)
 	q := make(chan func(), 8)
@@ -38,7 +38,7 @@ func TestNotificationsInitialSeed(t *testing.T) {
 func TestNotificationsPollRetainsOlderPages(t *testing.T) {
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { io.WriteString(w, `[{"id":"3"},{"id":"2"}]`) }))
 	defer s.Close()
-	r := testReader(t)
+	r := testViewModel(t)
 	r.session = &mastodon.Session{Instance: s.URL, Token: "test", Scopes: mastodon.Scopes}
 	r.service.SetSession(r.session)
 	r.notifications.applyNotifications([]mastodon.Notification{{ID: "3"}, {ID: "2"}}, false)
@@ -60,7 +60,7 @@ func TestNotificationsPollRetainsOlderPages(t *testing.T) {
 		t.Fatal("head refresh moved the older-page boundary")
 	}
 }
-func notificationStreamReader(t *testing.T) (*reader, chan func(), chan string) {
+func notificationStreamReader(t *testing.T) (*appViewModel, chan func(), chan string) {
 	t.Helper()
 	events := make(chan string, 8)
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
@@ -84,7 +84,7 @@ func notificationStreamReader(t *testing.T) (*reader, chan func(), chan string) 
 			}
 		}
 	}))
-	r := testReader(t)
+	r := testViewModel(t)
 	r.session = &mastodon.Session{Instance: s.URL, Token: "test", Scopes: mastodon.Scopes}
 	r.service.SetSession(r.session)
 	q := make(chan func(), 8)
@@ -146,7 +146,7 @@ func TestNotificationsPollThenStreamCountsOnce(t *testing.T) {
 }
 
 func TestNotificationsRequireReadScope(t *testing.T) {
-	r := testReader(t)
+	r := testViewModel(t)
 	r.session = &mastodon.Session{Scopes: "read:statuses"}
 	r.update = func(func()) { t.Error("unauthorized background work") }
 	r.startStream()
