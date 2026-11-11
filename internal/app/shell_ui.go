@@ -403,6 +403,9 @@ func (r *reader) sidebar(c *ui.Context) {
 				motion := ui.Local(button, "navigation-motion", func() navigationMotion {
 					return navigationMotion{selected: r.selected == page, color: fg, from: fg}
 				})
+				if (page == "home" || page == "favorites" || page == "bookmarks") && button.DoubleClicked() {
+					r.scrollPageToTop(page)
+				}
 				hintAction(c, button, func() {
 					motion.activate()
 					if r.session != nil {

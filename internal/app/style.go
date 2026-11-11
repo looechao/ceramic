@@ -90,7 +90,7 @@ func (r *reader) accountAvatar(c *ui.Context, name, source string, size float32,
 		if playback.player != nil && slot.InView() {
 			ui.Video(c, playback.player).Size(size, size).Fit(ui.Cover).Radius(size / 2).Label(name)
 		} else if entry != nil && bitmap == nil && !entry.failed && !entry.ready {
-			loadingIndicator(c).Size(min(18, size/2), min(18, size/2)).Label(locales.LoadingAvatar(name))
+			loading.CircularDots(c, loading.Options{Color: c.Theme().TextMuted}).Shrink(0).Size(min(18, size/2), min(18, size/2)).Label(locales.LoadingAvatar(name))
 		} else {
 			avatarImage(c, name, bitmap, size)
 		}

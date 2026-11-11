@@ -9,6 +9,23 @@ func (r *reader) navigate(page string) {
 	r.pendingG = time.Time{}
 	r.appViewModel.navigate(page)
 }
+
+func (r *reader) scrollPageToTop(page string) {
+	if r.session == nil || (r.composer != nil && r.composer.open) {
+		return
+	}
+	r.navigate(page)
+	ws := r.workspaces[page]
+	if ws == nil || len(ws.columns) == 0 {
+		return
+	}
+	root := ws.columns[0]
+	r.readingScroll = nil
+	r.focusColumn(ws, root)
+	ws.reveal, ws.revealFocus = false, true
+	root.readingJump = -1
+}
+
 func (r *reader) focusColumn(ws *workspace, f *feedState) {
 	r.pendingG = time.Time{}
 	r.appViewModel.focusColumn(ws, f)
