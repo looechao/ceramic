@@ -38,6 +38,7 @@ func newAppViewModel(service *mastodon.Client, dispatch func(func())) *appViewMo
 	r.favorites = &feedState{kind: "favorites"}
 	r.searchFeed = &feedState{kind: "search", searchKind: "statuses"}
 	r.notifications = &feedState{kind: "notifications"}
+	r.mentionNotifications = &feedState{kind: "notifications", notificationType: "mention"}
 	r.selected = "home"
 	return r
 }

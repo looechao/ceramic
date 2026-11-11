@@ -77,7 +77,7 @@ func notificationStreamReader(t *testing.T) (*appViewModel, chan func(), chan st
 		for {
 			select {
 			case id := <-events:
-				fmt.Fprintf(w, "event: notification\ndata: {\"id\":\"%s\"}\n\n", id)
+				fmt.Fprintf(w, "event: notification\ndata: {\"id\":\"%s\",\"type\":\"mention\"}\n\n", id)
 				w.(http.Flusher).Flush()
 			case <-req.Context().Done():
 				return
@@ -156,5 +156,16 @@ func TestNotificationsRequireReadScope(t *testing.T) {
 	r.session.Scopes = "read"
 	if !r.hasScope("read:notifications") {
 		t.Fatal("broad read scope must include notifications")
+	}
+}
+
+func TestNotificationsStreamUpdatesBothFiltersOnce(t *testing.T) {
+	r, q, events := notificationStreamReader(t)
+	events <- "new"
+	nextNotificationUpdate(t, q)()
+	events <- "new"
+	nextNotificationUpdate(t, q)()
+	if len(r.notifications.notifications) != 1 || len(r.mentionNotifications.notifications) != 1 || r.unread != 1 {
+		t.Fatal("stream lost a mention or counted it twice")
 	}
 }

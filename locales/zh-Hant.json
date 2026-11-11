@@ -257,5 +257,8 @@
   "Cancel": "取消",
   "SaveChanges": "儲存修改",
   "PostOverLimit": "已超出 {value0} 字，請縮短內容後發佈。",
-  "PostLimitsUnavailable": "無法取得發佈字數限制，請重試後發佈。"
+  "PostLimitsUnavailable": "無法取得發佈字數限制，請重試後發佈。",
+  "AllNotifications": "全部",
+  "MentionNotifications": "@ 提及",
+  "NoMentionsYet": "尚無提及你的通知。"
 }

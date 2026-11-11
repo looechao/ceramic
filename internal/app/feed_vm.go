@@ -20,6 +20,7 @@ type feedState struct {
 	kind                 string
 	profile              mastodon.Account
 	notificationExpanded map[string]*bool
+	notificationType     string
 	query, searchKind    string
 	focalID              string
 }
@@ -50,6 +51,7 @@ func (r *appViewModel) loadFeed(f *feedState, more bool) {
 	f.cancel = cancel
 	service := r.service.ForSession(ctx, r.session)
 	dispatch := r.update
+	notificationType := f.notificationType
 	kind, query, searchKind, focalID, person := f.kind, f.query, f.searchKind, f.focalID, f.profile
 	go func() {
 		defer cancel()
@@ -68,7 +70,11 @@ func (r *appViewModel) loadFeed(f *feedState, more bool) {
 		case "following", "followers":
 			people, next, err = service.AccountConnections(person.ID, kind, cursor)
 		case "notifications":
-			notices, err = service.Notifications(cursor)
+			if notificationType == "" {
+				notices, err = service.Notifications(cursor)
+			} else {
+				notices, err = service.Notifications(cursor, notificationType)
+			}
 		case "conversation":
 			posts, err = service.Conversation(focalID)
 		case "profile":

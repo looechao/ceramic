@@ -2668,3 +2668,33 @@ func PostLimitsUnavailable() string { return In(i18n.Locale()).PostLimitsUnavail
 func (msgs Messages) PostLimitsUnavailable() string {
 	return Catalog.Format(msgs.locale, "PostLimitsUnavailable", nil)
 }
+
+// AllNotifications says "全部"
+// in the language the app shows.
+func AllNotifications() string { return In(i18n.Locale()).AllNotifications() }
+
+// AllNotifications says "全部"
+// in the language of msgs.
+func (msgs Messages) AllNotifications() string {
+	return Catalog.Format(msgs.locale, "AllNotifications", nil)
+}
+
+// MentionNotifications says "@ 提及"
+// in the language the app shows.
+func MentionNotifications() string { return In(i18n.Locale()).MentionNotifications() }
+
+// MentionNotifications says "@ 提及"
+// in the language of msgs.
+func (msgs Messages) MentionNotifications() string {
+	return Catalog.Format(msgs.locale, "MentionNotifications", nil)
+}
+
+// NoMentionsYet says "暂无提及你的通知。"
+// in the language the app shows.
+func NoMentionsYet() string { return In(i18n.Locale()).NoMentionsYet() }
+
+// NoMentionsYet says "暂无提及你的通知。"
+// in the language of msgs.
+func (msgs Messages) NoMentionsYet() string {
+	return Catalog.Format(msgs.locale, "NoMentionsYet", nil)
+}

@@ -16,7 +16,7 @@ func (r *appViewModel) eachFeed(visit func(*feedState)) {
 			visit(f)
 		}
 	}
-	for _, f := range []*feedState{r.feedState, r.home, r.searchFeed, r.ownProfile, r.bookmarks, r.favorites, r.notifications} {
+	for _, f := range []*feedState{r.feedState, r.home, r.searchFeed, r.ownProfile, r.bookmarks, r.favorites, r.notifications, r.mentionNotifications} {
 		add(f)
 	}
 	for _, ws := range r.workspaces {

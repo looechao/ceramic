@@ -257,5 +257,8 @@
   "Cancel": "Cancel",
   "SaveChanges": "Save changes",
   "PostOverLimit": "{value0} characters over the limit. Shorten your post to publish.",
-  "PostLimitsUnavailable": "Could not load the posting limit. Retry to enable publishing."
+  "PostLimitsUnavailable": "Could not load the posting limit. Retry to enable publishing.",
+  "AllNotifications": "All",
+  "MentionNotifications": "@ Mentions",
+  "NoMentionsYet": "No mentions yet."
 }

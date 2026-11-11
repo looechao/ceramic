@@ -25,10 +25,16 @@ func (r *appViewModel) startStream() {
 			if current() && !feed.busy {
 				r.loadFeed(feed, false)
 			}
+			if current() && r.mentionNotifications.loaded {
+				r.loadFeed(r.mentionNotifications, false)
+			}
 		},
 		Receive: func(n mastodon.Notification) {
 			if !current() || r.postStore.deletedPost(n.Status) {
 				return
+			}
+			if n.Type == "mention" {
+				r.mentionNotifications.prependNotification(n)
 			}
 			if feed.prependNotification(n) {
 				r.notificationsViewModel.received(1, r.selected == "notifications")
@@ -42,9 +48,10 @@ func (r *appViewModel) stopStream() { r.notificationsViewModel.stop() }
 // notificationsViewModel owns unread presentation and the active sync lifetime.
 // Content merging belongs to the collection, transport scheduling to Sync.
 type notificationsViewModel struct {
-	notifications    *feedState
-	notificationSync *notifications.Sync
-	unread           int
+	notifications        *feedState
+	mentionNotifications *feedState
+	notificationSync     *notifications.Sync
+	unread               int
 }
 
 func (n *notificationsViewModel) stop() {
@@ -59,3 +66,30 @@ func (n *notificationsViewModel) received(count int, visible bool) {
 	}
 }
 func (n *notificationsViewModel) markRead() { n.unread = 0 }
+
+// Each filter retains its own collection, request and reading position.
+func (r *appViewModel) selectNotificationFilter(mentions bool) {
+	if r.session == nil {
+		return
+	}
+	r.ensureProfile()
+	ws := r.workspaces["notifications"]
+	next := r.notifications
+	if mentions {
+		next = r.mentionNotifications
+	}
+	previous := ws.columns[0]
+	if previous == next {
+		return
+	}
+	ws.columns[0] = next
+	for _, f := range ws.columns[1:] {
+		if f.source == previous {
+			f.source = next
+		}
+	}
+	r.focusColumn(ws, next)
+	if !next.loaded {
+		r.loadFeed(next, false)
+	}
+}
