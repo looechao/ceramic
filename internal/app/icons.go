@@ -61,6 +61,6 @@ var (
 	publicIcon            = bundledIcon("globe")
 	quietPublicIcon       = bundledIcon("moon")
 	followersIcon         = bundledIcon("lock-keyhole")
-	privateMentionIcon    = bundledIcon("message-circle")
+	privateMentionIcon    = bundledIcon("mail")
 	unknownVisibilityIcon = bundledIcon("circle-question-mark")
 )
