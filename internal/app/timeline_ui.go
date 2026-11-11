@@ -37,7 +37,16 @@ func (r *reader) timelineView(c *ui.Context, f *feedState, body ui.Element) {
 	if f.kind == "notifications" {
 		count = len(f.notifications)
 	}
-	f.list.Key = func(i int) any {
+	if f.revealPost != "" {
+		for i, p := range f.posts {
+			if p.status.ID == f.revealPost {
+				r.columnView(f).list.ScrollTo(i, ui.Start)
+				break
+			}
+		}
+		f.revealPost = ""
+	}
+	r.columnView(f).list.Key = func(i int) any {
 		if i < header {
 			return "profile-header"
 		}
@@ -57,7 +66,7 @@ func (r *reader) timelineView(c *ui.Context, f *feedState, body ui.Element) {
 	// Virtual rows build during layout, after the pane scope has returned.
 	blockedHints := hints(c).contentOnlyBlocked
 	var hintViewport ui.Element
-	hintViewport = ui.List(c.Key(f), &f.list, header+people+count+1, func(i int) {
+	hintViewport = ui.List(c.Key(f), &r.columnView(f).list, header+people+count+1, func(i int) {
 		h := hints(c)
 		previousClip, previousBlocked := h.clip, h.contentOnlyBlocked
 		h.clip, h.contentOnlyBlocked = intersectHintRect(hintViewport.Bounds(), body.Bounds()), blockedHints
@@ -128,7 +137,7 @@ func (r *reader) timelineView(c *ui.Context, f *feedState, body ui.Element) {
 				}
 			}
 		})
-	}).TrackScroll(&f.scroll).Grow(1)
+	}).TrackScroll(&r.columnView(f).scroll).Grow(1)
 }
 
 func notificationLabel(kind string) (string, *ui.SVG) {

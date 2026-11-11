@@ -9,38 +9,41 @@ import (
 
 // A gallery belongs to the originating post, including only its images.
 func (r *reader) openImage(f *feedState, selected mastodon.Media, media []mastodon.Media) {
-	f.previewItems = nil
-	f.previewIndex = 0
+	v := r.columnView(f)
+	v.previewItems = nil
+	v.previewIndex = 0
 	for _, m := range media {
 		if m.Type != "image" {
 			continue
 		}
 		if m.URL == selected.URL && m.Preview == selected.Preview {
-			f.previewIndex = len(f.previewItems)
+			v.previewIndex = len(v.previewItems)
 		}
-		f.previewItems = append(f.previewItems, m)
+		v.previewItems = append(v.previewItems, m)
 	}
-	if len(f.previewItems) == 0 {
-		f.previewItems = []mastodon.Media{selected}
+	if len(v.previewItems) == 0 {
+		v.previewItems = []mastodon.Media{selected}
 	}
-	f.preview = &f.previewItems[f.previewIndex]
+	v.preview = &v.previewItems[v.previewIndex]
 	r.readingScroll = nil
 	if ws := r.workspaces[r.selected]; ws != nil {
 		r.focusColumn(ws, f)
 	}
 }
 
-func (f *feedState) stepImage(step int) {
-	next := f.previewIndex + step
-	if next < 0 || next >= len(f.previewItems) {
+func (r *reader) stepImage(f *feedState, step int) {
+	v := r.columnView(f)
+	next := v.previewIndex + step
+	if next < 0 || next >= len(v.previewItems) {
 		return
 	}
-	f.previewIndex = next
-	f.preview = &f.previewItems[next]
+	v.previewIndex = next
+	v.preview = &v.previewItems[next]
 }
 
 func (r *reader) previewView(c *ui.Context, f *feedState) {
-	open := f.preview != nil
+	v := r.columnView(f)
+	open := v.preview != nil
 	if !open {
 		return
 	}
@@ -50,12 +53,12 @@ func (r *reader) previewView(c *ui.Context, f *feedState) {
 		backdrop.Background(ui.Transparent)
 		panel.Background(ui.Transparent).Label(locales.ImageViewer())
 		if panel.OverlayShortcut(0, ui.KeyLeft) {
-			f.stepImage(-1)
+			r.stepImage(f, -1)
 		}
 		if panel.OverlayShortcut(0, ui.KeyRight) {
-			f.stepImage(1)
+			r.stepImage(f, 1)
 		}
-		m := *f.preview
+		m := *v.preview
 		source := m.URL
 		if source == "" {
 			source = m.Preview
@@ -81,15 +84,15 @@ func (r *reader) previewView(c *ui.Context, f *feedState) {
 		panel.Width(max(240, imageW))
 		ui.Column(c).Gap(10).AlignItems(ui.Center).Children(func() {
 			ui.Row(c).Gap(6).AlignItems(ui.Center).Padding(4, 6).Radius(20).Background(c.Theme().Background).Shadow(0, 2, 8, 0, ui.Hex("#000000").Alpha(.12)).Children(func() {
-				if len(f.previewItems) > 1 {
-					imageControl(c, previousImageIcon, locales.PreviousImage(), f.previewIndex == 0, func() { f.stepImage(-1) })
-					ui.Text(c, fmt.Sprintf("%d / %d", f.previewIndex+1, len(f.previewItems))).FontSize(12).TextColor(c.Theme().TextMuted)
-					imageControl(c, nextImageIcon, locales.NextImage(), f.previewIndex == len(f.previewItems)-1, func() { f.stepImage(1) })
+				if len(v.previewItems) > 1 {
+					imageControl(c, previousImageIcon, locales.PreviousImage(), v.previewIndex == 0, func() { r.stepImage(f, -1) })
+					ui.Text(c, fmt.Sprintf("%d / %d", v.previewIndex+1, len(v.previewItems))).FontSize(12).TextColor(c.Theme().TextMuted)
+					imageControl(c, nextImageIcon, locales.NextImage(), v.previewIndex == len(v.previewItems)-1, func() { r.stepImage(f, 1) })
 				}
 				if target := mastodon.SafeURL(source); target != "" {
 					imageControl(c, externalIcon, locales.OpenOriginalImage(), false, func() { c.Services().OpenURL(target) })
 				}
-				imageControl(c, closeIcon, locales.CloseImage(), false, func() { f.preview = nil })
+				imageControl(c, closeIcon, locales.CloseImage(), false, func() { v.preview = nil })
 			})
 			ui.Box(c).Size(imageW, imageH).Radius(10).Shadow(0, 8, 28, 0, ui.Hex("#000000").Alpha(.18)).AlignItems(ui.Center).Justify(ui.Center).Children(func() {
 				if bitmap != nil {
@@ -106,7 +109,7 @@ func (r *reader) previewView(c *ui.Context, f *feedState) {
 		})
 	})
 	if !open {
-		f.preview = nil
+		v.preview = nil
 	}
 }
 

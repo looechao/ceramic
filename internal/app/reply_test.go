@@ -39,7 +39,7 @@ func TestMentionShowsKnownAccount(t *testing.T) {
 }
 
 func TestReplyPreservesDraftAndRecipients(t *testing.T) {
-	r := testReader(t)
+	r := testViewModel(t)
 	r.session = &mastodon.Session{Scopes: mastodon.Scopes, Account: json.RawMessage(`{"id":"me","acct":"me"}`)}
 	r.showComposer()
 	r.composer.text = "existing draft"

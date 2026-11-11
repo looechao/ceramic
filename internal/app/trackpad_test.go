@@ -11,39 +11,39 @@ func TestTrackpadMixedAxis(t *testing.T) {
 	r := columnReader(t, 8)
 	tt := ui.NewTester(r.view, 1240, 820)
 	ws := r.workspaces["home"]
-	ws.scroll.X = 600
+	r.workspaceView(ws).scroll.X = 600
 	tt.Frame()
 	for _, f := range ws.columns {
-		f.scroll.Y = 100
+		r.columnView(f).scroll.Y = 100
 	}
 	tt.Frame()
-	x := ws.scroll.X
+	x := r.workspaceView(ws).scroll.X
 	ys := make([]float32, len(ws.columns))
 	for i, f := range ws.columns {
-		ys[i] = f.scroll.Y
+		ys[i] = r.columnView(f).scroll.Y
 	}
 	tt.Scroll(900, 300, 40, 1)
-	if ws.scroll.X != x+40 {
-		t.Fatalf("horizontal gesture swallowed: %v -> %v", x, ws.scroll.X)
+	if r.workspaceView(ws).scroll.X != x+40 {
+		t.Fatalf("horizontal gesture swallowed: %v -> %v", x, r.workspaceView(ws).scroll.X)
 	}
 	for i, f := range ws.columns {
-		if f.scroll.Y != ys[i] {
+		if r.columnView(f).scroll.Y != ys[i] {
 			t.Fatal("horizontal gesture moved post list")
 		}
 	}
 	tt.Scroll(900, 300, 10, 15)
-	if ws.scroll.X != x+50 {
+	if r.workspaceView(ws).scroll.X != x+50 {
 		t.Fatal("gesture changed direction midstream")
 	}
 	tt.Advance(time.Second)
-	x = ws.scroll.X
+	x = r.workspaceView(ws).scroll.X
 	tt.Scroll(900, 300, 1, 40)
-	if ws.scroll.X != x {
+	if r.workspaceView(ws).scroll.X != x {
 		t.Fatal("vertical gesture moved columns")
 	}
 	moved := false
 	for i, f := range ws.columns {
-		moved = moved || f.scroll.Y > ys[i]
+		moved = moved || r.columnView(f).scroll.Y > ys[i]
 	}
 	if !moved {
 		t.Fatal("vertical gesture did not scroll list")

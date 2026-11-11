@@ -95,7 +95,7 @@ func TestPostManagementLifecycle(t *testing.T) {
 		io.WriteString(w, `{"id":"42","content":"<p>edited</p>","account":{"id":"me"}}`)
 	}))
 	defer server.Close()
-	r := testReader(t)
+	r := testViewModel(t)
 	r.session = &mastodon.Session{Instance: server.URL, Scopes: mastodon.Scopes, Account: json.RawMessage(`{"id":"me"}`)}
 	callbacks := make(chan func(), 8)
 	r.update = func(fn func()) { callbacks <- fn }
@@ -164,7 +164,7 @@ func TestManagedPostRejectsStaleFeed(t *testing.T) {
 			responses := make(chan string, 2)
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) { requests <- struct{}{}; io.WriteString(w, <-responses) }))
 			defer server.Close()
-			r := testReader(t)
+			r := testViewModel(t)
 			r.session = &mastodon.Session{Instance: server.URL, Token: "test", Scopes: mastodon.Scopes}
 			r.service.SetSession(r.session)
 			callbacks := make(chan func(), 2)
@@ -231,7 +231,7 @@ func TestDeletedPostRejectsLateNotification(t *testing.T) {
 			}
 		}
 	}))
-	r := testReader(t)
+	r := testViewModel(t)
 	r.session = &mastodon.Session{Instance: server.URL, Token: "test", Scopes: mastodon.Scopes}
 	r.service.SetSession(r.session)
 	q := make(chan func(), 8)

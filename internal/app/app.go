@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sync/atomic"
 
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/plugins/updater"
@@ -46,7 +47,20 @@ func Run() {
 		}
 		window := mygo.NewWindow(options)
 		reader.parentWindow = window
-		reader.update = window.Update
+		var closed atomic.Bool
+		reader.update = func(apply func()) {
+			if !closed.Load() {
+				window.Update(func() {
+					if !closed.Load() {
+						apply()
+					}
+				})
+			}
+		}
+		window.OnClosed(func() {
+			closed.Store(true)
+			reader.appViewModel.close()
+		})
 		reader.closeWindow = window.Close
 		reader.openWriting = func() { reader.showComposer() }
 		reader.checkUpdates = updater.CheckForUpdates
@@ -99,9 +113,8 @@ func Run() {
 		rebuildMenu()
 		mygo.App.OnLocaleChanged(func(string) { rebuildMenu() })
 		window.OnClose(func(e *mygo.CloseEvent) {
-			if reader.composer != nil && !reader.saveDraft(reader.composer) {
+			if !reader.prepareClose() {
 				e.PreventDefault()
-				reader.composer.open = true
 			}
 		})
 		window.OnClosed(func() { mygo.App.Quit() })

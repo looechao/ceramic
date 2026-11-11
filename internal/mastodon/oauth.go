@@ -1,6 +1,7 @@
 package mastodon
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/subtle"
 	"encoding/hex"
@@ -98,11 +99,20 @@ func (a *Client) Snapshot() (*Session, bool, error) {
 }
 
 func (a *Client) Login(instance string) error {
+	return a.LoginContext(context.Background(), instance)
+}
+
+// LoginContext cancels registration when its owning authorization is dismissed.
+func (a *Client) LoginContext(ctx context.Context, instance string) error {
 	instance, err := NormalizeInstance(instance)
 	if err != nil {
 		return err
 	}
 	a.mu.Lock()
+	if err := ctx.Err(); err != nil {
+		a.mu.Unlock()
+		return err
+	}
 	a.version++
 	version := a.version
 	a.loginError = nil
@@ -112,7 +122,7 @@ func (a *Client) Login(instance string) error {
 		ID     string `json:"client_id"`
 		Secret string `json:"client_secret"`
 	}
-	if err = a.request("POST", instance+"/api/v1/apps", "", url.Values{"client_name": {"Ceramic"}, "redirect_uris": {redirect}, "scopes": {Scopes}}, &app); err != nil {
+	if _, err = a.requestExtraContext(ctx, "POST", instance+"/api/v1/apps", "", url.Values{"client_name": {"Ceramic"}, "redirect_uris": {redirect}, "scopes": {Scopes}}, &app, nil); err != nil {
 		return err
 	}
 	if app.ID == "" || app.Secret == "" {
@@ -120,7 +130,7 @@ func (a *Client) Login(instance string) error {
 	}
 	p := &pendingLogin{Instance: instance, ClientID: app.ID, Secret: app.Secret, State: randomKey(), Redirect: redirect, Expires: time.Now().Add(10 * time.Minute)}
 	a.mu.Lock()
-	if version != a.version {
+	if version != a.version || ctx.Err() != nil {
 		a.mu.Unlock()
 		return MessageAuthorizationCanceled
 	}

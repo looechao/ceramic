@@ -8,8 +8,25 @@ login, and `imagecache` keeps downloaded images on disk. Dependencies point one
 way: `app` uses `mastodon` and `imagecache`, and neither of those imports MyGo
 or each other.
 
-Views go in `*_ui.go` files and share the `reader` state, so the interface stays
-one package. Add a package for a new protocol, such as Misskey, beside
+`publishing` owns submission identity, attachment upload reuse and publication,
+using `mastodon` without depending on app or storage. The app saves retry state
+before sending and applies results to the originating composer.
+
+`notifications` owns the stream, reconnect and polling workers for one session;
+app supplies serialized callbacks and controls the unread badge. Stop a sync
+before replacing it; callbacks queued by a stopped sync must not apply.
+
+Within app, each `feedCollection` owns rows and pagination. The session's
+`postStore` owns confirmed edits, interactions and deletion history across live
+collections; navigation supplies those collections without the store retaining
+columns. Logout replaces the store so deletion history cannot cross accounts.
+
+`draftstore` and `preferences` persist model data without MyGo or ViewModel
+dependencies. See `docs/architecture.md` for state ownership and async lifetimes.
+
+Views go in `*_ui.go` files and share the `reader` host and its ViewModel,
+so the interface stays one package. Business state and operations go in `*_vm.go`
+without MyGo types; widget and display state stay in the host. Add a package for a new protocol, such as Misskey, beside
 `mastodon` when it arrives, and write an interface only once there are two.
 
 ## Design

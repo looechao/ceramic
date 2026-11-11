@@ -12,7 +12,7 @@ type relationshipState struct {
 	message      string
 }
 
-func (r *reader) isSelf(id string) bool {
+func (r *appViewModel) isSelf(id string) bool {
 	if r.session == nil || id == "" {
 		return false
 	}
@@ -21,7 +21,7 @@ func (r *reader) isSelf(id string) bool {
 	return me.ID == id
 }
 
-func (r *reader) relationship(id string) *relationshipState {
+func (r *appViewModel) relationship(id string) *relationshipState {
 	if r.relationships == nil {
 		r.relationships = map[string]*relationshipState{}
 	}
@@ -31,8 +31,8 @@ func (r *reader) relationship(id string) *relationshipState {
 	return r.relationships[id]
 }
 
-func (r *reader) loadRelationship(id string) {
-	if id == "" || r.session == nil || r.isSelf(id) || r.update == nil {
+func (r *appViewModel) loadRelationship(id string) {
+	if r.closed || id == "" || r.session == nil || r.isSelf(id) || r.update == nil {
 		return
 	}
 	state := r.relationship(id)
@@ -41,10 +41,11 @@ func (r *reader) loadRelationship(id string) {
 	}
 	state.busy, state.message = true, ""
 	gen, session := r.generation, r.session
+	service, dispatch := r.service.ForSession(r.ctx, session), r.update
 	go func() {
-		value, err := r.service.Relationship(session, id)
-		r.update(func() {
-			if gen != r.generation || r.session != session {
+		value, err := service.Relationship(session, id)
+		dispatch(func() {
+			if r.closed || gen != r.generation || r.session != session {
 				return
 			}
 			state.busy = false
@@ -57,8 +58,8 @@ func (r *reader) loadRelationship(id string) {
 	}()
 }
 
-func (r *reader) toggleFollow(f *feedState, id string) {
-	if r.session == nil || r.update == nil || r.isSelf(id) {
+func (r *appViewModel) toggleFollow(f *feedState, id string) {
+	if r.closed || r.session == nil || r.update == nil || r.isSelf(id) {
 		return
 	}
 	state := r.relationship(id)
@@ -76,10 +77,11 @@ func (r *reader) toggleFollow(f *feedState, id string) {
 	}
 	state.busy, state.message = true, ""
 	gen, session := r.generation, r.session
+	service, dispatch := r.service.ForSession(r.ctx, session), r.update
 	go func() {
-		value, err := r.service.SetFollowing(session, id, follow)
-		r.update(func() {
-			if gen != r.generation || r.session != session {
+		value, err := service.SetFollowing(session, id, follow)
+		dispatch(func() {
+			if r.closed || gen != r.generation || r.session != session {
 				return
 			}
 			state.busy = false

@@ -48,7 +48,7 @@ func (r *reader) post(c *ui.Context, f *feedState, p *postView) {
 						})
 					}
 					body := r.renderRichText(c, p.runs, 14, func() {
-						if f.preview == nil {
+						if r.columnView(f).preview == nil {
 							r.openConversation(f, s)
 						}
 					}, func(ev ui.InputEvent) {
@@ -92,7 +92,7 @@ func (r *reader) post(c *ui.Context, f *feedState, p *postView) {
 			})
 		})
 	}).Label(locales.OpenConversation()+s.ID), func() {
-		if f.preview == nil {
+		if r.columnView(f).preview == nil {
 			r.openConversation(f, s)
 		}
 	})
@@ -124,7 +124,7 @@ func (r *reader) media(c *ui.Context, f *feedState, m mastodon.Media, single boo
 				preview = m.URL
 			}
 			entry := r.photo(preview)
-			height := mediaSlotHeight(m, max(1, f.width-86), single)
+			height := mediaSlotHeight(m, max(1, r.columnView(f).width-86), single)
 			ui.Box(c).FillWidth().Height(height).Radius(10).Clip().Background(c.Theme().Surface).AlignItems(ui.Center).Justify(ui.Center).Children(func() {
 				if entry != nil && entry.bitmap != nil {
 					hintAction(c, ui.Image(c, entry.bitmap).FillWidth().Height(height).Fit(ui.Cover).Radius(10).Label(m.Description), func() {

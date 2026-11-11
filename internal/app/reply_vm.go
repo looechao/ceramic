@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func (r *reader) showReply(status mastodon.Status) {
+func (r *appViewModel) showReply(status mastodon.Status) {
 	if r.session == nil {
 		return
 	}

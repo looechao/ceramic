@@ -79,7 +79,7 @@ func TestDraftImageRoundTripAndSaveFailure(t *testing.T) {
 	restored.showComposer()
 	restored.restoreDraft(restored.composer, restored.drafts[0])
 	got := restored.composer.attachments
-	if len(got) != 1 || got[0].description != "海边" || got[0].bitmap == nil || !bytes.Equal(got[0].data, buf.Bytes()) {
+	if len(got) != 1 || got[0].description != "海边" || r.composeBitmap(got[0]) == nil || !bytes.Equal(got[0].data, buf.Bytes()) {
 		t.Fatal("image data lost")
 	}
 	info, err := os.Stat(filepath.Join(r.draftDirectory(), d.draftID+".json"))

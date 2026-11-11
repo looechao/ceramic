@@ -20,7 +20,8 @@ func TestNativeMediaLoadingKeepsLayout(t *testing.T) {
 			}
 			entry := &imageEntry{}
 			r.images[m.Preview] = entry
-			f := &feedState{width: 394}
+			f := &feedState{}
+			r.columnView(f).width = 394
 			tt := ui.NewTester(func(c *ui.Context) {
 				ui.Column(c).Width(308).Children(func() {
 					r.media(c, f, m, true)
@@ -41,7 +42,7 @@ func TestNativeMediaLoadingKeepsLayout(t *testing.T) {
 			if err := tt.Click("预览图片"); err != nil {
 				t.Fatal(err)
 			}
-			if f.preview == nil {
+			if r.columnView(f).preview == nil {
 				t.Fatal("image did not open")
 			}
 			entry.bitmap, entry.failed = nil, true

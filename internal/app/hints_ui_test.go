@@ -51,16 +51,16 @@ func TestNativeHintsSearchSegments(t *testing.T) {
 	}
 	savePreview(t, tt, "native-hints-search-segments")
 	activateHint(t, tt, state, locales.Accounts())
-	if r.searchTab != 1 || r.searchKind != "accounts" {
+	if r.searchTab != 1 || r.feedState.searchKind != "accounts" {
 		t.Fatal("account hint did not switch the search kind")
 	}
 	tt.Key(0, ui.KeyF)
 	hintFrames(tt)
 	activateHint(t, tt, state, locales.Posts())
-	if r.searchTab != 0 || r.searchKind != "statuses" {
+	if r.searchTab != 0 || r.feedState.searchKind != "statuses" {
 		t.Fatal("posts hint did not switch the search kind")
 	}
-	if err := tt.Click(locales.Accounts()); err != nil || r.searchKind != "accounts" {
+	if err := tt.Click(locales.Accounts()); err != nil || r.feedState.searchKind != "accounts" {
 		t.Fatal("native mouse selection lost")
 	}
 }
@@ -196,7 +196,7 @@ func TestNativeHintsReadingFlow(t *testing.T) {
 	savePreview(t, tt, "native-hints-timeline")
 	tt.Key(0, ui.KeyEscape)
 	tt.SetSize(1000, 240)
-	r.home.list.ScrollTo(1, ui.Start)
+	r.columnView(r.home).list.ScrollTo(1, ui.Start)
 	hintFrames(tt)
 	tt.Key(0, ui.KeyF)
 	hintFrames(tt)
@@ -207,7 +207,7 @@ func TestNativeHintsReadingFlow(t *testing.T) {
 	}
 	tt.Key(0, ui.KeyEscape)
 	tt.SetSize(1000, 720)
-	r.home.list.ScrollTo(0, ui.Start)
+	r.columnView(r.home).list.ScrollTo(0, ui.Start)
 	hintFrames(tt)
 	tt.Key(0, ui.KeyF)
 	hintFrames(tt)

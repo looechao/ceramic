@@ -50,10 +50,10 @@ func benchmarkColumns(b *testing.B, visit bool) {
 	if visit {
 		ws := r.workspaces["home"]
 		for i, f := range ws.columns {
-			ws.scroll.X = float32(i) * (f.width + columnGap)
+			r.workspaceView(ws).scroll.X = float32(i) * (r.columnView(f).width + columnGap)
 			tt.Frame()
 		}
-		ws.scroll.X = 0
+		r.workspaceView(ws).scroll.X = 0
 	}
 	for i := 0; i < 3; i++ {
 		tt.Frame()
@@ -80,7 +80,7 @@ func TestNativeColumnsKeepReadingStateWhenCulled(t *testing.T) {
 	if len(r.images) > 4 {
 		t.Fatalf("offscreen columns requested images: %d", len(r.images))
 	}
-	r.home.list.ScrollTo(30, ui.Start)
+	r.columnView(r.home).list.ScrollTo(30, ui.Start)
 	tt.Frame()
 	before, ok := tt.Find("column-0-row-30")
 	if !ok {
@@ -89,7 +89,7 @@ func TestNativeColumnsKeepReadingStateWhenCulled(t *testing.T) {
 	r.home.posts[30].expanded = true
 	// A scrollbar jump must build the destination immediately, even when it
 	// skips the neighboring columns that are kept warm for normal scrolling.
-	ws.scroll.X = 1e9
+	r.workspaceView(ws).scroll.X = 1e9
 	tt.Frame()
 	if !tt.HasText("column-23-row-0") || tt.HasText("column-10-row-0") {
 		t.Fatal("end of horizontal path not built, or distant column still built")
@@ -101,7 +101,7 @@ func TestNativeColumnsKeepReadingStateWhenCulled(t *testing.T) {
 		t.Fatal("distant column contents retained in UI")
 	}
 	savePreview(t, tt, "native-many-columns-end")
-	ws.scroll.X = 0
+	r.workspaceView(ws).scroll.X = 0
 	tt.Frame()
 	after, ok := tt.Find("column-0-row-30")
 	if !ok || math.Abs(float64(before.Y-after.Y)) > 0.1 || !r.home.posts[30].expanded {
@@ -125,8 +125,8 @@ func TestNativeColumnsKeepReadingStateWhenCulled(t *testing.T) {
 	for _, delta := range []float32{900, 900, 2200, 900, -2200, -900, -900} {
 		tt.Scroll(900, 300, delta, 0)
 		for i, f := range ws.columns {
-			left := float32(i)*(f.width+columnGap) - ws.scroll.X
-			if left >= 0 && left+f.width <= 1240-railWidth-2*columnGap {
+			left := float32(i)*(r.columnView(f).width+columnGap) - r.workspaceView(ws).scroll.X
+			if left >= 0 && left+r.columnView(f).width <= 1240-railWidth-2*columnGap {
 				row := 0
 				if i == 0 {
 					row = 30
