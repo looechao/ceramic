@@ -77,6 +77,11 @@ func hintInput(c *ui.Context, e ui.Element) ui.Element {
 // Use native segments so each choice can have its own hint while retaining
 // radio-group focus, arrow navigation, and mouse selection.
 func hintSegmented(c *ui.Context, selected *int, labels ...string) bool {
+	return hintSegmentedText(c, selected, labels, labels)
+}
+
+// Text can be compact while labels retain accessible names and tooltips.
+func hintSegmentedText(c *ui.Context, selected *int, labels, text []string) bool {
 	t := c.Theme()
 	parts := ui.SegmentedBase(c, selected, len(labels))
 	track := parts.Track.AlignItems(ui.Stretch).Padding(t.Space(0.5)).Gap(t.Space(0.5)).
@@ -87,6 +92,9 @@ func hintSegmented(c *ui.Context, selected *int, labels ...string) bool {
 			segment := parts.Segment(i).
 				Padding(t.Space(1), t.Space(3)).Gap(t.Space(1.5)).
 				Radius(max(t.Radius-t.Space(0.5), 0)).TextColor(t.Text)
+			if label != text[i] {
+				segment.Label(label).Tooltip(label)
+			}
 			if i == *selected {
 				face := t.Background
 				if t.Dark {
@@ -100,7 +108,7 @@ func hintSegmented(c *ui.Context, selected *int, labels ...string) bool {
 					segment.Background(t.SurfaceHover)
 				}
 			}
-			segment.Children(func() { ui.Text(c, label).SingleLine() })
+			segment.Children(func() { ui.Text(c, text[i]).SingleLine() })
 			if h := hints(c); h.active || h.pending != nil {
 				ref := ui.Local(segment, "hint-segment", func() ui.Handle { return ui.Handle{} })
 				segment.Bind(ref)

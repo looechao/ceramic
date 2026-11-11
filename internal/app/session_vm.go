@@ -81,6 +81,7 @@ func (r *appViewModel) logout() bool {
 	r.feedState = r.home
 	r.searchFeed = &feedState{kind: "search", searchKind: "statuses"}
 	r.notifications = &feedState{kind: "notifications"}
+	r.mentionNotifications = &feedState{kind: "notifications", notificationType: "mention"}
 	r.bookmarks = &feedState{kind: "bookmarks"}
 	r.favorites = &feedState{kind: "favorites"}
 	r.unread = 0

@@ -263,6 +263,15 @@ func (r *reader) pane(c *ui.Context, f *feedState, ws *workspace, index int, war
 		}
 		r.emojiText(c, title, f.profile.Emojis, 14).FontWeight(600)
 		ui.Spacer(c)
+		if f.kind == "notifications" {
+			selected := 0
+			if f.notificationType == "mention" {
+				selected = 1
+			}
+			if hintSegmentedText(c, &selected, []string{locales.AllNotifications(), locales.MentionNotifications()}, []string{locales.AllNotifications(), "@"}) {
+				r.selectNotificationFilter(selected == 1)
+			}
+		}
 		hintAction(c, ui.ButtonBase(c).Size(28, 28).Label(locales.RefreshLabel()+title).Tooltip(locales.RefreshLabel()+title).Disabled(f.busy), func() { r.loadFeed(f, false) }).Children(func() { ui.Icon(c, refreshIcon).Size(16, 16).TextColor(t.TextMuted) })
 	}).Background(header).Height(48).Padding(8, 16).BorderWidth(0, 0, 1, 0).BorderColor(postDivider(c))
 	if !warm {

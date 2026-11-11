@@ -257,5 +257,8 @@
   "Cancel": "Annulla",
   "SaveChanges": "Salva modifiche",
   "PostOverLimit": "Limite superato di {value0} caratteri. Accorcia il post prima di pubblicarlo.",
-  "PostLimitsUnavailable": "Impossibile caricare il limite di caratteri. Riprova per poter pubblicare."
+  "PostLimitsUnavailable": "Impossibile caricare il limite di caratteri. Riprova per poter pubblicare.",
+  "AllNotifications": "Tutte",
+  "MentionNotifications": "@ Menzioni",
+  "NoMentionsYet": "Nessuna menzione."
 }

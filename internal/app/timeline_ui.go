@@ -126,6 +126,9 @@ func (r *reader) timelineView(c *ui.Context, f *feedState, body ui.Element) {
 				}
 				if f.kind == "notifications" {
 					label = locales.NoNotificationsYetFollowsBoostsFavoritesAndMentionsAppearHere()
+					if f.notificationType == "mention" {
+						label = locales.NoMentionsYet()
+					}
 				}
 				ui.Text(c, label).TextColor(c.Theme().TextMuted)
 			}

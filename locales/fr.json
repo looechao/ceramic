@@ -257,5 +257,8 @@
   "Cancel": "Annuler",
   "SaveChanges": "Enregistrer",
   "PostOverLimit": "Limite dépassée de {value0} caractères. Raccourcissez votre publication.",
-  "PostLimitsUnavailable": "Impossible de charger la limite de caractères. Réessayez pour pouvoir publier."
+  "PostLimitsUnavailable": "Impossible de charger la limite de caractères. Réessayez pour pouvoir publier.",
+  "AllNotifications": "Tout",
+  "MentionNotifications": "@ Mentions",
+  "NoMentionsYet": "Aucune mention pour le moment."
 }

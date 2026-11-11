@@ -257,5 +257,8 @@
   "Cancel": "キャンセル",
   "SaveChanges": "変更を保存",
   "PostOverLimit": "文字数の上限を {value0} 文字超えています。投稿を短くしてください。",
-  "PostLimitsUnavailable": "投稿の文字数制限を取得できませんでした。再試行してください。"
+  "PostLimitsUnavailable": "投稿の文字数制限を取得できませんでした。再試行してください。",
+  "AllNotifications": "すべて",
+  "MentionNotifications": "@ メンション",
+  "NoMentionsYet": "メンションはまだありません。"
 }

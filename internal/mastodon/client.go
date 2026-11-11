@@ -279,8 +279,11 @@ func (a *Client) StreamUser(ctx context.Context, onEvent func(event string, data
 }
 
 // Notifications reads the account's notification feed, newest first.
-func (a *Client) Notifications(cursor string) ([]Notification, error) {
+func (a *Client) Notifications(cursor string, types ...string) ([]Notification, error) {
 	q := url.Values{"limit": {"30"}}
+	for _, kind := range types {
+		q.Add("types[]", kind)
+	}
 	if cursor != "" {
 		q.Set("max_id", cursor)
 	}
