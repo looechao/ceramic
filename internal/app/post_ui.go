@@ -18,9 +18,27 @@ func (r *reader) post(c *ui.Context, f *feedState, p *postView) {
 	}
 	row := hintAction(c, r.listSurface(c, f, postTint(p), func(hover *listHoverState) {
 		if p.status.Reblog != nil {
-			ui.Row(c).Gap(6).Margin(0, 0, 2, 54).Children(func() {
-				ui.Icon(c, boostIcon).Size(13, 13).TextColor(t.TextMuted)
-				r.emojiText(c, locales.Boosted(p.status.Account.Name()), p.status.Account.Emojis, 11).TextColor(t.TextMuted)
+			booster := p.status.Account
+			ui.Row(c).Margin(0, 0, 4, 0).Children(func() {
+				hit := hintAction(c, ui.ButtonBase(c).Shrink(1).
+					Label(locales.Boosted(booster.Name())).Tooltip(locales.View()+booster.Name()),
+					func() { r.openProfileFrom(f, booster) })
+				target := float32(1)
+				if hit.Hovered() && !hit.Pressed() && !c.Preferences().ReduceMotion {
+					target = 1.05
+				}
+				scale := hit.Animate("boost-source-hover", target, listHoverDuration)
+				if c.Preferences().ReduceMotion {
+					scale = 1
+				}
+				hit.Children(func() {
+					ui.Row(c).Shrink(1).Gap(5).Padding(3, 7).Radius(12).
+						Background(t.Text.Alpha(0.06)).Scale(scale, scale).Children(func() {
+						r.accountAvatar(c, booster.Name(), booster.Avatar, 18, booster.AvatarStatic)
+						r.emojiText(c, locales.Boosted(booster.Name()), booster.Emojis, 11).TextColor(t.TextMuted).Shrink(1).MaxLines(1)
+						ui.Icon(c, boostIcon).Size(12, 12).Shrink(0).TextColor(t.TextMuted)
+					})
+				})
 			})
 		}
 		ui.Row(c).Gap(12).AlignItems(ui.Start).Children(func() {

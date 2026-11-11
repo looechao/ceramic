@@ -26,6 +26,8 @@ func avatarImage(c *ui.Context, name string, bitmap *ui.Bitmap, size float32) ui
 	return ui.Avatar(c, name, nil).Size(size, size).Radius(size / 2)
 }
 
+var privateMentionTint = ui.Hex("#d97924")
+
 // Type color is a quiet hint; the text/icon still identifies the post.
 func postTint(p *postView) ui.Color {
 	s := p.status
@@ -33,6 +35,8 @@ func postTint(p *postView) ui.Color {
 		s = *s.Reblog
 	}
 	switch {
+	case s.Visibility == "direct":
+		return privateMentionTint
 	case s.Spoiler != "" || s.Sensitive || p.warning != "":
 		return ui.Hex("#c48a38")
 	case p.status.Reblog != nil:

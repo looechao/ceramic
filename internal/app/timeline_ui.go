@@ -197,10 +197,19 @@ func (r *reader) notificationRow(c *ui.Context, f *feedState, n mastodon.Notific
 		}
 		relation = &s
 	}
-	r.listSurface(c, f, ui.Transparent, func(hover *listHoverState) {
+	privateMention := n.Type == "mention" && relation != nil && relation.Visibility == "direct"
+	tint := ui.Transparent
+	if privateMention {
+		tint = privateMentionTint
+	}
+	r.listSurface(c, f, tint, func(hover *listHoverState) {
 		ui.Row(c).Gap(6).Children(func() {
-			ui.Icon(c, icon).Size(14, 14).TextColor(t.Accent)
-			ui.Text(c, label).FontSize(12).TextColor(t.TextMuted)
+			if privateMention {
+				visibilityBadge(c, "direct")
+			} else {
+				ui.Icon(c, icon).Size(14, 14).TextColor(t.Accent)
+				ui.Text(c, label).FontSize(12).TextColor(t.TextMuted)
+			}
 			ui.Spacer(c)
 			if date, err := time.Parse(time.RFC3339, n.CreatedAt); err == nil {
 				ui.Text(c, relativeTime(date)).FontSize(11).TextColor(t.TextMuted).Tooltip(date.Local().Format("2006-01-02 15:04"))
@@ -214,7 +223,9 @@ func (r *reader) notificationRow(c *ui.Context, f *feedState, n mastodon.Notific
 			})
 		})
 		if relation != nil {
-			visibilityBadge(c, relation.Visibility)
+			if !privateMention {
+				visibilityBadge(c, relation.Visibility)
+			}
 			content := func() {
 				r.renderRichText(c, mastodon.ParseText(relation.Content, relation.Emojis...), 13, func() {
 					r.openConversation(f, *relation)
@@ -276,6 +287,14 @@ func (r *reader) avatar(c *ui.Context, f *feedState, p mastodon.Account, size fl
 
 func (r *reader) profileHeader(c *ui.Context, f *feedState, p mastodon.Account) {
 	t := c.Theme()
+	pending := f.busy && !f.loaded
+	avatar := func() {
+		if pending && p.Avatar == "" {
+			profileAvatarLoading(c, p.Name())
+		} else {
+			r.avatar(c, f, p, 56)
+		}
+	}
 	ui.Column(c).Padding(22).Gap(20).BorderWidth(0, 0, 1, 0).BorderColor(t.Border).Children(func() {
 		identity := func() {
 			ui.Column(c).Grow(1).Shrink(1).Gap(5).Children(func() {
@@ -286,7 +305,7 @@ func (r *reader) profileHeader(c *ui.Context, f *feedState, p mastodon.Account) 
 		if r.session != nil && p.ID != "" && !r.isSelf(p.ID) {
 			ui.Column(c).Gap(12).Children(func() {
 				ui.Row(c).FillWidth().Gap(14).AlignItems(ui.Center).Children(func() {
-					r.avatar(c, f, p, 56)
+					avatar()
 					ui.Spacer(c)
 					r.profileRelationship(c, f, p)
 				})
@@ -294,11 +313,13 @@ func (r *reader) profileHeader(c *ui.Context, f *feedState, p mastodon.Account) 
 			})
 		} else {
 			ui.Row(c).Gap(14).AlignItems(ui.Center).Children(func() {
-				r.avatar(c, f, p, 56)
+				avatar()
 				identity()
 			})
 		}
-		if runs := mastodon.ParseText(p.Note, p.Emojis...); len(runs) > 0 {
+		if pending && p.Note == "" {
+			profileTextLoading(c)
+		} else if runs := mastodon.ParseText(p.Note, p.Emojis...); len(runs) > 0 {
 			r.renderRichText(c, runs, 14, nil, nil, r.postLink(f, mastodon.Status{})).LineHeight(1.65).FillWidth()
 		}
 		if len(p.Fields) > 0 {
@@ -316,11 +337,15 @@ func (r *reader) profileHeader(c *ui.Context, f *feedState, p mastodon.Account) 
 				}
 			})
 		}
-		ui.Row(c).Gap(10).AlignItems(ui.Center).Children(func() {
-			ui.Text(c, locales.PostCount(p.Statuses)).FontSize(12).TextColor(t.TextMuted).Shrink(1)
-			hintAction(c, ui.Button(c, locales.FollowingCount(p.Following)).FontSize(12).Background(ui.Transparent).BorderWidth(0).Padding(4, 0).Shrink(1), func() { r.openConnections(f, "following") })
-			hintAction(c, ui.Button(c, locales.FollowerCount(p.Followers)).FontSize(12).Background(ui.Transparent).BorderWidth(0).Padding(4, 0).Shrink(1), func() { r.openConnections(f, "followers") })
-		})
+		if pending {
+			profileCountsLoading(c)
+		} else {
+			ui.Row(c).Gap(10).AlignItems(ui.Center).Children(func() {
+				ui.Text(c, locales.PostCount(p.Statuses)).FontSize(12).TextColor(t.TextMuted).Shrink(1)
+				hintAction(c, ui.Button(c, locales.FollowingCount(p.Following)).FontSize(12).Background(ui.Transparent).BorderWidth(0).Padding(4, 0).Shrink(1), func() { r.openConnections(f, "following") })
+				hintAction(c, ui.Button(c, locales.FollowerCount(p.Followers)).FontSize(12).Background(ui.Transparent).BorderWidth(0).Padding(4, 0).Shrink(1), func() { r.openConnections(f, "followers") })
+			})
+		}
 		if target := mastodon.SafeURL(p.URL); target != "" {
 			externalTextLink(c, locales.ViewProfileInBrowser(), target)
 		}
