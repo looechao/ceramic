@@ -86,7 +86,7 @@ func (r *appViewModel) logout() bool {
 	r.unread = 0
 	r.interactions = nil
 	r.relationships = nil
-	r.deletedPosts = nil
+	r.postStore = postStore{}
 	r.ownProfile = nil
 	r.workspaces = nil
 	r.searchAllowed = false

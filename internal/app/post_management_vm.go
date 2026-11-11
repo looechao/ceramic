@@ -97,53 +97,7 @@ func (r *appViewModel) submitPostManagement(d *postManager) {
 	}()
 }
 
-// Apply confirmed results to every loaded copy, including boosts and notifications.
+// Navigation supplies the live collections; the store owns mutation rules.
 func (r *appViewModel) syncManagedPost(id string, updated mastodon.Status, deleting bool) {
-	if deleting {
-		if r.deletedPosts == nil {
-			r.deletedPosts = map[string]bool{}
-		}
-		r.deletedPosts[id] = true
-	}
-	matches := func(s *mastodon.Status) bool { return s != nil && (s.ID == id || s.Reblog != nil && s.Reblog.ID == id) }
-	patch := func(s *mastodon.Status) {
-		if s.ID == id {
-			*s = updated
-		} else if s.Reblog != nil && s.Reblog.ID == id {
-			copy := updated
-			s.Reblog = &copy
-		}
-	}
-	r.eachFeed(func(f *feedState) {
-		f.contentRevision++
-		posts := f.posts[:0]
-		for _, p := range f.posts {
-			if matches(&p.status) {
-				if deleting {
-					continue
-				}
-				patch(&p.status)
-				body := p.status
-				if body.Reblog != nil {
-					body = *body.Reblog
-				}
-				p.runs = mastodon.ParseText(body.Content, body.Emojis...)
-			}
-			posts = append(posts, p)
-		}
-		clear(f.posts[len(posts):])
-		f.posts = posts
-		notifications := f.notifications[:0]
-		for _, n := range f.notifications {
-			if matches(n.Status) {
-				if deleting {
-					continue
-				}
-				patch(n.Status)
-			}
-			notifications = append(notifications, n)
-		}
-		clear(f.notifications[len(notifications):])
-		f.notifications = notifications
-	})
+	r.postStore.syncManagedPost(id, updated, deleting, r.collections())
 }

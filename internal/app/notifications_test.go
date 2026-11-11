@@ -150,7 +150,7 @@ func TestNotificationsRequireReadScope(t *testing.T) {
 	r.session = &mastodon.Session{Scopes: "read:statuses"}
 	r.update = func(func()) { t.Error("unauthorized background work") }
 	r.startStream()
-	if r.cancelStream != nil || r.notifications.busy {
+	if r.notificationSync != nil || r.notifications.busy {
 		t.Fatal("started background requests without notification scope")
 	}
 	r.session.Scopes = "read"

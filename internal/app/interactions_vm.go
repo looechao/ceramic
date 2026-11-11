@@ -59,31 +59,8 @@ func (r *appViewModel) interact(f *feedState, s mastodon.Status, action string) 
 	}()
 }
 
-// Patch only the action's fields, preserving text, reading state and unrelated
-// interactions in every visible copy, including boost and notification wrappers.
 func (r *appViewModel) syncInteraction(updated mastodon.Status, action string) {
-	var patch func(*mastodon.Status)
-	patch = func(s *mastodon.Status) {
-		if s == nil {
-			return
-		}
-		if s.Reblog != nil {
-			patch(s.Reblog)
-		}
-		if s.ID != updated.ID {
-			return
-		}
-		switch action {
-		case "favourite", "unfavourite":
-			s.Favourited, s.Favourites = updated.Favourited, updated.Favourites
-		case "reblog", "unreblog":
-			s.Reblogged, s.Reblogs = updated.Reblogged, updated.Reblogs
-		case "bookmark", "unbookmark":
-			s.Bookmarked = updated.Bookmarked
-		}
-	}
-	r.eachFeed(func(f *feedState) { f.contentRevision++ })
-	r.visitPosts(patch)
+	r.postStore.syncInteraction(updated, action, r.collections())
 	// Refresh saved lists on next visit without disturbing an active reading path.
 	if action == "favourite" || action == "unfavourite" {
 		r.favorites.loaded = false

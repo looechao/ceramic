@@ -12,7 +12,7 @@ import (
 
 // These boundaries are easy to accidentally cross while adding an event handler.
 func TestLayerDependencies(t *testing.T) {
-	for _, pattern := range []string{"*_vm.go", "*_ui.go", "../draftstore/*.go", "../preferences/*.go"} {
+	for _, pattern := range []string{"*_vm.go", "*_ui.go", "../draftstore/*.go", "../preferences/*.go", "../publishing/*.go", "../notifications/*.go"} {
 		paths, err := filepath.Glob(pattern)
 		if err != nil {
 			t.Fatal(err)
@@ -32,7 +32,9 @@ func TestLayerDependencies(t *testing.T) {
 				if !view && strings.HasPrefix(name, "github.com/egoist/mygo") {
 					t.Errorf("%s imports MyGo", path)
 				}
-				if !vm && !view && strings.HasPrefix(name, "ceramic/") {
+				capability := filepath.Base(filepath.Dir(path))
+				allowedProtocol := (capability == "publishing" || capability == "notifications") && name == "ceramic/internal/mastodon"
+				if !vm && !view && strings.HasPrefix(name, "ceramic/") && !allowedProtocol {
 					t.Errorf("%s depends on application code", path)
 				}
 				if view && (name == "os" || name == "ceramic/internal/preferences" || name == "ceramic/internal/draftstore") {

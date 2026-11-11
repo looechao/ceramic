@@ -203,7 +203,7 @@ func TestViewModelNotificationPollSkipsDeletedAndDuplicateNotices(t *testing.T) 
 	vm, q := connectViewModel(t, func(w http.ResponseWriter, r *http.Request) {
 		io.WriteString(w, `[{"id":"3","status":{"id":"deleted"}},{"id":"2","status":{"id":"kept"}},{"id":"2","status":{"id":"kept"}}]`)
 	})
-	vm.deletedPosts = map[string]bool{"deleted": true}
+	vm.postStore.deleted = map[string]bool{"deleted": true}
 	vm.notifications.loaded = true
 	vm.loadFeed(vm.notifications, false)
 	nextNotificationUpdate(t, q)()

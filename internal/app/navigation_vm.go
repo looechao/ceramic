@@ -44,7 +44,7 @@ func (r *appViewModel) navigate(page string) {
 	}
 	r.selected = page
 	if page == "notifications" {
-		r.unread = 0
+		r.notificationsViewModel.markRead()
 	}
 	if ws.focused == nil {
 		ws.focused = ws.columns[0]

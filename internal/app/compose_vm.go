@@ -2,10 +2,9 @@ package app
 
 import (
 	"ceramic/internal/mastodon"
+	"ceramic/internal/publishing"
 	"ceramic/locales"
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"encoding/json"
 )
 
@@ -84,33 +83,22 @@ func (r *appViewModel) publish(d *composer) {
 	if r.closed || d.busy || d.update == nil || !r.hasScope("write:statuses") || !d.ready() {
 		return
 	}
-	draft := d.draft()
-	attachments := append([]composeAttachment(nil), d.attachments...)
-	// Attachment content and descriptions participate in retry identity.
-	identity := []string{}
-	for _, a := range attachments {
-		identity = append(identity, a.digest, a.description)
+	attachments := make([]publishing.Attachment, len(d.attachments))
+	for i, a := range d.attachments {
+		attachments[i] = publishing.Attachment{Name: a.name, Description: a.description, UploadedDescription: a.uploadedDescription, ID: a.id, Digest: a.digest, Data: a.data}
 	}
-	draft.MediaIDs = nil
-	payloadBytes, _ := json.Marshal(struct {
-		Draft       mastodon.PostDraft
-		Attachments []string
-	}{draft, identity})
-	payload := string(payloadBytes)
-	if d.key == "" || d.payload != payload {
-		var b [16]byte
-		if _, err := rand.Read(b[:]); err != nil {
-			d.message = locales.CouldNotPrepareThePostPleaseRetry()
-			return
-		}
-		d.key, d.payload = hex.EncodeToString(b[:]), payload
+	attempt, err := publishing.Prepare(d.draft(), attachments, publishing.Retry{Key: d.key, Payload: d.payload})
+	if err != nil {
+		d.message = locales.CouldNotPrepareThePostPleaseRetry()
+		return
 	}
+	retry := attempt.Retry()
+	d.key, d.payload = retry.Key, retry.Payload
 	if !r.saveDraft(d) {
 		return
 	}
 	s := r.session
 	gen := r.generation
-	key := d.key
 	ctx, cancel := context.WithCancel(r.ctx)
 	d.cancelPublish = cancel
 	update, service := d.update, r.service
@@ -118,28 +106,17 @@ func (r *appViewModel) publish(d *composer) {
 	d.message = ""
 	go func() {
 		defer cancel()
-		var err error
-		for i := range attachments {
-			a := &attachments[i]
-			if a.id == "" || a.uploadedDescription != a.description {
-				a.id, err = service.UploadImageContext(ctx, s, a.name, a.description, a.data)
-				if err != nil {
-					break
-				}
-				a.uploadedDescription = a.description
-			}
-			draft.MediaIDs = append(draft.MediaIDs, a.id)
-		}
-		if err == nil {
-			_, err = service.PublishDraftContext(ctx, s, draft, key)
-		}
+		result, err := attempt.Run(ctx, service, s)
 		update(func() {
 			d.cancelPublish = nil
 			d.busy = false
 			if r.closed || gen != r.generation || r.composer != d {
 				return
 			}
-			d.attachments = attachments
+			d.attachments = make([]composeAttachment, len(result.Attachments))
+			for i, a := range result.Attachments {
+				d.attachments[i] = composeAttachment{name: a.Name, description: a.Description, uploadedDescription: a.UploadedDescription, id: a.ID, digest: a.Digest, data: a.Data}
+			}
 			if err != nil {
 				d.message = localizedError(err) + locales.DraftKeptYouCanRetry()
 				r.saveDraft(d)

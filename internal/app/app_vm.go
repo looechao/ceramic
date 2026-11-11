@@ -20,7 +20,7 @@ type appViewModel struct {
 	ctx           context.Context
 	cancelTasks   context.CancelFunc
 	closed        bool
-	deletedPosts  map[string]bool
+	postStore     postStore
 	relationships map[string]*relationshipState
 	interactions  map[string]bool
 	service       *mastodon.Client
