@@ -113,8 +113,13 @@ func TestPostFastDragDoesNotNavigate(t *testing.T) {
 	}
 	tt.Advance(time.Second)
 	tt.ClickAt(b.X+40, b.Y+b.H/2)
+	if len(r.workspaces["home"].columns) != 1 {
+		t.Fatal("clearing selection after fast drag opened conversation")
+	}
+	tt.Advance(time.Second)
+	tt.ClickAt(b.X+40, b.Y+b.H/2)
 	if len(r.workspaces["home"].columns) != 2 {
-		t.Fatal("ordinary click after fast drag did not open conversation")
+		t.Fatal("ordinary click after clearing fast-drag selection did not open conversation")
 	}
 }
 

@@ -10,7 +10,7 @@
 
 ![Ceramic 多栏阅读界面的真实截图](docs/ceramic-screenshot.png)
 
-基于 **MyGo v0.7.4 原生 UI** 构建。第三方依赖及资源遵循各自的许可证。
+基于 **MyGo v0.10.0 原生 UI** 构建。第三方依赖及资源遵循各自的许可证。
 
 界面全部由 Go 编写，使用 `ui.View`、`ui.List`、`ui.RichText`、`ui.Image` 等原生渲染组件，没有 WebView、HTML 页面、JavaScript 或前端构建工具。MyGo 在 macOS 上使用 Metal 绘制界面，并非 AppKit/SwiftUI 控件。
 
@@ -141,7 +141,7 @@ Go 直接连接所选实例。浏览器仅用于登录授权和打开外部链�
 
 ## 导航与框架边界
 
-保持官方 MyGo v0.7.4，没有替换依赖、修改框架或使用 Peek 的定制分支。
+保持官方 MyGo v0.10.0，没有替换依赖、修改框架或使用 Peek 的定制分支。
 界面使用 MyGo 自带的 `ButtonBase`、`Toolbar`、`SearchField`、`Segmented`、`List`、`Avatar`、`Icon` 和 `RichText`。
 这些 UI 组件由 MyGo 原生渲染，不能等同于 Peek 分支的 `NSToolbar` / `NSOutlineView` 桥接。侧栏现使用官方 `VibrancySidebar`，在 macOS 上由系统 `NSVisualEffectView` 绘制毛玻璃材质；只有侧栏透明，阅读列保持不透明。
 系统菜单中的 Navigate 提供 我的（⌘1）、首页（⌘2）、通知（⌘3）、书签（⌘4）、喜欢（⌘5）、Explore（⌘6）、写帖子（⌘N）和刷新（⌘R）；Escape 取消组合键或关闭图片，不关闭阅读列。点击作者名在当前 Tab 右侧追加个人页；点击帖子正文或回复图标打开讨论串和回复列表。支持触控板横向滑动和 Shift＋滚轮横向滚动。新增列左上角 × 只关闭当前列，主列不可关闭；切换 Tab 保留各自路径。内容区不足 720 pt 时只显示焦点列，拉宽后恢复并列显示。左上角账号头像切换到 Profile。

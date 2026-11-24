@@ -2,7 +2,7 @@
 
 `main.go` starts `internal/app`. The UI stays in that one package. Protocol and
 persistence packages do not depend on ViewModel or MyGo. Ceramic continues to
-use the concrete Mastodon client and official MyGo v0.7.4.
+use the concrete Mastodon client and official MyGo v0.10.0.
 
 ## View
 
