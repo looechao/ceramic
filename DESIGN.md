@@ -1,7 +1,7 @@
 # Ceramic desktop reading
 
 ## Direction
-Ivory-inspired compact reading workspace, built only with official MyGo v0.7.4. A narrow navigation rail and independent per-tab reading paths replace the earlier broad sidebar. Real content, not decoration, provides the visual focus.
+Ivory-inspired compact reading workspace, built only with official MyGo v0.10.0. A narrow navigation rail and independent per-tab reading paths replace the earlier broad sidebar. Real content, not decoration, provides the visual focus.
 
 ## Palette
 System light/dark background, surface, text, muted text and borders. Accent is monochrome ink, matching the black-and-white app icon: #1d1d1f (hover #3a3a3c, pressed #000000, white text) in light mode; #ededed (hover #ffffff, pressed #d4d4d6, #1d1d1f text) in dark mode. Always set hover and pressed with the accent so framework defaults never leak through. The unread badge is the only warm color: clay #b34a30 with white text in light mode, #e2876b with #1d1d1f text in dark mode. Selection uses the text color at 9% opacity with an accent glyph. No forced dark mode or custom glass. Post-type gradients remain subtle and are omitted in high contrast.
@@ -49,7 +49,7 @@ Post visibility uses a small icon and text label alongside the account handle: p
 
 Post rows have fixed outer hit areas with 4 pt vertical and 8 pt horizontal spacing, no divider lines, and an 8 pt corner radius. Pointer hover lifts the inner surface by 1 pt over 140 ms with a soft shadow. Text selection freezes the current displacement until release; ordinary controls settle on press. Reduced motion disables displacement, and high contrast omits shadow. Existing content-type tints remain.
 
-Precise touchpad input locks to one axis and one vertical reading target per gesture, including momentum. Small opening deltas accumulate to 3 pt and require a 1.6:1 direction advantage; ambiguous starts wait up to 12 pt. The initial direction can be corrected within 80 ms until 12 pt of net displacement, without rewinding either view; edges never transfer input to the other axis. MyGo v0.7.4 exposes no native gesture phases, so a 180 ms idle gap or fingers interrupting momentum starts a new gesture. Mouse wheels retain framework behavior.
+Precise touchpad input locks to one axis and one vertical reading target per gesture, including momentum. Small opening deltas accumulate to 3 pt and require a 1.6:1 direction advantage; ambiguous starts wait up to 12 pt. The initial direction can be corrected within 80 ms until 12 pt of net displacement, without rewinding either view; edges never transfer input to the other axis. Ceramic still starts a new gesture after a 180 ms idle gap or when fingers interrupt momentum, rather than using MyGo's native touch phases. Mouse wheels retain framework behavior.
 
 The signed-out login page uses a centered, borderless form up to 360 pt wide, the bundled Ceramic app icon, a single instance field and a compact Continue action. Field labels, instance input text, helper text, authorization status and Cancel all align centrally. The 24 pt title and 72 pt logo stay centered. A full-width Continue action gives way to an inline loading status during authorization, with the browser instruction and Cancel below it; permission guidance appears only before authorization. Keep explanatory text brief; retain the navigation rail and native window drag area. Narrow and short windows scroll the form without clipping controls.
 
